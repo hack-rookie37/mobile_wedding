@@ -24,6 +24,13 @@ npm run test:e2e
       `supabase migration list --linked`)
 - [ ] Auth 설정: 이메일/비밀번호 로그인 활성, Site URL = 배포 도메인,
       이메일 확인 정책 결정(로컬 기본은 확인 없음 — 운영에서는 확인 활성 권장)
+- [ ] **공개 가입 차단**: Authentication → Sign In / Providers → *Allow new users to sign up* **끄기**
+      (ADR-024). 제품 UI에 가입 화면이 없어도 anon 키는 공개되므로, 이 설정을 끄지 않으면
+      누구나 `auth.signUp()`을 직접 호출해 계정을 만들 수 있다. 로컬 `config.toml`은
+      테스트 때문에 켜져 있으니 **운영에서 반드시 별도로 확인한다.**
+- [ ] **운영 계정 생성**: Authentication → Users → *Add user* → *Create new user*로
+      직접 만든다(이메일 확인을 켰다면 *Auto Confirm User* 체크). 가입 화면이 없으므로
+      계정 추가 경로는 이곳뿐이다.
 - [ ] Storage: `photos` 버킷은 마이그레이션이 생성한다(공개 읽기·10MB·jpeg/png/webp).
       대시보드에서 존재·설정만 확인
 - [ ] **service role 키는 어떤 환경 변수에도 넣지 않는다** (ADR-006)
@@ -40,7 +47,10 @@ npm run test:e2e
 
 ### 1.4 배포 직후 스모크 테스트 (수동)
 
-- [ ] 회원가입 → 샘플 생성 → 편집 → 자동 저장 표시 확인
+- [ ] 대시보드에서 만든 계정으로 로그인 → 샘플 생성 → 편집 → 자동 저장 표시 확인
+- [ ] 가입이 실제로 막혔는지 확인: 브라우저 콘솔에서
+      `await (await import('@supabase/supabase-js')).createClient(URL, ANON).auth.signUp(...)`
+      또는 Auth REST `POST /auth/v1/signup`이 `signup_disabled`로 거부되는지 본다
 - [ ] 사진 업로드 → 갤러리 배치
 - [ ] 비공개 미리보기 링크 발급 → 시크릿 창에서 열림 확인 → 폐기 → 접근 거부 확인
 - [ ] 발행 → `/i/<slug>` 하객 화면 확인 → RSVP 제출 → 결과 페이지에서 확인

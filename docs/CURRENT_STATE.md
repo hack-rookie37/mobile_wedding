@@ -1,12 +1,14 @@
 # CURRENT_STATE — 프로젝트 현재 상태
 
-- 최종 갱신: 2026-07-20 (Phase 11 — production readiness audit 완료)
+- 최종 갱신: 2026-07-20 (Phase 11 완료 + 공개 가입 차단 ADR-024)
 - 갱신 규칙: **각 vertical slice 완료 시, 그리고 중요한 결정·환경 변화 시 이 파일을 갱신한다.** 이 파일은 "지금 어디까지 왔고 다음이 무엇인지"의 단일 소스다.
 
 ## 1. 한 줄 요약
 
 **Phase 11(production readiness audit + 배포 준비) 완료 — 최종 판정: Conditionally ready.**
 7개 영역(architecture·security·data integrity·accessibility·responsive·performance·e2e)을 감사해 실제 결함 **14건을 수정**했고(핵심: anon이 `publish_records` 직접 조회로 public projection을 우회해 숨긴 계좌·연락처 열람 + 발행 목록 열거가 가능했던 취약점 — RPC 단일 경로로 봉쇄, ADR-023), 배포 문서(README·DEPLOYMENT·.env.example)를 완성했다. 전 검사 green: format·lint·typecheck·renderer-units / 단위 216 / 통합 29 / build / e2e 59. 남은 조건은 §3.
+
+**Phase 11 이후 변경**: 아직 서비스로 열지 않으므로 **공개 가입을 닫았다**(ADR-024) — 로그인 화면에서 회원가입 모드 제거, 계정은 Supabase 대시보드에서 직접 생성, 운영 `enable_signup = false`가 실제 경계(§3-2). admin role은 도입하지 않았다(소유권 모델로 충분, YAGNI). e2e 헬퍼는 가입 UI 대신 anon API로 계정을 만들고 로그인만 UI로 수행한다 — 전 검사 재실행 green(§4).
 
 ## 2. Phase 11에서 수정한 것 (감사 → 수정, ADR-023)
 
@@ -38,9 +40,8 @@ RSVP 대시보드 행 펼침을 키보드 조작 가능하게(게스트명 = ari
 코드·테스트·문서는 배포 준비 상태다. 근거는 §4의 실측 결과와 §2의 수정 내역. "Ready"가 아닌 이유 — 아래 조건이 남아 있다:
 
 1. **프로덕션 인프라 미검증**: 지금까지의 모든 검증은 로컬 Supabase 스택 기준이다. 클라우드 Supabase 프로비저닝 → `supabase db push` → Vercel 배포 → DEPLOYMENT.md §1.4 스모크 테스트를 통과해야 Ready.
-2. **운영 Auth 정책 미설정**: 로컬 기본은 이메일 확인 없음 — 운영에서 확인 활성·Site URL 설정 필요 (DEPLOYMENT §1.2).
+2. **운영 Auth 정책 미설정**: 로컬 기본은 이메일 확인 없음 — 운영에서 확인 활성·Site URL 설정 필요. 특히 **공개 가입 차단(`enable_signup = false`)은 운영 대시보드에서만 적용된다** — 로그인 화면에서 회원가입 UI는 제거했지만(ADR-024) anon 키가 공개라 UI 제거만으로는 차단되지 않는다. 로컬 `config.toml`은 테스트 때문에 가입이 켜져 있으므로 코드로 보장되지 않는 항목이다 (DEPLOYMENT §1.2 체크리스트 + 배포 후 거부 확인 스모크 테스트).
 3. **rate limiter는 in-memory**: 서버리스 다중 인스턴스에서는 인스턴스별로 적용된다(우회가 아니라 상한이 N배로 느슨해지는 것 — RSVP는 DB 일일 상한 200이 내구적 2차 방어라 수용, AI는 비용 상한이 느슨해질 수 있음). 트래픽이 실제로 생기면 재검토.
-4. **git push 미완료**: 원격 `hack-rookie37/mobile_wedding`에 현재 인증(계정 junghoon26, SSH 키 거부)으로는 push 권한이 없다 — 로컬 커밋까지 완료. 저장소 소유자 권한(collaborator 추가 또는 해당 계정 인증) 필요.
 
 ## 4. 검증 결과 (2026-07-20 실측 — `supabase db reset`으로 마이그레이션 4개 전체 체인 재적용 후)
 
@@ -90,8 +91,12 @@ RSVP 대시보드 행 펼침을 키보드 조작 가능하게(게스트명 = ari
 - Node v23.10.0 · npm 10.9.2 · Supabase CLI 2.109.1 + Rancher Desktop
 - 셋업·스크립트·마이그레이션: **README.md** / 배포·롤백·백업: **docs/DEPLOYMENT.md**
 - e2e는 포트 3100 프로덕션 서버 자체 기동(`AI_PROVIDER=mock`) — 실행 전 오래된 3100 서버 종료
-- git: main 브랜치, 원격 origin = `git@github.com:hack-rookie37/mobile_wedding.git` (push 권한 대기 — §3)
+- git: main 브랜치, 원격 origin = `https://github.com/hack-rookie37/mobile_wedding.git` (push 완료)
+  - 이 저장소만 hack-rookie37 계정을 쓴다(전역 설정은 회사 계정 유지): 로컬 `user.name`/`user.email`을
+    GitHub noreply로 지정하고, credential helper를 `gh auth git-credential`로 고정했다.
+    `gh auth switch`로 활성 계정을 바꾸면 이 저장소 push가 막힌다.
+- 로그인 계정은 Supabase Studio → Authentication → Users에서 직접 만든다 (가입 화면 없음 — ADR-024)
 
 ## 9. 외부 준비 대기 항목
 
-클라우드 Supabase + Vercel(발행 URL 도메인 확정) / **git push 권한(hack-rookie37/mobile_wedding)** / Anthropic API 키 + 모델 선정(A-21 — adapter·env 준비 완료) / Kakao Maps 키(지도 표시 시) / 제품명·도메인.
+클라우드 Supabase + Vercel(발행 URL 도메인 확정) / Anthropic API 키 + 모델 선정(A-21 — adapter·env 준비 완료) / Kakao Maps 키(지도 표시 시) / 제품명·도메인.

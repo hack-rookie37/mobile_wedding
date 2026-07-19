@@ -173,6 +173,9 @@ enable_refresh_token_rotation = true
 # Requires enable_refresh_token_rotation = true.
 refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
+# 로컬만 true — e2e·integration 테스트가 매 케이스 새 계정을 만들어 사용자 격리를 검증한다
+# (service role 키는 쓰지 않는다, ADR-006). 운영 프로젝트는 반드시 false로 둔다 (ADR-024):
+# 제품 UI에 가입 화면이 없어도 anon 키는 공개되므로, 실제 차단은 이 설정이 한다.
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = false

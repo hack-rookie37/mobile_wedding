@@ -34,6 +34,18 @@ cp .env.example .env.local
 npm run dev   # http://localhost:3000
 ```
 
+### 로그인 계정 만들기
+
+제품에는 회원가입 화면이 없다 — 계정은 운영자가 직접 만든다 (ADR-024).
+로컬은 Supabase Studio(`supabase status`의 Studio URL) → Authentication → Users →
+**Add user**로 만들고, 그 계정으로 `/login`에서 로그인한다.
+로컬 스택은 이메일 확인이 꺼져 있어 바로 로그인된다.
+
+운영 프로젝트는 **가입을 반드시 꺼야 한다**(`enable_signup = false`).
+UI에 가입 버튼이 없어도 anon 키는 공개되므로 그것만으로는 차단되지 않는다 —
+`docs/DEPLOYMENT.md` §1.2 참고. 로컬 `config.toml`이 가입을 켜 둔 것은
+테스트가 케이스마다 새 계정으로 사용자 격리를 검증하기 때문이다.
+
 AI 도우미를 로컬에서 써 보려면 `.env.local`에 `AI_PROVIDER=mock`(결정적 mock) 또는
 `ANTHROPIC_API_KEY` + `AI_MODEL`(실제 모델)을 설정한다. 없으면 AI 버튼만 '미설정'
 안내를 띄우고 편집기는 완전히 동작한다.

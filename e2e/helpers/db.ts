@@ -1,26 +1,10 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { createClient } from "@supabase/supabase-js";
 import type { TestUser } from "./auth";
+import { anonClient } from "./env";
 
 // e2e에서 서버에 실제로 저장된 문서 JSON을 검증하기 위한 접근 (사용자 세션, RLS 통과)
 
-function readEnvLocal(): Record<string, string> {
-  // Playwright는 CJS로 트랜스파일하므로 import.meta 대신 프로젝트 루트 기준 경로 사용
-  const content = readFileSync(resolve(process.cwd(), ".env.local"), "utf8");
-  const env: Record<string, string> = {};
-  for (const line of content.split("\n")) {
-    const match = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (match) env[match[1]] = match[2];
-  }
-  return env;
-}
-
 export async function fetchStoredDoc(user: TestUser, projectId: string): Promise<unknown> {
-  const env = readEnvLocal();
-  const client = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const client = anonClient();
   const signIn = await client.auth.signInWithPassword(user);
   if (signIn.error) throw new Error(`문서 확인용 로그인 실패: ${signIn.error.message}`);
   const { data, error } = await client
@@ -37,10 +21,7 @@ export async function fetchRsvpRows(
   user: TestUser,
   projectId: string,
 ): Promise<{ guest_name: string }[]> {
-  const env = readEnvLocal();
-  const client = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.NEXT_PUBLIC_SUPABASE_ANON_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  const client = anonClient();
   const signIn = await client.auth.signInWithPassword(user);
   if (signIn.error) throw new Error(`응답 확인용 로그인 실패: ${signIn.error.message}`);
   const { data, error } = await client

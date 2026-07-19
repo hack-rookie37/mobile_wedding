@@ -361,7 +361,7 @@ interface AssetStore {
 | 경로 | 접근 | 역할 | 상태 |
 |------|------|------|------|
 | `/` | 소유자 | 대시보드: 프로젝트 목록·생성·개명·복제·보관·삭제 | ✅ Phase 6 |
-| `/login` | 공개 | Supabase Auth 이메일+비밀번호 (가입 포함, A-01) | ✅ Phase 6 |
+| `/login` | 공개 | Supabase Auth 이메일+비밀번호 로그인 (A-01). 공개 가입 없음 — 계정은 Supabase 대시보드에서 생성 (ADR-024) | ✅ Phase 6 |
 | `/editor/[projectId]` | 소유자 | 편집기 (자동 저장·기록·발행) | ✅ |
 | `/preview/[projectId]` | 소유자 | draft 모바일 뷰 (A-19) | ✅ |
 | `/i/[slug]` | 공개 | 발행된 live 스냅샷 (인증 불필요, noindex, 공유 버튼) | ✅ Phase 7 |
@@ -399,7 +399,7 @@ interface AssetStore {
 |------|------|------|
 | 단위 | Vitest | zod 스키마·마이그레이션, `applyAction` + undo 왕복(patch→inverse=identity 속성 테스트), redactForAI, 발행 검증 규칙 |
 | 컴포넌트 | Vitest + Testing Library | 섹션 렌더러 12종 fixture 렌더, 폼 컨트롤 동작 |
-| E2E | Playwright | 슬라이스별 핵심 여정 (가입→편집→발행→게스트 열람, RSVP 제출 등). 게스트 뷰는 모바일 뷰포트로 실행 |
+| E2E | Playwright | 슬라이스별 핵심 여정 (로그인→편집→발행→게스트 열람, RSVP 제출 등). 게스트 뷰는 모바일 뷰포트로 실행. 계정은 헬퍼가 anon API로 만들고 로그인만 UI로 수행한다 (ADR-024) |
 | 경계 | eslint-plugin-boundaries + grep(vw/vh/@media) | §2 매트릭스, §6 renderer 단위 규칙 |
 
 게이트: `typecheck` / `lint` / `test` / `test:e2e` 4개 스크립트가 각 슬라이스의 완료 조건 ([IMPLEMENTATION_PLAN.md §5](./IMPLEMENTATION_PLAN.md)).
