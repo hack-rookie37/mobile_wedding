@@ -37,6 +37,8 @@ const CONTENT_FIELD_LABELS: Record<string, string> = {
   brideLabel: "신부측 그룹 이름",
   photoAssetId: "사진",
   photoFrame: "사진 초점",
+  photoAspect: "사진 세로 길이",
+  fadeBottom: "사진 하단 페이드아웃",
   groom: "신랑 소개",
   bride: "신부 소개",
 };

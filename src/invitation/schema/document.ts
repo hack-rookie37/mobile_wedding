@@ -66,10 +66,16 @@ export const photoFrameSchema = z.object({
 
 // ── 섹션별 content / layout
 
+// photoFull(전면 사진) 세로 비율 — 값은 CSS aspect-ratio의 가로/세로. 아래로 갈수록 길다.
+export const heroPhotoAspectSchema = z.enum(["1/1", "4/5", "3/4", "9/16"]);
+
 export const heroContentSchema = z.object({
   tagline: z.string(),
   photoAssetId: z.string().nullable(),
   photoFrame: photoFrameSchema.optional(),
+  // photoFull 전용 표시 옵션 — 다른 variant(아치·텍스트만)에서는 무시된다
+  photoAspect: heroPhotoAspectSchema,
+  fadeBottom: z.boolean(), // 사진 하단을 배경색으로 페이드아웃
   showDate: z.boolean(),
   showVenue: z.boolean(),
 });
@@ -325,7 +331,7 @@ export const SECTION_LAYOUT_SCHEMAS = {
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(5),
+    schemaVersion: z.literal(6),
     wedding: weddingSchema,
     theme: themeSchema,
     sections: z.array(sectionSchema).min(1),
@@ -363,6 +369,7 @@ export type ThemeId = z.infer<typeof themeIdSchema>;
 export type Theme = z.infer<typeof themeSchema>;
 export type SectionStyle = z.infer<typeof sectionStyleSchema>;
 export type PhotoFrame = z.infer<typeof photoFrameSchema>;
+export type HeroPhotoAspect = z.infer<typeof heroPhotoAspectSchema>;
 export type GalleryPhoto = z.infer<typeof galleryPhotoSchema>;
 export type HeroSection = z.infer<typeof heroSectionSchema>;
 export type GreetingSection = z.infer<typeof greetingSectionSchema>;

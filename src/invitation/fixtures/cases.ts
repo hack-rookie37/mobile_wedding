@@ -5,6 +5,7 @@ import { createSampleDocument } from "./sample";
 
 export const FIXTURE_CASES = [
   "base",
+  "hero-full",
   "long-names",
   "long-greeting",
   "one-photo",
@@ -34,6 +35,14 @@ export function createCaseDocument(kind: FixtureCase): InvitationDocument {
   switch (kind) {
     case "base":
       return doc;
+
+    // 전면 사진 히어로 — 풀블리드 + 하단 페이드 (벤치마크 스타일)
+    case "hero-full": {
+      const hero = doc.sections[0];
+      if (hero.type !== "hero") throw new Error("hero 섹션이 없습니다");
+      hero.layout = { variant: "photoFull" };
+      return doc;
+    }
 
     case "long-names": {
       doc.wedding.groom.name = "남궁현성민";

@@ -1,6 +1,6 @@
 import { documentSchema, type InvitationDocument } from "./document";
 
-export const CURRENT_SCHEMA_VERSION = 5;
+export const CURRENT_SCHEMA_VERSION = 6;
 
 export class InvalidDocumentError extends Error {}
 
@@ -55,6 +55,21 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
   // 버전 경계만 올린다: rsvp를 담을 수 있는 문서를 구버전 코드가 스키마 오류로
   // 오해하지 않고 "지원하지 않는 버전"으로 명확히 거부하게 한다 (ADR-002).
   4: (raw) => ({ ...(raw as object), schemaVersion: 5 }),
+  // v5 → v6: hero content에 photoFull 표시 옵션 추가 (photoAspect·fadeBottom).
+  // 기존 문서는 벤치마크 기본값(3:4, 페이드 켬)을 주입한다 — photoArch·textOnly에서는
+  // 무시되는 값이라 기존 렌더 결과는 바뀌지 않는다.
+  5: (raw) => {
+    const doc = raw as { sections?: Array<{ type?: unknown; content?: object }> };
+    return {
+      ...(raw as object),
+      schemaVersion: 6,
+      sections: (doc.sections ?? []).map((section) =>
+        section.type === "hero"
+          ? { ...section, content: { ...section.content, photoAspect: "3/4", fadeBottom: true } }
+          : section,
+      ),
+    };
+  },
 };
 
 export function migrateDocument(raw: unknown): InvitationDocument {

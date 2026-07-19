@@ -15,10 +15,14 @@ export function SectionShell({
   section,
   index,
   children,
+  bleed = false,
+  flushTop = false,
 }: {
   section: Section;
   index: number;
   children: ReactNode;
+  bleed?: boolean; // 좌우 패딩 해제 — 콘텐츠가 캔버스 가로를 꽉 채운다 (자체 패딩은 섹션이 관리)
+  flushTop?: boolean; // 상단 패딩 해제 — 콘텐츠가 캔버스 맨 위에 붙는다 (전면 사진 히어로)
 }) {
   const { mode, selectedSectionId, onSectionSelect, theme } = useRenderer();
   const editing = mode === "editor-edit";
@@ -82,6 +86,7 @@ export function SectionShell({
       className={clsx("group relative", editing && "cursor-pointer")}
       style={{
         paddingBlock: `var(--canvas-pad-${section.style.paddingY})`,
+        ...(flushTop ? { paddingTop: 0 } : {}),
         ...(section.style.background ? { backgroundColor: section.style.background } : {}),
       }}
     >
@@ -92,7 +97,7 @@ export function SectionShell({
           style={{ backgroundColor: "var(--canvas-line)" }}
         />
       )}
-      <div ref={bodyRef} className="px-6" style={motionStyle}>
+      <div ref={bodyRef} className={bleed ? undefined : "px-6"} style={motionStyle}>
         {children}
       </div>
       {editing && (

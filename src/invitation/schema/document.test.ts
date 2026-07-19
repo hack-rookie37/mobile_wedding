@@ -152,8 +152,31 @@ describe("migrateDocument", () => {
       sections: base.sections.filter((s) => s.type !== "rsvp"),
     };
     const migrated = migrateDocument(v4);
-    expect(migrated.schemaVersion).toBe(5);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     expect(migrated.sections).toEqual(v4.sections); // 콘텐츠 완전 보존
+  });
+
+  it("v5 → v6: hero에 photoAspect·fadeBottom이 주입된다 (기존 콘텐츠 보존)", () => {
+    const base = createSampleDocument();
+    const v5 = {
+      ...base,
+      schemaVersion: 5,
+      sections: base.sections.map((s) => {
+        if (s.type !== "hero") return s;
+        // v5 hero content에는 photoAspect·fadeBottom이 없었다
+        const content = Object.fromEntries(
+          Object.entries(s.content).filter(([k]) => k !== "photoAspect" && k !== "fadeBottom"),
+        );
+        return { ...s, content };
+      }),
+    };
+    const migrated = migrateDocument(v5);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    const hero = migrated.sections[0];
+    if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    expect(hero.content.photoAspect).toBe("3/4");
+    expect(hero.content.fadeBottom).toBe(true);
+    expect(hero.content.tagline).toBe("THE MARRIAGE OF"); // 콘텐츠 보존
   });
 
   it("v3 → v4: venue에 showMapButtons가 추가된다 (기존 note 보존)", () => {

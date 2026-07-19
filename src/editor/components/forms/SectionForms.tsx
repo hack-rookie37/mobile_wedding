@@ -11,6 +11,7 @@ import type {
   VenueSection,
   VideoSection,
 } from "@/invitation/schema/document";
+import { HERO_ASPECT_CSS } from "@/renderer/sections/HeroSection";
 import { FieldLabel, SegmentedField, TextAreaField, TextField, ToggleField } from "@/ui/fields";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor } from "../../EditorStoreContext";
@@ -66,11 +67,34 @@ export function HeroForm({ section }: { section: HeroSection }) {
         )}
       </PhotoPickField>
 
+      {section.layout.variant === "photoFull" && (
+        <>
+          <SegmentedField
+            label="사진 세로 길이"
+            value={content.photoAspect}
+            options={[
+              { value: "1/1", label: "1:1" },
+              { value: "4/5", label: "4:5" },
+              { value: "3/4", label: "3:4" },
+              { value: "9/16", label: "9:16" },
+            ]}
+            onChange={(photoAspect) => patch({ photoAspect })}
+          />
+          <ToggleField
+            label="사진 하단 페이드아웃"
+            checked={content.fadeBottom}
+            onChange={(fadeBottom) => patch({ fadeBottom })}
+          />
+        </>
+      )}
+
       {content.photoAssetId !== null && (
         <FrameEditor
           asset={asset}
           frame={content.photoFrame}
-          aspectRatio="4 / 5"
+          aspectRatio={
+            section.layout.variant === "photoFull" ? HERO_ASPECT_CSS[content.photoAspect] : "4 / 5"
+          }
           onChange={(photoFrame) => patch({ photoFrame })}
         />
       )}

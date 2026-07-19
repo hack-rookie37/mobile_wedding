@@ -14,7 +14,7 @@ const style = (
 // 실제 한국 청첩장 관례를 따른 샘플 문서 (인물·장소는 가상)
 export function createSampleDocument(): InvitationDocument {
   return {
-    schemaVersion: 5,
+    schemaVersion: 6,
     wedding: {
       groom: {
         name: "김민준",
@@ -47,6 +47,8 @@ export function createSampleDocument(): InvitationDocument {
         content: {
           tagline: "THE MARRIAGE OF",
           photoAssetId: "hero-main",
+          photoAspect: "3/4",
+          fadeBottom: true,
           showDate: true,
           showVenue: true,
         },
