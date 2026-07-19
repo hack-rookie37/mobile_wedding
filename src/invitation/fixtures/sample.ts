@@ -101,6 +101,7 @@ export function createSampleDocument(): InvitationDocument {
         style: style("md", "rise"),
         content: {
           title: "우리의 순간들",
+          photoAspect: "3/4",
           photos: [
             { assetId: "gallery-01", alt: "한강 산책 스냅", caption: "한강 산책" },
             { assetId: "gallery-02", alt: "카페에서", caption: "자주 가던 카페" },

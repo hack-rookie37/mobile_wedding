@@ -64,7 +64,7 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
         ...base,
         type,
         layout: { variant: "grid3" },
-        content: { title: "우리의 순간들", photos: [] },
+        content: { title: "우리의 순간들", photos: [], photoAspect: "3/4" },
       };
     case "video":
       return {

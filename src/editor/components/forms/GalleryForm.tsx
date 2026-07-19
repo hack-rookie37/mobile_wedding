@@ -20,7 +20,7 @@ import type {
   PhotoFrame,
 } from "@/invitation/schema/document";
 import { galleryItemAspect } from "@/renderer/sections/GallerySection";
-import { FieldLabel, TextField } from "@/ui/fields";
+import { FieldLabel, SegmentedField, TextField } from "@/ui/fields";
 import { DragHandleIcon } from "@/ui/icons";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor, useEditorStoreHandle } from "../../EditorStoreContext";
@@ -83,6 +83,20 @@ export function GalleryForm({ section }: { section: GallerySectionData }) {
         onChange={(title) => patchContent({ title })}
       />
 
+      {section.layout.variant === "strip" && (
+        <SegmentedField
+          label="사진 세로 길이"
+          value={section.content.photoAspect}
+          options={[
+            { value: "1/1", label: "1:1" },
+            { value: "4/5", label: "4:5" },
+            { value: "3/4", label: "3:4" },
+            { value: "9/16", label: "9:16" },
+          ]}
+          onChange={(photoAspect) => patchContent({ photoAspect })}
+        />
+      )}
+
       <div>
         <FieldLabel>
           사진 {photos.length} / {MAX_PHOTOS}
@@ -101,6 +115,7 @@ export function GalleryForm({ section }: { section: GallerySectionData }) {
               count={photos.length}
               sectionId={sectionId}
               variant={section.layout.variant}
+              photoAspect={section.content.photoAspect}
               expanded={expandedIndex === index}
               onToggleExpand={() =>
                 setExpandedIndex((current) => (current === index ? null : index))
@@ -153,6 +168,7 @@ function PhotoRow({
   count,
   sectionId,
   variant,
+  photoAspect,
   expanded,
   onToggleExpand,
   onMove,
@@ -165,6 +181,7 @@ function PhotoRow({
   count: number;
   sectionId: string;
   variant: GallerySectionData["layout"]["variant"];
+  photoAspect: GallerySectionData["content"]["photoAspect"];
   expanded: boolean;
   onToggleExpand: () => void;
   onMove: (delta: -1 | 1) => void;
@@ -296,7 +313,7 @@ function PhotoRow({
           <FrameEditor
             asset={asset}
             frame={photo.frame}
-            aspectRatio={galleryItemAspect(count === 1 ? "single" : variant, index)}
+            aspectRatio={galleryItemAspect(count === 1 ? "single" : variant, index, photoAspect)}
             onChange={(frame) => onPatchPhoto({ frame: frame ?? null })}
           />
         </div>

@@ -1,24 +1,12 @@
 "use client";
 
 import type { ResolvedAsset } from "@/invitation/assets/assetTypes";
-import type {
-  HeroPhotoAspect,
-  HeroSection as HeroSectionData,
-  Wedding,
-} from "@/invitation/schema/document";
+import type { HeroSection as HeroSectionData, Wedding } from "@/invitation/schema/document";
 import { formatDateStamp, formatWeddingDate } from "../format";
 import { MetaList, MetaRow } from "../primitives/MetaRow";
-import { PhotoFrame } from "../primitives/PhotoFrame";
+import { PHOTO_ASPECT_CSS, PhotoFrame } from "../primitives/PhotoFrame";
 import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
-
-// photoAspect enum → CSS aspect-ratio (편집기의 crop 미리보기도 같은 값을 쓴다)
-export const HERO_ASPECT_CSS: Record<HeroPhotoAspect, string> = {
-  "1/1": "1 / 1",
-  "4/5": "4 / 5",
-  "3/4": "3 / 4",
-  "9/16": "9 / 16",
-};
 
 // 세 variant가 공유하는 데이터 준비 결과 — 표현만 다르고 로직은 하나다
 interface HeroData {
@@ -175,7 +163,7 @@ function HeroFull({
           asset={photo}
           alt="대표 사진"
           shape="rect"
-          aspectRatio={HERO_ASPECT_CSS[content.photoAspect]}
+          aspectRatio={PHOTO_ASPECT_CSS[content.photoAspect]}
           sizes={HERO_SIZES}
           frame={content.photoFrame}
           eager

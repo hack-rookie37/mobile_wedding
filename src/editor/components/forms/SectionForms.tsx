@@ -11,7 +11,7 @@ import type {
   VenueSection,
   VideoSection,
 } from "@/invitation/schema/document";
-import { HERO_ASPECT_CSS } from "@/renderer/sections/HeroSection";
+import { PHOTO_ASPECT_CSS } from "@/renderer/primitives/PhotoFrame";
 import { FieldLabel, SegmentedField, TextAreaField, TextField, ToggleField } from "@/ui/fields";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor } from "../../EditorStoreContext";
@@ -93,7 +93,7 @@ export function HeroForm({ section }: { section: HeroSection }) {
           asset={asset}
           frame={content.photoFrame}
           aspectRatio={
-            section.layout.variant === "photoFull" ? HERO_ASPECT_CSS[content.photoAspect] : "4 / 5"
+            section.layout.variant === "photoFull" ? PHOTO_ASPECT_CSS[content.photoAspect] : "4 / 5"
           }
           onChange={(photoFrame) => patch({ photoFrame })}
         />

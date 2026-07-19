@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useState } from "react";
 import type { GallerySection as GallerySectionData } from "@/invitation/schema/document";
-import { PhotoFrame } from "../primitives/PhotoFrame";
+import { PHOTO_ASPECT_CSS, PhotoFrame } from "../primitives/PhotoFrame";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
@@ -15,6 +15,7 @@ const FILM_TILTS = ["rotate-[1.4deg]", "-rotate-[1.6deg]", "rotate-[0.7deg]", "-
 // srcset 선택용 표시 폭 힌트 — canvas 최대 폭 430px 기준 고정값 (renderer에서 vw 금지)
 const SIZES = {
   single: "300px",
+  strip: "380px",
   grid2: "215px",
   grid3: "144px",
   slider: "300px",
@@ -25,9 +26,16 @@ const SIZES = {
 
 export type GalleryLayoutKind = "single" | GallerySectionData["layout"]["variant"];
 
-// 편집기 crop 미리보기도 실제 표시 비율을 재사용한다 (표시 비율의 단일 소스)
-export function galleryItemAspect(kind: GalleryLayoutKind, index: number): string {
+// 편집기 crop 미리보기도 실제 표시 비율을 재사용한다 (표시 비율의 단일 소스).
+// photoAspect는 strip에서만 쓰인다 — 다른 레이아웃은 고정 비율.
+export function galleryItemAspect(
+  kind: GalleryLayoutKind,
+  index: number,
+  photoAspect: GallerySectionData["content"]["photoAspect"],
+): string {
   switch (kind) {
+    case "strip":
+      return PHOTO_ASPECT_CSS[photoAspect];
     case "single":
     case "slider":
       return "4 / 5";
@@ -56,13 +64,16 @@ export function GallerySection({ section, index }: { section: GallerySectionData
   const interactive = mode === "published"; // 편집 모드의 클릭은 섹션 선택에 사용된다
 
   const isGrid = kind === "grid2" || kind === "grid3" || kind === "collage";
-  const scroller = kind === "slider" || kind === "filmstrip";
-  const treatment = kind === "filmstrip" ? "plain" : theme.variants.photoTreatment;
-  const tilt = flavor === "film" && kind !== "filmstrip" && kind !== "single";
+  const scroller = kind === "slider" || kind === "filmstrip" || kind === "strip";
+  // strip은 풀블리드 대형 스트립 — 장식(폴라로이드·기울기) 없이 사진 자체를 크게 보여준다
+  const treatment =
+    kind === "filmstrip" || kind === "strip" ? "plain" : theme.variants.photoTreatment;
+  const tilt = flavor === "film" && kind !== "filmstrip" && kind !== "single" && kind !== "strip";
 
   const containerClass = clsx(
     kind === "single" && "flex justify-center",
     scroller && "flex snap-x snap-mandatory overflow-x-auto pb-2",
+    kind === "strip" && "gap-0.5",
     kind === "slider" && (flavor === "film" ? "gap-5" : "gap-3"),
     kind === "filmstrip" && "gap-2.5 px-3 py-2.5",
     isGrid && "grid grid-cols-2",
@@ -84,9 +95,9 @@ export function GallerySection({ section, index }: { section: GallerySectionData
       <PhotoFrame
         asset={resolveAsset(photo.assetId)}
         alt={photo.alt ?? ""}
-        shape={flavor === "mono" || kind === "filmstrip" ? "rect" : "soft"}
+        shape={flavor === "mono" || kind === "filmstrip" || kind === "strip" ? "rect" : "soft"}
         treatment={treatment}
-        aspectRatio={galleryItemAspect(kind, i)}
+        aspectRatio={galleryItemAspect(kind, i, content.photoAspect)}
         sizes={itemSizes(kind, i)}
         frame={photo.frame}
       />
@@ -96,6 +107,7 @@ export function GallerySection({ section, index }: { section: GallerySectionData
         key={`${photo.assetId}-${i}`}
         className={clsx(
           kind === "single" && "w-full max-w-[300px]",
+          kind === "strip" && "w-[88%] shrink-0 snap-center",
           kind === "slider" && "w-[70%] shrink-0 snap-center",
           kind === "filmstrip" && "w-[62%] shrink-0 snap-center",
           kind === "collage" && i % 3 === 0 && "col-span-2",
@@ -151,9 +163,13 @@ export function GallerySection({ section, index }: { section: GallerySectionData
       </div>
     );
 
+  // strip은 풀블리드 — 섹션 패딩을 해제하고 헤더·캡션만 자체 패딩을 준다
+  const bleed = kind === "strip";
   return (
-    <SectionShell section={section} index={index}>
-      <SectionHeader label="GALLERY" title={content.title} index={index} />
+    <SectionShell section={section} index={index} bleed={bleed}>
+      <div className={bleed ? "px-6" : undefined}>
+        <SectionHeader label="GALLERY" title={content.title} index={index} />
+      </div>
       <div className="mt-8">{body}</div>
       {lightboxIndex !== null && (
         <GalleryLightbox

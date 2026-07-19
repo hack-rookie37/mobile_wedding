@@ -181,6 +181,10 @@ describe("migrateDocument", () => {
     if (calendar?.type !== "calendar") throw new Error("calendar가 없습니다");
     expect(calendar.content.ddayStyle).toBe("countdown");
     expect(calendar.content.showDday).toBe(true); // 콘텐츠 보존
+    const gallery = migrated.sections.find((s) => s.type === "gallery");
+    if (gallery?.type !== "gallery") throw new Error("gallery가 없습니다");
+    expect(gallery.content.photoAspect).toBe("3/4");
+    expect(gallery.content.photos.length).toBeGreaterThan(0); // 콘텐츠 보존
   });
 
   it("v3 → v4: venue에 showMapButtons가 추가된다 (기존 note 보존)", () => {

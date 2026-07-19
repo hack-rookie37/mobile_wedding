@@ -6,6 +6,7 @@ import { createSampleDocument } from "./sample";
 export const FIXTURE_CASES = [
   "base",
   "hero-full",
+  "gallery-strip",
   "long-names",
   "long-greeting",
   "one-photo",
@@ -41,6 +42,13 @@ export function createCaseDocument(kind: FixtureCase): InvitationDocument {
       const hero = doc.sections[0];
       if (hero.type !== "hero") throw new Error("hero 섹션이 없습니다");
       hero.layout = { variant: "photoFull" };
+      return doc;
+    }
+
+    // 대형 스트립 갤러리 — 풀블리드 가로 스냅 (벤치마크 스타일)
+    case "gallery-strip": {
+      const gallery = gallerySectionOf(doc);
+      gallery.layout = { variant: "strip" };
       return doc;
     }
 

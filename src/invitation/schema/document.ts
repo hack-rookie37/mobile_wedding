@@ -66,15 +66,16 @@ export const photoFrameSchema = z.object({
 
 // ── 섹션별 content / layout
 
-// photoFull(전면 사진) 세로 비율 — 값은 CSS aspect-ratio의 가로/세로. 아래로 갈수록 길다.
-export const heroPhotoAspectSchema = z.enum(["1/1", "4/5", "3/4", "9/16"]);
+// 대형 사진 세로 비율 (hero photoFull·gallery strip 공용) —
+// 값은 CSS aspect-ratio의 가로/세로. 아래로 갈수록 길다.
+export const photoAspectSchema = z.enum(["1/1", "4/5", "3/4", "9/16"]);
 
 export const heroContentSchema = z.object({
   tagline: z.string(),
   photoAssetId: z.string().nullable(),
   photoFrame: photoFrameSchema.optional(),
   // photoFull 전용 표시 옵션 — 다른 variant(아치·텍스트만)에서는 무시된다
-  photoAspect: heroPhotoAspectSchema,
+  photoAspect: photoAspectSchema,
   fadeBottom: z.boolean(), // 사진 하단을 배경색으로 페이드아웃
   showDate: z.boolean(),
   showVenue: z.boolean(),
@@ -110,11 +111,15 @@ export const galleryPhotoSchema = z.object({
 export const galleryContentSchema = z.object({
   title: z.string(),
   photos: z.array(galleryPhotoSchema).max(30, "갤러리 사진은 최대 30장입니다"),
+  photoAspect: photoAspectSchema, // strip(대형 스트립) 전용 — 다른 variant에서는 무시된다
 });
 
 export const gallerySectionSchema = sectionBase.extend({
   type: z.literal("gallery"),
-  layout: z.object({ variant: z.enum(["grid2", "grid3", "slider", "filmstrip", "collage"]) }),
+  // strip: 캔버스 가로를 꽉 채우는 대형 가로 스냅 스트립 (벤치마크 스타일)
+  layout: z.object({
+    variant: z.enum(["strip", "grid2", "grid3", "slider", "filmstrip", "collage"]),
+  }),
   content: galleryContentSchema,
 });
 
@@ -371,7 +376,7 @@ export type ThemeId = z.infer<typeof themeIdSchema>;
 export type Theme = z.infer<typeof themeSchema>;
 export type SectionStyle = z.infer<typeof sectionStyleSchema>;
 export type PhotoFrame = z.infer<typeof photoFrameSchema>;
-export type HeroPhotoAspect = z.infer<typeof heroPhotoAspectSchema>;
+export type PhotoAspect = z.infer<typeof photoAspectSchema>;
 export type GalleryPhoto = z.infer<typeof galleryPhotoSchema>;
 export type HeroSection = z.infer<typeof heroSectionSchema>;
 export type GreetingSection = z.infer<typeof greetingSectionSchema>;

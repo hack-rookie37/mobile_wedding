@@ -32,6 +32,7 @@ export const SECTION_VARIANT_OPTIONS: Record<SectionType, { value: string; label
     { value: "simple", label: "심플" },
   ],
   gallery: [
+    { value: "strip", label: "대형 스트립" },
     { value: "grid2", label: "2열" },
     { value: "grid3", label: "3열" },
     { value: "slider", label: "슬라이더" },

@@ -3,10 +3,18 @@
 import clsx from "clsx";
 import { useState, type CSSProperties } from "react";
 import type { ResolvedAsset } from "@/invitation/assets/assetTypes";
-import type { PhotoFrame as PhotoFrameValue } from "@/invitation/schema/document";
+import type { PhotoAspect, PhotoFrame as PhotoFrameValue } from "@/invitation/schema/document";
 
 type FrameShape = "rect" | "soft" | "arch";
 type FrameTreatment = "plain" | "polaroid";
+
+// photoAspect enum → CSS aspect-ratio (hero photoFull·gallery strip, 편집기 crop 미리보기 공용)
+export const PHOTO_ASPECT_CSS: Record<PhotoAspect, string> = {
+  "1/1": "1 / 1",
+  "4/5": "4 / 5",
+  "3/4": "3 / 4",
+  "9/16": "9 / 16",
+};
 
 // frame(crop) → CSS: 초점을 object-position과 transform-origin에 동시에 두면
 // 확대(zoom) 시에도 초점이 프레임 안에 고정된다. 원본 asset은 절대 수정하지 않는다.
