@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  /* DESIGN_SYSTEM.md §2 — tool: 편집기 고정 팔레트 (청첩장 canvas 팔레트와 분리) */
+  --color-tool-bg: #f6f6f7;
+  --color-tool-bg-deep: #ebebee; /* segmented 컨트롤 등 white 활성 pill과 대비가 필요한 면 */
+  --color-tool-surface: #ffffff;
+  --color-tool-border: #e5e5e8;
+  --color-tool-border-strong: #d2d2d7;
+  --color-tool-ink: #26262a;
+  --color-tool-ink-soft: #6f6f78;
+  --color-tool-ink-faint: #9b9ba3;
+  --color-tool-accent: #4056d8;
+  --color-tool-accent-soft: #eef0fc;
+  --color-tool-danger: #d5423c;
+
+  --font-sans:
+    "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
+    sans-serif;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    word-break: keep-all; /* 한국어는 어절 단위로 줄바꿈 */
+    /* keep-all만 있으면 공백 없는 긴 토큰(URL·계좌번호·이메일)이 컨테이너를
+       넘친다 — 한 줄에 못 담을 때만 강제로 쪼갠다 */
+    overflow-wrap: anywhere;
+  }
+}

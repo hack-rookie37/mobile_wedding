@@ -1,0 +1,192 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type {
+  AssetRecord,
+  AssetStore,
+  StoredAsset,
+  UploadOptions,
+  UploadOutcome,
+} from "@/invitation/assets/assetTypes";
+import { decodeImage, makeThumbnail, sha256Hex } from "@/invitation/assets/imageProcessing";
+import { lowResolutionWarning, validateUploadFile } from "@/invitation/assets/uploadPolicy";
+import { referencedAssetIds } from "@/invitation/lib/assetRefs";
+import { migrateDocument } from "@/invitation/schema/migrate";
+import { PHOTOS_BUCKET, storagePublicUrl } from "./assetManifest";
+
+export class AssetStorageError extends Error {}
+
+const EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+interface AssetRow {
+  id: string;
+  filename: string;
+  mime_type: string;
+  bytes: number;
+  width: number;
+  height: number;
+  content_hash: string;
+  storage_path: string;
+  thumb_path: string | null;
+  created_at: string;
+}
+
+// Phase 5의 AssetStore 인터페이스에 대한 Supabase Storage 구현 (ADR-016 §1의 교체 지점).
+// 파일은 photos 버킷(projects/{projectId}/…), 메타는 project_assets — 전부 RLS 통과.
+// builtin 샘플 병합은 AssetLibraryProvider가 담당하므로 여기서는 업로드 asset만 다룬다.
+export class SupabaseAssetStore implements AssetStore {
+  constructor(
+    private readonly client: SupabaseClient,
+    private readonly projectId: string,
+    private readonly builtinAssets: StoredAsset[],
+  ) {}
+
+  private toStored(row: AssetRow): StoredAsset {
+    const record: AssetRecord = {
+      id: row.id,
+      filename: row.filename,
+      mimeType: row.mime_type,
+      size: row.bytes,
+      width: row.width,
+      height: row.height,
+      contentHash: row.content_hash,
+      createdAt: row.created_at,
+      builtin: false,
+    };
+    return {
+      record,
+      fullUrl: storagePublicUrl(this.client, row.storage_path),
+      thumbUrl: row.thumb_path !== null ? storagePublicUrl(this.client, row.thumb_path) : null,
+    };
+  }
+
+  async list(): Promise<StoredAsset[]> {
+    const { data, error } = await this.client
+      .from("project_assets")
+      .select("*")
+      .eq("project_id", this.projectId)
+      .order("created_at", { ascending: false });
+    if (error) throw new AssetStorageError(`사진 목록 조회 실패: ${error.message}`);
+    return [...(data as AssetRow[]).map((row) => this.toStored(row)), ...this.builtinAssets];
+  }
+
+  async upload(file: File, { onProgress }: UploadOptions = {}): Promise<UploadOutcome> {
+    onProgress?.(0.05);
+    validateUploadFile(file);
+    const contentHash = await sha256Hex(await file.arrayBuffer());
+    onProgress?.(0.2);
+
+    // 중복 파일: 같은 프로젝트에 같은 내용이 있으면 기존 asset을 반환
+    const existing = await this.client
+      .from("project_assets")
+      .select("*")
+      .eq("project_id", this.projectId)
+      .eq("content_hash", contentHash)
+      .maybeSingle();
+    if (existing.error) throw new AssetStorageError(`중복 확인 실패: ${existing.error.message}`);
+    if (existing.data !== null) {
+      onProgress?.(1);
+      return { asset: this.toStored(existing.data as AssetRow), duplicate: true, warnings: [] };
+    }
+
+    const bitmap = await decodeImage(file);
+    onProgress?.(0.35);
+    const thumbnail = await makeThumbnail(bitmap, file.type);
+    const warning = lowResolutionWarning(bitmap.width);
+    const { width, height } = bitmap;
+    bitmap.close();
+
+    // 경로는 내용 주소(content hash) — 파일 업로드 후 행 기록 전에 실패해도
+    // 재시도가 같은 경로에 덮어쓰므로(upsert) 고아 파일이 남지 않는다
+    const assetId = crypto.randomUUID();
+    const storagePath = `projects/${this.projectId}/${contentHash}.${EXTENSIONS[file.type]}`;
+    const bucket = this.client.storage.from(PHOTOS_BUCKET);
+
+    const originalUpload = await bucket.upload(storagePath, file, {
+      contentType: file.type,
+      upsert: true,
+    });
+    if (originalUpload.error) {
+      throw new AssetStorageError(`업로드 실패: ${originalUpload.error.message}`);
+    }
+    onProgress?.(0.7);
+
+    let thumbPath: string | null = null;
+    if (thumbnail !== null) {
+      thumbPath = `projects/${this.projectId}/${contentHash}.thumb.jpg`;
+      const thumbUpload = await bucket.upload(thumbPath, thumbnail, {
+        contentType: thumbnail.type,
+        upsert: true,
+      });
+      if (thumbUpload.error) {
+        throw new AssetStorageError(`썸네일 업로드 실패: ${thumbUpload.error.message}`);
+      }
+    }
+    onProgress?.(0.9);
+
+    const row: AssetRow = {
+      id: assetId,
+      filename: file.name,
+      mime_type: file.type,
+      bytes: file.size,
+      width,
+      height,
+      content_hash: contentHash,
+      storage_path: storagePath,
+      thumb_path: thumbPath,
+      created_at: new Date().toISOString(),
+    };
+    const { error: insertError } = await this.client
+      .from("project_assets")
+      .insert({ ...row, project_id: this.projectId });
+    if (insertError) {
+      throw new AssetStorageError(`사진 기록 실패: ${insertError.message}`);
+    }
+    onProgress?.(1);
+    return {
+      asset: this.toStored(row),
+      duplicate: false,
+      warnings: warning !== null ? [warning] : [],
+    };
+  }
+
+  async remove(assetId: string): Promise<void> {
+    if (this.builtinAssets.some((asset) => asset.record.id === assetId)) {
+      throw new AssetStorageError("기본 제공 이미지는 삭제할 수 없습니다");
+    }
+    // 발행 중(live)인 청첩장이 참조하는 사진은 삭제 거부 — 스냅샷 문서는 그대로인데
+    // 파일만 사라지면 하객이 보는 공개 페이지의 사진이 '이미지 없음'으로 깨진다
+    const published = await this.client
+      .from("publish_records")
+      .select("doc, status")
+      .eq("project_id", this.projectId)
+      .maybeSingle();
+    if (published.error) {
+      throw new AssetStorageError(`발행 상태 확인 실패: ${published.error.message}`);
+    }
+    if (published.data !== null && published.data.status === "live") {
+      const publishedDoc = migrateDocument(published.data.doc);
+      if (referencedAssetIds(publishedDoc).has(assetId)) {
+        throw new AssetStorageError(
+          "발행된 청첩장에서 사용 중인 사진입니다 — 발행을 중단하거나, 사진을 빼고 재발행한 뒤 삭제할 수 있습니다",
+        );
+      }
+    }
+    const { data, error } = await this.client
+      .from("project_assets")
+      .select("storage_path, thumb_path")
+      .eq("id", assetId)
+      .maybeSingle();
+    if (error) throw new AssetStorageError(`삭제 준비 실패: ${error.message}`);
+    if (data === null) throw new AssetStorageError("삭제 실패: 사진을 찾을 수 없습니다");
+
+    const paths = data.thumb_path !== null ? [data.storage_path, data.thumb_path] : [data.storage_path];
+    const removed = await this.client.storage.from(PHOTOS_BUCKET).remove(paths);
+    if (removed.error) throw new AssetStorageError(`파일 삭제 실패: ${removed.error.message}`);
+
+    const { error: rowError } = await this.client.from("project_assets").delete().eq("id", assetId);
+    if (rowError) throw new AssetStorageError(`사진 기록 삭제 실패: ${rowError.message}`);
+  }
+}
