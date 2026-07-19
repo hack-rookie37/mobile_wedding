@@ -37,6 +37,7 @@ const CONTENT_FIELD_LABELS: Record<string, string> = {
   groomLabel: "신랑측 그룹 이름",
   brideLabel: "신부측 그룹 이름",
   photoAssetId: "사진",
+  mapImageAssetId: "약도 이미지",
   photoFrame: "사진 초점",
   photoAspect: "사진 세로 길이",
   fadeBottom: "사진 하단 페이드아웃",
@@ -166,7 +167,9 @@ export function describeAiAction(doc: InvitationDocument, action: AiAction): AiC
           ? action.slot.index === undefined
             ? "갤러리에 사진 추가"
             : `갤러리 ${action.slot.index + 1}번째 사진 교체`
-          : "사진 지정";
+          : action.slot.kind === "venueMap"
+            ? "약도 지정"
+            : "사진 지정";
       return { title: `${label} — ${slotLabel}`, detail: `사진: ${action.assetId}` };
     }
 

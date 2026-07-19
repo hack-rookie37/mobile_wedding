@@ -158,7 +158,7 @@ describe("migrateDocument", () => {
 
   it("v5 → v6: hero에 photoAspect·fadeBottom, calendar에 ddayStyle이 주입된다 (기존 콘텐츠 보존)", () => {
     const base = createSampleDocument();
-    const V6_FIELDS = ["photoAspect", "fadeBottom", "ddayStyle"];
+    const V6_FIELDS = ["photoAspect", "fadeBottom", "ddayStyle", "mapImageAssetId"];
     const v5 = {
       ...base,
       schemaVersion: 5,
@@ -185,6 +185,10 @@ describe("migrateDocument", () => {
     if (gallery?.type !== "gallery") throw new Error("gallery가 없습니다");
     expect(gallery.content.photoAspect).toBe("3/4");
     expect(gallery.content.photos.length).toBeGreaterThan(0); // 콘텐츠 보존
+    const venue = migrated.sections.find((s) => s.type === "venue");
+    if (venue?.type !== "venue") throw new Error("venue가 없습니다");
+    expect(venue.content.mapImageAssetId).toBeNull();
+    expect(venue.content.showMapButtons).toBe(true); // 콘텐츠 보존
   });
 
   it("v3 → v4: venue에 showMapButtons가 추가된다 (기존 note 보존)", () => {

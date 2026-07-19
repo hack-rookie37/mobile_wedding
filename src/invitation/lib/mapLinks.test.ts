@@ -13,8 +13,8 @@ describe("mapSearchLinks", () => {
 });
 
 describe("venueMapQuery", () => {
-  it("주소가 있으면 주소, 없으면 장소명을 쓴다", () => {
-    expect(venueMapQuery({ name: "라온컨벤션", address: "테헤란로 132" })).toBe("테헤란로 132");
-    expect(venueMapQuery({ name: "라온컨벤션", address: "" })).toBe("라온컨벤션");
+  it("예식장 이름이 있으면 이름으로, 없으면 주소로 검색한다", () => {
+    expect(venueMapQuery({ name: "라온컨벤션", address: "테헤란로 132" })).toBe("라온컨벤션");
+    expect(venueMapQuery({ name: "", address: "테헤란로 132" })).toBe("테헤란로 132");
   });
 });

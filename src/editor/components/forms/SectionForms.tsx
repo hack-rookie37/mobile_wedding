@@ -184,6 +184,7 @@ export function VenueForm({
   onOpenWedding: () => void;
 }) {
   const patch = usePatchContent(section.id);
+  const dispatch = useEditor((s) => s.dispatch);
   const { content } = section;
   return (
     <div className="space-y-4">
@@ -194,6 +195,22 @@ export function VenueForm({
         onChange={(note) => patch({ note })}
         rows={5}
       />
+      <PhotoPickField
+        label="약도 이미지"
+        assetId={content.mapImageAssetId}
+        pickMode={{ kind: "venueMap", sectionId: section.id }}
+        onRemove={() =>
+          dispatch({
+            type: "removeAssetReference",
+            sectionId: section.id,
+            slot: { kind: "venueMap" },
+          })
+        }
+      >
+        <p className="mt-2 text-[11px] leading-[1.5] text-tool-ink-faint">
+          예식장 안내도나 직접 그린 약도를 올리면 원본 비율 그대로 표시됩니다.
+        </p>
+      </PhotoPickField>
       <ToggleField
         label="외부 지도 열기 버튼 (네이버 지도·카카오맵·티맵)"
         checked={content.showMapButtons}

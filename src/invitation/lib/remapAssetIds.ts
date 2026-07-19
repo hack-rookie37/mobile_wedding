@@ -26,6 +26,11 @@ export function remapAssetIds(
           ...section,
           content: { ...section.content, photoAssetId: mapId(section.content.photoAssetId) },
         };
+      case "venue":
+        return {
+          ...section,
+          content: { ...section.content, mapImageAssetId: mapId(section.content.mapImageAssetId) },
+        };
       case "gallery":
         return {
           ...section,

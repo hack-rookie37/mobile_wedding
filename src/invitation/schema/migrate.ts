@@ -79,6 +79,9 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
         if (section.type === "gallery") {
           return { ...section, content: { ...section.content, photoAspect: "3/4" } };
         }
+        if (section.type === "venue") {
+          return { ...section, content: { ...section.content, mapImageAssetId: null } };
+        }
         return section;
       }),
     };

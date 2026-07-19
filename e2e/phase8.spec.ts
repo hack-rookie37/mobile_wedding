@@ -180,8 +180,8 @@ test("공개 페이지: 복사·전화/문자·지도 링크·일정 저장·D-d
     "sms:01012345678",
   );
 
-  // ── 오시는 길: 외부 지도 링크 3종 (주소 기반)
-  const encoded = encodeURIComponent("서울특별시 강남구 테헤란로 132");
+  // ── 오시는 길: 외부 지도 링크 3종 (예식장 이름으로 검색 — 장소 카드로 바로 연결)
+  const encoded = encodeURIComponent("라온컨벤션");
   const mapLinks = guest.locator("[data-map-links] a");
   await expect(mapLinks).toHaveCount(3);
   await expect(mapLinks.nth(0)).toHaveAttribute(

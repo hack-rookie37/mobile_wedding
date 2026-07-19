@@ -78,7 +78,7 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
         ...base,
         type,
         layout: { variant: "default" },
-        content: { title: "오시는 길", note: "", showMapButtons: true },
+        content: { title: "오시는 길", note: "", mapImageAssetId: null, showMapButtons: true },
       };
     case "transportation":
       return {

@@ -121,6 +121,7 @@ export function createSampleDocument(): InvitationDocument {
         content: {
           title: "오시는 길",
           note: "식장 입구가 협소하니 안내 직원의 안내를 따라주세요.",
+          mapImageAssetId: null,
           showMapButtons: true,
         },
       },

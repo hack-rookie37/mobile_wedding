@@ -21,7 +21,8 @@ export type MediaPickMode =
   | { kind: "gallery-replace"; sectionId: string; index: number }
   | { kind: "hero"; sectionId: string }
   | { kind: "profile"; sectionId: string; side: "groom" | "bride" }
-  | { kind: "closing"; sectionId: string };
+  | { kind: "closing"; sectionId: string }
+  | { kind: "venueMap"; sectionId: string };
 
 interface QueueItem {
   key: number;
@@ -146,7 +147,9 @@ export function MediaLibraryDialog({
           ? { kind: "profilePhoto" as const, side: mode.side }
           : mode.kind === "closing"
             ? { kind: "closingPhoto" as const }
-            : { kind: "heroPhoto" as const };
+            : mode.kind === "venueMap"
+              ? { kind: "venueMap" as const }
+              : { kind: "heroPhoto" as const };
       dispatch({
         type: "assignAsset",
         sectionId: mode.sectionId,
@@ -164,7 +167,9 @@ export function MediaLibraryDialog({
         ? "이 사진으로 교체"
         : mode.kind === "hero"
           ? "대표 사진으로 사용"
-          : "이 사진으로 사용";
+          : mode.kind === "venueMap"
+            ? "이 약도로 사용"
+            : "이 사진으로 사용";
 
   return (
     <dialog

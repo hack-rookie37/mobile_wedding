@@ -210,6 +210,33 @@ describe("profilePhoto · closingPhoto slot", () => {
     expect(after.content.photoAssetId).toBeNull();
   });
 
+  it("오시는 길 약도를 할당·제거한다 (undo 시 이전 값 복원)", () => {
+    const doc = createSampleDocument();
+    const sectionId = sectionIdOf(doc, "venue");
+    const assigned = applied(
+      applyAction(doc, {
+        type: "assignAsset",
+        sectionId,
+        assetId: "gallery-03",
+        slot: { kind: "venueMap" },
+      }),
+    );
+    const section = assigned.doc.sections.find((s) => s.id === sectionId);
+    if (section?.type !== "venue") throw new Error("venue가 없습니다");
+    expect(section.content.mapImageAssetId).toBe("gallery-03");
+
+    const removed = applied(
+      applyAction(assigned.doc, {
+        type: "removeAssetReference",
+        sectionId,
+        slot: { kind: "venueMap" },
+      }),
+    );
+    const after = removed.doc.sections.find((s) => s.id === sectionId);
+    if (after?.type !== "venue") throw new Error("venue가 없습니다");
+    expect(after.content.mapImageAssetId).toBeNull();
+  });
+
   it("섹션 타입이 맞지 않으면 거부한다", () => {
     const doc = createSampleDocument();
     expect(() =>
@@ -228,6 +255,14 @@ describe("profilePhoto · closingPhoto slot", () => {
         slot: { kind: "closingPhoto" },
       }),
     ).toThrow(/closing 섹션에만/);
+    expect(() =>
+      applyAction(doc, {
+        type: "assignAsset",
+        sectionId: sectionIdOf(doc, "greeting"),
+        assetId: "gallery-01",
+        slot: { kind: "venueMap" },
+      }),
+    ).toThrow(/venue 섹션에만/);
   });
 });
 

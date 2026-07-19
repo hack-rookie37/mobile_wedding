@@ -7,6 +7,7 @@ export const FIXTURE_CASES = [
   "base",
   "hero-full",
   "gallery-strip",
+  "venue-map",
   "long-names",
   "long-greeting",
   "one-photo",
@@ -49,6 +50,14 @@ export function createCaseDocument(kind: FixtureCase): InvitationDocument {
     case "gallery-strip": {
       const gallery = gallerySectionOf(doc);
       gallery.layout = { variant: "strip" };
+      return doc;
+    }
+
+    // 오시는 길 약도 이미지 — 원본 비율 그대로 표시
+    case "venue-map": {
+      const venue = doc.sections.find((s) => s.type === "venue");
+      if (venue?.type !== "venue") throw new Error("venue 섹션이 없습니다");
+      venue.content.mapImageAssetId = "gallery-01";
       return doc;
     }
 

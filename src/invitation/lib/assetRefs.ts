@@ -18,6 +18,9 @@ export function referencedAssetIds(doc: InvitationDocument): Set<string> {
     if (section.type === "gallery") {
       for (const photo of section.content.photos) ids.add(photo.assetId);
     }
+    if (section.type === "venue") {
+      add(section.content.mapImageAssetId);
+    }
   }
   return ids;
 }

@@ -291,6 +291,14 @@ function mutate(
         section.content.photoAssetId = action.assetId;
         break;
       }
+      if (action.slot.kind === "venueMap") {
+        if (section.type !== "venue") {
+          throw new InvalidActionError("venueMap slot은 venue 섹션에만 사용할 수 있습니다");
+        }
+        // 약도는 crop 없이 원본 비율 그대로 표시하므로 frame 초기화가 없다
+        section.content.mapImageAssetId = action.assetId;
+        break;
+      }
       // galleryItem
       if (section.type !== "gallery") {
         throw new InvalidActionError("galleryItem slot은 gallery 섹션에만 사용할 수 있습니다");
@@ -403,6 +411,13 @@ function mutate(
         }
         section.content.photoAssetId = null;
         delete section.content.photoFrame;
+        break;
+      }
+      if (action.slot.kind === "venueMap") {
+        if (section.type !== "venue") {
+          throw new InvalidActionError("venueMap slot은 venue 섹션에만 사용할 수 있습니다");
+        }
+        section.content.mapImageAssetId = null;
         break;
       }
       if (section.type !== "gallery") {

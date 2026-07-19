@@ -126,6 +126,8 @@ export const gallerySectionSchema = sectionBase.extend({
 export const venueContentSchema = z.object({
   title: z.string(),
   note: z.string(), // 주차·안내 등 자유 문구 (빈 문자열 허용)
+  // 약도 이미지 (예식장 안내도 캡처 등) — 원본 비율 그대로 표시, crop 없음
+  mapImageAssetId: z.string().nullable(),
   // 외부 지도 앱으로 열기 버튼 (네이버 지도·카카오맵·티맵) — 별도 지도 API 없이 URL·딥링크만 사용
   showMapButtons: z.boolean(),
 });
