@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysUntilWedding, weddingCalendarMonth } from "./calendarGrid";
+import { countdownToWedding, daysUntilWedding, weddingCalendarMonth } from "./calendarGrid";
 
 describe("weddingCalendarMonth", () => {
   it("예식 달의 그리드를 서울 시간 기준으로 만든다 (2026년 11월 — 1일이 일요일, 30일)", () => {
@@ -41,5 +41,37 @@ describe("daysUntilWedding", () => {
   it("시각이 달라도 달력 날짜 차이로 계산한다", () => {
     // 예식 시각(14:00)보다 늦은 저녁이어도 하루 전이면 D-1
     expect(daysUntilWedding(wedding, new Date("2026-11-13T22:00:00+09:00"))).toBe(1);
+  });
+});
+
+describe("countdownToWedding", () => {
+  const wedding = "2026-11-14T14:00:00+09:00";
+
+  it("일·시·분·초를 분해한다", () => {
+    // 2일 3시간 4분 5초 전
+    const now = new Date("2026-11-12T10:55:55+09:00");
+    expect(countdownToWedding(wedding, now)).toEqual({
+      days: 2,
+      hours: 3,
+      minutes: 4,
+      seconds: 5,
+      past: false,
+    });
+  });
+
+  it("정확히 예식 시각이면 전부 0이고 past가 아니다", () => {
+    expect(countdownToWedding(wedding, new Date(wedding))).toEqual({
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      past: false,
+    });
+  });
+
+  it("예식이 지나면 past=true, 표시값은 0으로 고정된다", () => {
+    const after = countdownToWedding(wedding, new Date("2026-11-14T15:00:00+09:00"));
+    expect(after.past).toBe(true);
+    expect([after.days, after.hours, after.minutes, after.seconds]).toEqual([0, 0, 0, 0]);
   });
 });

@@ -57,7 +57,7 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
         ...base,
         type,
         layout: { variant: "grid" },
-        content: { title: "예식 일정", showDday: true },
+        content: { title: "예식 일정", showDday: true, ddayStyle: "countdown" },
       };
     case "gallery":
       return {

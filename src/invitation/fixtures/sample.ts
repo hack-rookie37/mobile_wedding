@@ -91,7 +91,7 @@ export function createSampleDocument(): InvitationDocument {
         visible: true,
         layout: { variant: "grid" },
         style: style("md", "fade"),
-        content: { title: "그날을 기다립니다", showDday: true },
+        content: { title: "그날을 기다립니다", showDday: true, ddayStyle: "countdown" },
       },
       {
         id: nanoid(),

@@ -49,3 +49,25 @@ export function daysUntilWedding(iso: string, now: Date): number {
 }
 
 export const WEEKDAY_HEADINGS = ["일", "월", "화", "수", "목", "금", "토"] as const;
+
+// 실시간 카운트다운: 예식 '시각'까지 남은 시간 (D-day의 날짜 차이와 달리 시각 기준).
+// now는 호출자가 주입한다 (daysUntilWedding과 같은 이유 — hydration 안전).
+export interface WeddingCountdown {
+  days: number;
+  hours: number;
+  minutes: number;
+  seconds: number;
+  past: boolean; // 예식 시각이 지났으면 true (표시값은 0으로 고정)
+}
+
+export function countdownToWedding(iso: string, now: Date): WeddingCountdown {
+  const diffMs = new Date(iso).getTime() - now.getTime();
+  const total = Math.max(0, Math.floor(diffMs / 1000));
+  return {
+    days: Math.floor(total / 86_400),
+    hours: Math.floor((total % 86_400) / 3_600),
+    minutes: Math.floor((total % 3_600) / 60),
+    seconds: total % 60,
+    past: diffMs < 0,
+  };
+}

@@ -55,19 +55,28 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
   // 버전 경계만 올린다: rsvp를 담을 수 있는 문서를 구버전 코드가 스키마 오류로
   // 오해하지 않고 "지원하지 않는 버전"으로 명확히 거부하게 한다 (ADR-002).
   4: (raw) => ({ ...(raw as object), schemaVersion: 5 }),
-  // v5 → v6: hero content에 photoFull 표시 옵션 추가 (photoAspect·fadeBottom).
-  // 기존 문서는 벤치마크 기본값(3:4, 페이드 켬)을 주입한다 — photoArch·textOnly에서는
-  // 무시되는 값이라 기존 렌더 결과는 바뀌지 않는다.
+  // v5 → v6: 벤치마크 리뉴얼 1차 (전면 히어로·실시간 카운트다운)
+  //  * hero content에 photoAspect·fadeBottom 추가 — photoArch·textOnly에서는 무시되는
+  //    값이라 기존 렌더 결과는 바뀌지 않는다 (기본 3:4·페이드 켬)
+  //  * calendar content에 ddayStyle 추가 — 기존 문서도 실시간 카운트다운으로 전환한다
+  //    (요청된 표시 개선 — 배지로 되돌리려면 편집기에서 선택)
   5: (raw) => {
     const doc = raw as { sections?: Array<{ type?: unknown; content?: object }> };
     return {
       ...(raw as object),
       schemaVersion: 6,
-      sections: (doc.sections ?? []).map((section) =>
-        section.type === "hero"
-          ? { ...section, content: { ...section.content, photoAspect: "3/4", fadeBottom: true } }
-          : section,
-      ),
+      sections: (doc.sections ?? []).map((section) => {
+        if (section.type === "hero") {
+          return {
+            ...section,
+            content: { ...section.content, photoAspect: "3/4", fadeBottom: true },
+          };
+        }
+        if (section.type === "calendar") {
+          return { ...section, content: { ...section.content, ddayStyle: "countdown" } };
+        }
+        return section;
+      }),
     };
   },
 };

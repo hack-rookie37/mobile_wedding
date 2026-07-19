@@ -153,10 +153,21 @@ export function CalendarForm({ section }: { section: CalendarSection }) {
     <div className="space-y-4">
       <TextField label="제목" value={content.title} onChange={(title) => patch({ title })} />
       <ToggleField
-        label="D-day 카운트다운 표시"
+        label="D-day 표시"
         checked={content.showDday}
         onChange={(showDday) => patch({ showDday })}
       />
+      {content.showDday && (
+        <SegmentedField
+          label="D-day 표시 방식"
+          value={content.ddayStyle}
+          options={[
+            { value: "countdown", label: "실시간 카운트다운" },
+            { value: "badge", label: "D-N 배지" },
+          ]}
+          onChange={(ddayStyle) => patch({ ddayStyle })}
+        />
+      )}
       <PhaseNote>
         날짜와 시간은 왼쪽 ‘기본 정보’의 예식 일시를 따릅니다. 게스트는 ‘캘린더에 일정 저장’
         버튼으로 자신의 캘린더에 일정을 추가할 수 있습니다.

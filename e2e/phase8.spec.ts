@@ -195,8 +195,15 @@ test("공개 페이지: 복사·전화/문자·지도 링크·일정 저장·D-d
   await expect(mapLinks.nth(2)).toHaveAttribute("href", `tmap://search?name=${encoded}`);
   await expect(mapLinks.nth(0)).toHaveAttribute("target", "_blank");
 
-  // ── 캘린더: D-day 표시 + 일정 저장(.ics 다운로드, UTC 변환 확인)
-  await expect(guest.locator("[data-dday]")).toHaveText(/^D-\d+$/);
+  // ── 캘린더: 실시간 카운트다운(기본 표시) + 일정 저장(.ics 다운로드, UTC 변환 확인)
+  const countdown = guest.locator("[data-dday-countdown]");
+  await expect(countdown).toContainText(/\d+\s*DAYS/);
+  await expect(countdown).toContainText("SEC");
+  // 초가 실제로 줄어든다 — 1초 뒤 표시가 달라져야 한다
+  const beforeTick = await countdown.innerText();
+  await expect(async () => {
+    expect(await countdown.innerText()).not.toBe(beforeTick);
+  }).toPass({ timeout: 3_000 });
   const downloadPromise = guest.waitForEvent("download");
   await guest.getByRole("button", { name: /일정 저장/ }).click();
   const download = await downloadPromise;

@@ -25,6 +25,7 @@ const CONTENT_FIELD_LABELS: Record<string, string> = {
   showDate: "예식 일시 표시",
   showVenue: "예식장 표시",
   showDday: "D-day 표시",
+  ddayStyle: "D-day 표시 방식",
   showShare: "공유 버튼",
   showMapButtons: "지도 버튼",
   deadline: "마감일",

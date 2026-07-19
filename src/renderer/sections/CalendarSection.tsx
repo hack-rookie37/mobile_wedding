@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { useSyncExternalStore } from "react";
 import {
+  countdownToWedding,
   daysUntilWedding,
   WEEKDAY_HEADINGS,
   weddingCalendarMonth,
@@ -39,6 +40,53 @@ function DdayBadge({ datetime }: { datetime: string }) {
   );
 }
 
+// 초 단위 실시간 카운트다운 — 1초 간격으로 스냅샷(초 절삭 타임스탬프)이 바뀌며 리렌더된다.
+// D-day 배지와 같은 이유로 서버 스냅샷은 null (hydration 불일치 없음).
+function subscribeEverySecond(onChange: () => void) {
+  const timer = setInterval(onChange, 1_000);
+  return () => clearInterval(timer);
+}
+
+function CountdownUnit({ value, label }: { value: number; label: string }) {
+  return (
+    <span className="flex w-14 flex-col items-center">
+      <span className="font-(family-name:--canvas-font-heading) text-[24px] leading-[1.2] font-semibold text-(--canvas-ink) tabular-nums">
+        {String(value).padStart(2, "0")}
+      </span>
+      <span className="mt-1 text-[10px] font-medium tracking-[0.14em] text-(--canvas-ink-soft)">
+        {label}
+      </span>
+    </span>
+  );
+}
+
+function CountdownBar({ datetime }: { datetime: string }) {
+  const nowSecond = useSyncExternalStore(
+    subscribeEverySecond,
+    () => Math.floor(Date.now() / 1_000),
+    () => null,
+  );
+
+  if (nowSecond === null) return null;
+  const remain = countdownToWedding(datetime, new Date(nowSecond * 1_000));
+  const separator = (
+    <span aria-hidden className="pb-5 text-[18px] font-medium text-(--canvas-ink-soft)">
+      :
+    </span>
+  );
+  return (
+    <div data-dday-countdown className="mt-6 flex items-center justify-center">
+      <CountdownUnit value={remain.days} label="DAYS" />
+      {separator}
+      <CountdownUnit value={remain.hours} label="HOURS" />
+      {separator}
+      <CountdownUnit value={remain.minutes} label="MIN" />
+      {separator}
+      <CountdownUnit value={remain.seconds} label="SEC" />
+    </div>
+  );
+}
+
 function downloadIcs(wedding: Wedding) {
   const { groom, bride, venue } = wedding;
   const ics = buildIcs({
@@ -60,19 +108,23 @@ function downloadIcs(wedding: Wedding) {
 function CalendarGrid({ datetime }: { datetime: string }) {
   const { year, month, day, weeks } = weddingCalendarMonth(datetime);
 
+  // 콘텐츠 폭(캔버스 - 좌우 패딩)을 꽉 채운다 — 칸 높이만 고정해 세로 리듬 유지
   return (
-    <div className="mx-auto max-w-[300px]">
-      <p className="text-center font-(family-name:--canvas-font-heading) text-[15px] font-semibold tracking-[0.06em] text-(--canvas-ink) tabular-nums">
+    <div className="w-full">
+      <p className="text-center font-(family-name:--canvas-font-heading) text-[16px] font-semibold tracking-[0.06em] text-(--canvas-ink) tabular-nums">
         {year}. {String(month).padStart(2, "0")}
       </p>
-      <table className="mt-4 w-full border-collapse" aria-label={`${year}년 ${month}월 달력`}>
+      <table
+        className="mt-5 w-full table-fixed border-collapse"
+        aria-label={`${year}년 ${month}월 달력`}
+      >
         <thead>
           <tr>
             {WEEKDAY_HEADINGS.map((weekday) => (
               <th
                 key={weekday}
                 scope="col"
-                className="pb-2 text-center text-[10px] font-medium tracking-[0.1em] text-(--canvas-ink-soft)"
+                className="pb-3 text-center text-[11px] font-medium tracking-[0.1em] text-(--canvas-ink-soft)"
               >
                 {weekday}
               </th>
@@ -83,11 +135,11 @@ function CalendarGrid({ datetime }: { datetime: string }) {
           {weeks.map((week, weekIndex) => (
             <tr key={weekIndex}>
               {week.map((date, dayIndex) => (
-                <td key={dayIndex} className="p-0.5 text-center">
+                <td key={dayIndex} className="h-11 p-0 text-center">
                   {date !== null && (
                     <span
                       className={clsx(
-                        "mx-auto flex size-8 items-center justify-center rounded-full text-[12.5px] tabular-nums",
+                        "mx-auto flex size-9 items-center justify-center rounded-full text-[13.5px] tabular-nums",
                         date === day
                           ? "font-semibold text-(--canvas-paper)"
                           : "text-(--canvas-ink)",
@@ -141,7 +193,12 @@ export function CalendarSection({
             </p>
           </div>
         )}
-        {content.showDday && <DdayBadge datetime={wedding.datetime} />}
+        {content.showDday &&
+          (content.ddayStyle === "countdown" ? (
+            <CountdownBar datetime={wedding.datetime} />
+          ) : (
+            <DdayBadge datetime={wedding.datetime} />
+          ))}
         <div className="mt-6 flex justify-center">
           <button
             type="button"

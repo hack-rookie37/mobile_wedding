@@ -170,6 +170,8 @@ export const coupleProfileSectionSchema = sectionBase.extend({
 export const calendarContentSchema = z.object({
   title: z.string(),
   showDday: z.boolean(),
+  // badge: "D-N" 텍스트 / countdown: 일:시:분:초 실시간 (showDday가 켜져 있을 때만 의미)
+  ddayStyle: z.enum(["badge", "countdown"]),
 });
 
 export const calendarSectionSchema = sectionBase.extend({
