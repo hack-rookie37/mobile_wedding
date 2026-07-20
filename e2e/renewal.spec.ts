@@ -264,6 +264,47 @@ test("커스텀 폰트: 업로드하면 선택지에 뜨고 @font-face가 주입
   await expect(inspector(page).getByRole("button", { name: "사용 중" })).toBeDisabled();
 });
 
+test("커스텀 폰트: 한 번에 여러 개를 올리고, 하나가 잘못돼도 나머지는 올라간다", async ({
+  page,
+}) => {
+  await signUpFresh(page);
+  await createSample(page);
+  await page.getByRole("button", { name: "테마", exact: true }).click();
+
+  const fontFile = (name: string, mimeType: string) => ({
+    name,
+    mimeType,
+    buffer: Buffer.from(`fake-font-bytes-${name}`),
+  });
+
+  await inspector(page)
+    .locator("[data-font-upload]")
+    .setInputFiles([
+      fontFile("serif-one.woff2", "font/woff2"),
+      fontFile("not-a-font.png", "image/png"), // 형식 오류 — 여기서 멈추면 안 된다
+      fontFile("sans-two.otf", "font/otf"),
+    ]);
+
+  const item = (name: string) =>
+    inspector(page).locator("[data-custom-fonts] li").filter({ hasText: name });
+  const errors = inspector(page).locator("[data-font-upload-errors]");
+  await expect(item("serif-one.woff2")).toBeVisible({ timeout: 30_000 });
+  await expect(item("sans-two.otf")).toBeVisible({ timeout: 30_000 });
+  await expect(item("not-a-font.png")).toHaveCount(0);
+
+  // 실패한 파일만 이름과 함께 알려준다
+  await expect(errors).toContainText("not-a-font.png");
+  await expect(errors).toContainText("지원하지 않는 폰트 파일 형식");
+
+  // 둘 다 선택지에 나타난다
+  await expect(
+    inspector(page).getByLabel("제목·이름 폰트").locator("option", { hasText: "serif-one.woff2" }),
+  ).toHaveCount(1);
+  await expect(
+    inspector(page).getByLabel("제목·이름 폰트").locator("option", { hasText: "sans-two.otf" }),
+  ).toHaveCount(1);
+});
+
 test("진입 애니메이션: 옵션을 고르면 미리보기에서 그 자리에서 재생된다", async ({ page }) => {
   await signUpFresh(page);
   await createSample(page);
