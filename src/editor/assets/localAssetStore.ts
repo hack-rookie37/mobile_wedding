@@ -9,8 +9,10 @@ import type {
 import { decodeImage, makeThumbnail, sha256Hex } from "@/invitation/assets/imageProcessing";
 import {
   ALLOWED_AUDIO_TYPES,
+  fontMimeOf,
   lowResolutionWarning,
   validateAudioFile,
+  validateFontFile,
   validateUploadFile,
 } from "@/invitation/assets/uploadPolicy";
 import { BUILTIN_ASSETS } from "./builtinAssets";
@@ -83,8 +85,11 @@ export class LocalAssetStore implements AssetStore {
 
   async upload(file: File, { onProgress }: UploadOptions = {}): Promise<UploadOutcome> {
     onProgress?.(0.05);
-    const isAudio = file.type in ALLOWED_AUDIO_TYPES;
-    if (isAudio) validateAudioFile(file);
+    // 종류 판별은 업로드 정책이 단일 소스 — 폰트는 mime이 제각각이라 확장자까지 본다
+    const fontMime = fontMimeOf(file);
+    const kind = file.type in ALLOWED_AUDIO_TYPES ? "audio" : fontMime !== null ? "font" : "image";
+    if (kind === "audio") validateAudioFile(file);
+    else if (kind === "font") validateFontFile(file);
     else validateUploadFile(file);
     const contentHash = await sha256Hex(await file.arrayBuffer());
     onProgress?.(0.3);
@@ -97,14 +102,14 @@ export class LocalAssetStore implements AssetStore {
       return { asset: this.toStored(existing), duplicate: true, warnings: [] };
     }
 
-    if (isAudio) {
-      // 오디오: 디코드·썸네일 없음
+    if (kind !== "image") {
+      // 오디오·폰트: 디코드·썸네일 없음
       const row: StoredRow = {
         record: {
-          kind: "audio",
+          kind,
           id: nanoid(12),
           filename: file.name,
-          mimeType: file.type,
+          mimeType: fontMime ?? file.type,
           size: file.size,
           contentHash,
           createdAt: new Date().toISOString(),

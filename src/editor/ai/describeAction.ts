@@ -154,7 +154,7 @@ export function describeAiAction(doc: InvitationDocument, action: AiAction): AiC
               ? "진입 모션"
               : key === "fontFamily"
                 ? "글꼴"
-                : key === "fontScale"
+                : key === "fontSizePt"
                   ? "글자 크기"
                   : "배경색";
         const styleValue = (value: unknown) =>

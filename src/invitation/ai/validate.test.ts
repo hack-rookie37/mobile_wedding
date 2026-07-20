@@ -24,9 +24,9 @@ describe("validateAiProposal — 유효한 제안", () => {
     const result = validateAiProposal(
       doc,
       proposal(doc, [
-        { type: "setSectionVariant", sectionId: hero.id, variant: "textOnly" },
+        { type: "updateSectionContent", sectionId: hero.id, patch: { tagline: "" } },
         { type: "updateSectionSettings", sectionId: hero.id, patch: { paddingY: "lg" } },
-        { type: "setSectionVariant", sectionId: gallery.id, variant: "filmstrip" },
+        { type: "setSectionVariant", sectionId: gallery.id, variant: "slider" },
         { type: "setTheme", themeId: "film-diary" },
         { type: "moveGalleryPhoto", sectionId: gallery.id, from: 0, to: 2 }, // arrangeGallery
         {
@@ -42,7 +42,7 @@ describe("validateAiProposal — 유효한 제안", () => {
     // preview: 전체 적용 결과가 미리 계산된다
     const previewHero = result.previewDoc.sections[0];
     if (previewHero.type !== "hero") throw new Error("hero가 없습니다");
-    expect(previewHero.layout.variant).toBe("textOnly");
+    expect(previewHero.content.tagline).toBe("");
     expect(result.previewDoc.theme.id).toBe("film-diary");
     // 원본은 변하지 않았다
     expect(doc).toEqual(snapshot);
@@ -193,9 +193,7 @@ describe("validateAiProposal — 거부 경로", () => {
     expect(() =>
       validateAiProposal(
         doc,
-        proposal(doc, [
-          { type: "setSectionVariant", sectionId: "no-such-id", variant: "textOnly" },
-        ]),
+        proposal(doc, [{ type: "setSectionVariant", sectionId: "no-such-id", variant: "slider" }]),
       ),
     ).toThrow(AiProposalError);
     expect(() =>

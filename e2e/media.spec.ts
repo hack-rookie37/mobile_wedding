@@ -175,7 +175,7 @@ test("caption·alt 편집과 variant 전환(이미지·순서 보존)", async ({
   // variant 순회: 사진 수·첫 사진이 그대로 보존된다
   const firstSrc = await galleryImages(page).first().getAttribute("src");
   await inspector(page).getByRole("button", { name: "레이아웃", exact: true }).click();
-  for (const variant of ["2열", "3열", "필름", "콜라주", "슬라이더"]) {
+  for (const variant of ["2열", "3열", "콜라주", "슬라이더"]) {
     await inspector(page).getByRole("button", { name: variant, exact: true }).click();
     await expect(galleryImages(page)).toHaveCount(6);
     expect(await galleryImages(page).first().getAttribute("src")).toBe(firstSrc);
@@ -375,8 +375,6 @@ test("모바일 스크린샷: 세로·가로 사진 crop을 4개 variant와 crop
   await shoot("preview-grid2-390");
   await setVariant("슬라이더");
   await shoot("preview-slider-390");
-  await setVariant("필름");
-  await shoot("preview-filmstrip-390");
   await setVariant("콜라주");
   await shoot("preview-collage-390");
 

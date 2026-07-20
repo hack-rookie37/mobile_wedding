@@ -24,7 +24,7 @@ test.describe("테마 스크린샷 (reduced motion)", () => {
       for (const width of WIDTHS) {
         await page.setViewportSize({ width, height: 844 });
         await page.goto(`/fixture/${theme}/base`);
-        await expect(page.getByText("서울특별시 강남구 테헤란로 132")).toBeVisible();
+        await expect(page.getByText("서울 영등포구 여의대방로 259")).toBeVisible();
         // reduced motion: 뷰포트 밖 마지막 섹션 본문도 즉시 완전 표시 (모션 스킵)
         const lastBody = page.locator("[data-section-id] > div.px-6").last();
         await expect(lastBody).toHaveCSS("opacity", "1");
@@ -55,12 +55,12 @@ test.describe("테마 스크린샷 (reduced motion)", () => {
   test("테마 간 콘텐츠 보존: 세 테마가 동일한 텍스트를 렌더한다", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const REQUIRED_TEXTS = [
-      "김민준",
-      "이서연",
+      "이정훈",
+      "양은진",
       "서로가 마주 보며",
-      "라온컨벤션",
-      "서울특별시 강남구 테헤란로 132",
-      "김영호",
+      "공군호텔",
+      "서울 영등포구 여의대방로 259",
+      "이길재",
       "우리의 순간들",
     ];
     for (const theme of THEMES) {
@@ -88,7 +88,7 @@ test.describe("진입 모션 (일반 모드)", () => {
   test("film-diary: 뷰포트 밖 섹션은 스크롤 진입 시 나타난다", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/fixture/film-diary/base");
-    await expect(page.getByText("서울특별시 강남구 테헤란로 132")).toBeAttached();
+    await expect(page.getByText("서울 영등포구 여의대방로 259")).toBeAttached();
 
     const lastBody = page.locator("[data-section-id] > div.px-6").last();
     await expect(lastBody).toHaveCSS("opacity", "0"); // 아직 미진입 — 숨김 상태
@@ -119,7 +119,7 @@ test.describe("편집기 테마 전환", () => {
     await page.getByRole("button", { name: /모던 모노크롬/ }).click();
     await expect(root).toHaveAttribute("data-canvas-theme", "modern-monochrome");
     // 콘텐츠 보존
-    await expect(root.getByText("김민준").first()).toBeVisible();
+    await expect(root.getByText("이정훈").first()).toBeVisible();
     await expect(root.getByText(/서로가 마주 보며/)).toBeVisible();
 
     await page.getByRole("button", { name: "실행 취소" }).click();

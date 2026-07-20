@@ -13,7 +13,7 @@ import type { InvitationDocument } from "./schema/document";
 export const publicAssetEntrySchema = z
   .strictObject({
     id: z.string().min(1),
-    kind: z.enum(["image", "audio"]),
+    kind: z.enum(["image", "audio", "font"]),
     url: z.string().min(1),
     thumbUrl: z.string().nullable(),
     width: z.number().int().min(1).nullable(), // 오디오는 null
@@ -71,6 +71,11 @@ export function manifestResolver(
       height: entry.height,
     };
   };
+}
+
+// 업로드 폰트 URL — 문서가 참조하는 id를 manifest에서 찾는다 (폰트 entry만 인정)
+export function fontUrlOf(payload: PublicInvitationPayload, assetId: string): string | null {
+  return payload.assets.find((a) => a.id === assetId && a.kind === "font")?.url ?? null;
 }
 
 // 배경음악 URL — 문서의 music.assetId를 manifest에서 찾는다 (오디오 entry만 인정)

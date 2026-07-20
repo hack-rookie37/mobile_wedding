@@ -34,8 +34,10 @@ export function buildMockProposal(input: AiPromptInput): unknown {
 
   const hero = bySectionType("hero");
   const greeting = bySectionType("greeting");
+
   if (instruction.includes("미니멀") && hero) {
-    actions.push({ type: "setSectionVariant", sectionId: hero.id, variant: "textOnly" });
+    // 메인은 레이아웃이 하나뿐이라 장식(태그라인)을 덜어내는 쪽으로 제안한다
+    actions.push({ type: "updateSectionContent", sectionId: hero.id, patch: { tagline: "" } });
     if (greeting) {
       actions.push({
         type: "updateSectionSettings",
@@ -43,14 +45,14 @@ export function buildMockProposal(input: AiPromptInput): unknown {
         patch: { paddingY: "lg" },
       });
     }
-    parts.push("첫 화면을 텍스트 중심의 미니멀한 구성으로 바꾸고 여백을 넓혔습니다");
+    parts.push("첫 화면의 장식을 덜어내 미니멀하게 바꾸고 여백을 넓혔습니다");
   }
 
   const gallery = bySectionType("gallery");
   if (/필름|따뜻/.test(instruction) && gallery) {
-    actions.push({ type: "setSectionVariant", sectionId: gallery.id, variant: "filmstrip" });
+    actions.push({ type: "setSectionVariant", sectionId: gallery.id, variant: "slider" });
     actions.push({ type: "setTheme", themeId: "film-diary" });
-    parts.push("갤러리를 필름 레이아웃으로 바꾸고 테마를 필름 다이어리로 제안합니다");
+    parts.push("갤러리를 슬라이더 레이아웃으로 바꾸고 테마를 필름 다이어리로 제안합니다");
   }
 
   if (/인사말|다듬/.test(instruction) && greeting) {

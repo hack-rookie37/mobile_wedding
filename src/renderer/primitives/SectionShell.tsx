@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Section } from "@/invitation/schema/document";
-import { FONT_SCALE_FACTORS, fontCssOf } from "@/invitation/schema/themes";
+import { fontCssOf, fontScaleFromPt } from "@/invitation/schema/themes";
 import { useRenderer } from "../RendererContext";
 
 function prefersReducedMotion(): boolean {
@@ -25,7 +25,7 @@ export function SectionShell({
   bleed?: boolean; // 좌우 패딩 해제 — 콘텐츠가 캔버스 가로를 꽉 채운다 (자체 패딩은 섹션이 관리)
   flushTop?: boolean; // 상단 패딩 해제 — 콘텐츠가 캔버스 맨 위에 붙는다 (전면 사진 히어로)
 }) {
-  const { mode, selectedSectionId, onSectionSelect, theme } = useRenderer();
+  const { mode, selectedSectionId, onSectionSelect, theme, motionReplay } = useRenderer();
   const editing = mode === "editor-edit";
   const selected = editing && selectedSectionId === section.id;
 
@@ -37,6 +37,20 @@ export function SectionShell({
   // reduced motion: 즉시 표시할 뿐 아니라 transition 자체를 제거한다 — 남겨 두면
   // 숨김→표시 전환이 여전히 fade/rise로 재생된다
   const [instant, setInstant] = useState(false);
+
+  // 편집기에서 진입 애니메이션을 고르면 그 자리에서 한 번 더 재생한다 —
+  // 옵션 이름만 보고 결과를 상상하지 않아도 되게. 다시 숨기면 아래 관찰자가 곧바로 되살린다.
+  // (prop 변화에 따른 state 재설정은 렌더 중에 하는 것이 React 권장 방식이다)
+  const replayToken = motionReplay?.sectionId === section.id ? motionReplay.token : null;
+  const [seenReplayToken, setSeenReplayToken] = useState(replayToken);
+  if (replayToken !== seenReplayToken) {
+    setSeenReplayToken(replayToken);
+    if (replayToken !== null) {
+      setInstant(false);
+      setRevealed(false);
+    }
+  }
+
   const shown = revealed || skipMotion;
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -86,8 +100,10 @@ export function SectionShell({
       onClick={editing && onSectionSelect ? () => onSectionSelect(section.id) : undefined}
       className={clsx("group relative", editing && "cursor-pointer")}
       style={{
-        paddingBlock: `var(--canvas-pad-${section.style.paddingY})`,
-        ...(flushTop ? { paddingTop: 0 } : {}),
+        // 축약형(paddingBlock)과 개별형(paddingTop)을 섞으면 React가 바뀐 속성만 다시 적용할 때
+        // 축약형이 나중에 적용돼 flushTop이 풀린다 — 항상 개별 속성으로만 쓴다
+        paddingTop: flushTop ? 0 : `var(--canvas-pad-${section.style.paddingY})`,
+        paddingBottom: `var(--canvas-pad-${section.style.paddingY})`,
         ...(section.style.background ? { backgroundColor: section.style.background } : {}),
         // 섹션별 폰트·크기 override — CSS 변수를 지역 재정의하면 하위 텍스트가 전부 따라온다
         ...(section.style.fontFamily !== undefined && fontCssOf(section.style.fontFamily) !== null
@@ -97,8 +113,8 @@ export function SectionShell({
               fontFamily: "var(--canvas-font-body)",
             } as CSSProperties)
           : {}),
-        ...(section.style.fontScale !== undefined
-          ? ({ "--canvas-fs": FONT_SCALE_FACTORS[section.style.fontScale] } as CSSProperties)
+        ...(section.style.fontSizePt !== undefined
+          ? ({ "--canvas-fs": fontScaleFromPt(section.style.fontSizePt) } as CSSProperties)
           : {}),
       }}
     >
@@ -109,7 +125,12 @@ export function SectionShell({
           style={{ backgroundColor: "var(--canvas-line)" }}
         />
       )}
-      <div ref={bodyRef} className={bleed ? undefined : "px-6"} style={motionStyle}>
+      <div
+        ref={bodyRef}
+        data-section-body
+        className={bleed ? undefined : "px-6"}
+        style={motionStyle}
+      >
         {children}
       </div>
       {editing && (

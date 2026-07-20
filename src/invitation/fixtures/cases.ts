@@ -39,11 +39,11 @@ export function createCaseDocument(kind: FixtureCase): InvitationDocument {
     case "base":
       return doc;
 
-    // 전면 사진 히어로 — 풀블리드 + 하단 페이드 (벤치마크 스타일)
+    // 전면 사진 효과 — 반짝임 + 밝기·투명도를 낮춘 상태
     case "hero-full": {
       const hero = doc.sections[0];
       if (hero.type !== "hero") throw new Error("hero 섹션이 없습니다");
-      hero.layout = { variant: "photoFull" };
+      hero.content.effects = { fadeBottom: true, sparkle: true, brightness: 0.8, opacity: 0.9 };
       return doc;
     }
 
@@ -56,10 +56,10 @@ export function createCaseDocument(kind: FixtureCase): InvitationDocument {
 
     // 폰트 선택 + 큰 글자 + 섹션별 override (인사말만 고운돋움·작게)
     case "typography": {
-      doc.typography = { headingFont: "nanum-myeongjo", bodyFont: "gowun-batang", scale: "lg" };
+      doc.typography = { headingFont: "nanum-myeongjo", bodyFont: "gowun-batang", basePt: 13 };
       const greeting = doc.sections.find((s) => s.type === "greeting");
       if (greeting?.type !== "greeting") throw new Error("greeting 섹션이 없습니다");
-      greeting.style = { ...greeting.style, fontFamily: "gowun-dodum", fontScale: "sm" };
+      greeting.style = { ...greeting.style, fontFamily: "gowun-dodum", fontSizePt: 9 };
       return doc;
     }
 

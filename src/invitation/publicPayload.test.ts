@@ -67,9 +67,9 @@ describe("publicPageMeta (social metadata)", () => {
     const hero = doc.sections[0];
     if (hero.type === "hero") hero.content.photoAssetId = "asset-1";
     const meta = publicPageMeta(buildPublicPayload(doc, MANIFEST));
-    expect(meta.title).toBe("김민준 ♥ 이서연 결혼합니다");
-    expect(meta.description).toContain("2026년 11월 14일");
-    expect(meta.description).toContain("라온컨벤션 3층 그랜드볼룸");
+    expect(meta.title).toBe("이정훈 ♥ 양은진 결혼합니다");
+    expect(meta.description).toContain("2026년 9월 19일");
+    expect(meta.description).toContain("공군호텔 3층 그랜드볼룸");
     expect(meta.heroImageUrl).toBe("https://cdn.example/a.png");
   });
 

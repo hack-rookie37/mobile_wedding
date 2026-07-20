@@ -17,11 +17,8 @@ export const SECTION_LABELS: Record<SectionType, string> = {
 
 // 인스펙터 '레이아웃' 탭 — 타입별 layout.variant 선택지 (스키마 enum과 값 동일)
 export const SECTION_VARIANT_OPTIONS: Record<SectionType, { value: string; label: string }[]> = {
-  hero: [
-    { value: "photoArch", label: "아치 사진" },
-    { value: "photoFull", label: "전면 사진" },
-    { value: "textOnly", label: "텍스트만" },
-  ],
+  hero: [], // 전면 사진 단일 레이아웃 — '레이아웃' 탭은 사진 효과를 다룬다
+
   greeting: [],
   coupleProfile: [
     { value: "sideBySide", label: "나란히" },
@@ -36,7 +33,6 @@ export const SECTION_VARIANT_OPTIONS: Record<SectionType, { value: string; label
     { value: "grid2", label: "2열" },
     { value: "grid3", label: "3열" },
     { value: "slider", label: "슬라이더" },
-    { value: "filmstrip", label: "필름" },
     { value: "collage", label: "콜라주" },
   ],
   venue: [],
@@ -62,6 +58,6 @@ export const SECTION_VARIANT_OPTIONS: Record<SectionType, { value: string; label
   ],
   closing: [
     { value: "simple", label: "텍스트" },
-    { value: "photo", label: "사진과 함께" },
+    { value: "photo", label: "전면 사진" },
   ],
 };

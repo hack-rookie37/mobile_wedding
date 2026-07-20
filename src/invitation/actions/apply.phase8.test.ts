@@ -54,7 +54,7 @@ describe("updateListItem", () => {
     const contacts = withPhone.doc.sections.find((s) => s.id === contactsId);
     if (contacts?.type !== "contacts") throw new Error("contacts가 없습니다");
     expect(contacts.content.entries[0].phone).toBe("010-9999-0000");
-    expect(contacts.content.entries[0].name).toBe("김민준");
+    expect(contacts.content.entries[0].name).toBe("이정훈");
 
     const giftId = sectionIdOf(doc, "giftAccount");
     const withBank = applied(

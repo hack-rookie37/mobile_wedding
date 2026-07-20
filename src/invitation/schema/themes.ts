@@ -26,7 +26,7 @@ export interface ThemeTokens {
 
 export interface ThemeVariants {
   header: SectionVariantId;
-  hero: SectionVariantId;
+  // hero는 전면 사진 단일 레이아웃이라 테마 분기가 없다 — 토큰(폰트·색)만 반영된다
   greeting: SectionVariantId;
   gallery: SectionVariantId;
   venue: SectionVariantId;
@@ -46,10 +46,10 @@ const SERIF = "var(--font-noto-serif-kr), 'Noto Serif KR', serif";
 const SANS = "var(--font-sans)";
 const HAND = "var(--font-nanum-pen), 'Nanum Pen Script', cursive";
 
-// 문서 typography의 폰트 선택지 — id 목록은 document.ts(fontIdSchema)가 단일 소스.
+// 문서 typography의 내장 폰트 선택지 — id 목록은 document.ts(builtinFontIdSchema)가 단일 소스.
 // "theme"은 여기 없다: 테마 토큰을 그대로 쓴다는 뜻이라 CSS 해석이 없다.
 export const FONT_CHOICES: Record<
-  Exclude<import("./document").FontId, "theme">,
+  Exclude<import("./document").BuiltinFontId, "theme">,
   { label: string; css: string }
 > = {
   "noto-serif": { label: "노토 세리프", css: SERIF },
@@ -65,16 +65,35 @@ export const FONT_CHOICES: Record<
   sans: { label: "고딕", css: SANS },
 };
 
-// 글자 크기 스케일 — 렌더러의 모든 텍스트가 calc(Npx * var(--canvas-fs))로 곱한다
-export const FONT_SCALE_FACTORS: Record<import("./document").FontScale, number> = {
-  sm: 0.93,
-  md: 1,
-  lg: 1.08,
-};
+// 렌더러 텍스트 크기의 기준선(px). 모든 텍스트가 calc(Npx * var(--canvas-fs))로 곱해지므로
+// 사용자가 입력한 pt를 이 기준에 대한 배율로 환산하면 전체가 함께 커진다.
+export const BASE_BODY_PX = 15;
+const PT_TO_PX = 96 / 72;
+export const DEFAULT_BASE_PT = 11; // ≈ 14.7px — 기존 '보통' 크기
+
+export function fontScaleFromPt(pt: number): number {
+  return (pt * PT_TO_PX) / BASE_BODY_PX;
+}
+
+// 업로드 폰트의 CSS family 이름 — @font-face 선언과 사용처가 이 함수 하나를 공유한다
+export const CUSTOM_FONT_PREFIX = "custom:";
+
+export function customFontFamily(assetId: string): string {
+  return `cf-${assetId}`;
+}
+
+export function customFontAssetIdOf(fontId: import("./document").FontId): string | null {
+  return fontId.startsWith(CUSTOM_FONT_PREFIX) ? fontId.slice(CUSTOM_FONT_PREFIX.length) : null;
+}
 
 // fontId → CSS 스택 ("theme"은 null — 호출자가 테마 토큰으로 대체)
 export function fontCssOf(fontId: import("./document").FontId): string | null {
-  return fontId === "theme" ? null : FONT_CHOICES[fontId].css;
+  if (fontId === "theme") return null;
+  const customId = customFontAssetIdOf(fontId);
+  if (customId !== null) return `"${customFontFamily(customId)}", ${SANS}`;
+  const choice = (FONT_CHOICES as Record<string, { css: string }>)[fontId];
+  if (!choice) throw new Error(`알 수 없는 폰트 id입니다: ${fontId}`);
+  return choice.css;
 }
 
 export const THEME_ORDER: ThemeId[] = ["warm-editorial", "modern-monochrome", "film-diary"];
@@ -103,7 +122,6 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     },
     variants: {
       header: "editorial",
-      hero: "editorial",
       greeting: "editorial",
       gallery: "editorial",
       venue: "editorial",
@@ -134,7 +152,6 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     },
     variants: {
       header: "mono",
-      hero: "mono",
       greeting: "mono",
       gallery: "mono",
       venue: "mono",
@@ -165,7 +182,6 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     },
     variants: {
       header: "film",
-      hero: "film",
       greeting: "film",
       gallery: "film",
       venue: "film",

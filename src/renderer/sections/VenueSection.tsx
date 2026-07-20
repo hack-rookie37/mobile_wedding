@@ -53,18 +53,22 @@ function MapLinkButtons({ venue }: { venue: Wedding["venue"] }) {
 }
 
 // 약도 이미지 — crop 없이 원본 비율 그대로. asset 해상도를 알면 그 비율로 자리를 예약한다.
-function VenueMapImage({ assetId }: { assetId: string }) {
+// 제목 바로 아래에 두어 "어디인지"를 글보다 먼저 보여준다.
+function VenueMap({ assetId }: { assetId: string | null }) {
   const { resolveAsset } = useRenderer();
+  if (assetId === null) return null;
   const asset = resolveAsset(assetId);
   return (
-    <PhotoFrame
-      asset={asset}
-      alt="예식장 약도"
-      shape="soft"
-      aspectRatio={asset !== null ? `${asset.width} / ${asset.height}` : "3 / 2"}
-      sizes="380px"
-      className="w-full"
-    />
+    <div className="mt-7 w-full">
+      <PhotoFrame
+        asset={asset}
+        alt="예식장 약도"
+        shape="soft"
+        aspectRatio={asset !== null ? `${asset.width} / ${asset.height}` : "3 / 2"}
+        sizes="380px"
+        className="w-full"
+      />
+    </div>
   );
 }
 
@@ -86,6 +90,7 @@ export function VenueSection({
     return (
       <SectionShell section={section} index={index}>
         <SectionHeader label="LOCATION" title={content.title} index={index} />
+        <VenueMap assetId={content.mapImageAssetId} />
         <div className="mt-7">
           <MetaList>
             <MetaRow label="장소">
@@ -108,11 +113,6 @@ export function VenueSection({
             {content.note}
           </p>
         )}
-        {content.mapImageAssetId !== null && (
-          <div className="mt-7">
-            <VenueMapImage assetId={content.mapImageAssetId} />
-          </div>
-        )}
         {content.showMapButtons && (
           <div className="mt-7">
             <MapLinkButtons venue={venue} />
@@ -126,6 +126,7 @@ export function VenueSection({
     return (
       <SectionShell section={section} index={index}>
         <SectionHeader label="LOCATION" title={content.title} index={index} />
+        <VenueMap assetId={content.mapImageAssetId} />
         <div className="mt-7 space-y-1">
           <p className="font-(family-name:--canvas-font-heading) text-[length:calc(18px*var(--canvas-fs))] leading-[1.5] font-semibold text-(--canvas-ink)">
             {venue.name}
@@ -164,11 +165,6 @@ export function VenueSection({
             </p>
           </>
         )}
-        {content.mapImageAssetId !== null && (
-          <div className="mt-7">
-            <VenueMapImage assetId={content.mapImageAssetId} />
-          </div>
-        )}
         {content.showMapButtons && (
           <div className="mt-7">
             <MapLinkButtons venue={venue} />
@@ -182,6 +178,7 @@ export function VenueSection({
     <SectionShell section={section} index={index}>
       <div className="flex flex-col items-center text-center">
         <SectionHeader label="LOCATION" title={content.title} index={index} />
+        <VenueMap assetId={content.mapImageAssetId} />
         <div className="mt-8">
           <p className="font-(family-name:--canvas-font-heading) text-[length:calc(19px*var(--canvas-fs))] leading-[1.5] font-semibold text-(--canvas-ink)">
             {venue.name}
@@ -217,11 +214,6 @@ export function VenueSection({
               {content.note}
             </p>
           </>
-        )}
-        {content.mapImageAssetId !== null && (
-          <div className="mt-8 w-full">
-            <VenueMapImage assetId={content.mapImageAssetId} />
-          </div>
         )}
         {content.showMapButtons && (
           <div className="mt-8 w-full">

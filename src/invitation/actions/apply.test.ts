@@ -338,12 +338,12 @@ describe("setSectionVariant", () => {
     expect(after?.layout.variant).toBe("slider");
     expect(after?.content).toEqual(before?.content); // 사진 asset 참조 포함 전부 보존
 
-    const heroId = sectionIdOf(doc, "hero");
-    const heroResult = applied(
-      applyAction(doc, { type: "setSectionVariant", sectionId: heroId, variant: "textOnly" }),
+    const closingId = sectionIdOf(doc, "closing");
+    const closingResult = applied(
+      applyAction(doc, { type: "setSectionVariant", sectionId: closingId, variant: "simple" }),
     );
-    const hero = heroResult.doc.sections.find((s) => s.id === heroId);
-    expect(hero?.type === "hero" && hero.content.photoAssetId).toBe("hero-main"); // 사진 참조 유지
+    const closing = closingResult.doc.sections.find((s) => s.id === closingId);
+    expect(closing?.type === "closing" && closing.content.photoAssetId).toBe("gallery-06"); // 사진 참조 유지
   });
 
   it("타입이 허용하지 않는 variant는 거부한다", () => {

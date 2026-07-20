@@ -2,8 +2,10 @@
 
 import type { CSSProperties } from "react";
 import type { ResolveAsset } from "@/invitation/assets/assetTypes";
+import { customFontAssetIds } from "@/invitation/lib/assetRefs";
 import type { InvitationDocument, Section, Wedding } from "@/invitation/schema/document";
-import { FONT_SCALE_FACTORS, fontCssOf, THEMES } from "@/invitation/schema/themes";
+import { fontCssOf, fontScaleFromPt, THEMES } from "@/invitation/schema/themes";
+import { CustomFontFaces, type ResolveFontUrl } from "./CustomFontFaces";
 import { MusicToggle } from "./MusicToggle";
 import { RendererProvider, type RendererMode } from "./RendererContext";
 import { CalendarSection } from "./sections/CalendarSection";
@@ -66,6 +68,10 @@ export interface InvitationRendererProps {
   rsvpSlug?: string;
   // 배경음악 파일 URL — 호스트(공개 페이지·미리보기·편집기)가 doc.music.assetId를 해석해 전달
   musicUrl?: string | null;
+  // 업로드 폰트 파일 URL 해석기 — 문서가 참조하는 id는 렌더러가 스스로 찾는다
+  resolveFontUrl?: ResolveFontUrl;
+  // 편집기 전용: 이 토큰이 바뀌면 해당 섹션의 진입 애니메이션을 그 자리에서 다시 재생한다
+  motionReplay?: { sectionId: string; token: number } | null;
 }
 
 // 편집기 미리보기와 공개 페이지가 공유하는 유일한 renderer (ADR-004).
@@ -79,9 +85,12 @@ export function InvitationRenderer({
   onSectionSelect,
   rsvpSlug,
   musicUrl = null,
+  resolveFontUrl,
+  motionReplay = null,
 }: InvitationRendererProps) {
   const theme = THEMES[doc.theme.id];
   const t = theme.tokens;
+  const fontAssetIds = [...customFontAssetIds(doc)];
 
   // 문서 typography가 테마 폰트를 덮어쓴다 ("theme"이면 테마 기본).
   // 크기는 --canvas-fs 곱으로 — 섹션별 override는 SectionShell이 같은 변수를 지역 재정의한다.
@@ -95,7 +104,7 @@ export function InvitationRenderer({
     "--canvas-font-heading": fontCssOf(typography.headingFont) ?? t.headingFont,
     "--canvas-font-body": fontCssOf(typography.bodyFont) ?? t.bodyFont,
     "--canvas-font-hand": t.handFont,
-    "--canvas-fs": FONT_SCALE_FACTORS[typography.scale],
+    "--canvas-fs": fontScaleFromPt(typography.basePt),
     "--canvas-radius-photo": t.radiusPhoto,
     "--canvas-pad-sm": t.padSm,
     "--canvas-pad-md": t.padMd,
@@ -114,6 +123,7 @@ export function InvitationRenderer({
         onSectionSelect: onSectionSelect ?? null,
         theme,
         rsvpSlug: rsvpSlug ?? null,
+        motionReplay,
       }}
     >
       <div
@@ -122,6 +132,7 @@ export function InvitationRenderer({
         className="w-full bg-(--canvas-paper) font-(family-name:--canvas-font-body) text-(--canvas-ink) antialiased"
         style={canvasVars}
       >
+        <CustomFontFaces assetIds={fontAssetIds} resolveFontUrl={resolveFontUrl ?? null} />
         {musicUrl !== null && <MusicToggle url={musicUrl} />}
         {doc.sections
           .filter((section) => section.visible)

@@ -106,7 +106,7 @@ test("편집기: 계좌 추가·수정과 variant 전환 content 보존, 교통 
   await page.getByRole("button", { name: "+ 신부측 계좌 추가" }).click();
   const newCard = page.locator("[data-list-item]").last();
   await newCard.getByLabel("은행").fill("카카오뱅크");
-  await newCard.getByLabel("예금주").fill("최미경");
+  await newCard.getByLabel("예금주").fill("임현이");
   await newCard.getByLabel("계좌번호").fill("3333-01-2345678");
   await expect(page.locator("[data-invitation-root]").getByText("카카오뱅크")).toBeVisible();
 
@@ -151,7 +151,7 @@ test("공개 페이지: 복사·전화/문자·지도 링크·일정 저장·D-d
   await expect(groomToggle).toHaveAttribute("aria-expanded", "true");
   await expect(guest.getByText("123456-01-234567")).toBeVisible();
 
-  await guest.getByRole("button", { name: "김민준 국민은행 계좌번호 복사" }).click();
+  await guest.getByRole("button", { name: "이정훈 국민은행 계좌번호 복사" }).click();
   await expect(guest.getByText("복사됨")).toBeVisible();
   expect(await guest.evaluate(() => navigator.clipboard.readText())).toBe(
     "국민은행 123456-01-234567",
@@ -162,7 +162,7 @@ test("공개 페이지: 복사·전화/문자·지도 링크·일정 저장·D-d
   await brideToggle.focus();
   await guest.keyboard.press("Enter");
   await expect(brideToggle).toHaveAttribute("aria-expanded", "true");
-  const brideCopy = guest.getByRole("button", { name: "이서연 우리은행 계좌번호 복사" });
+  const brideCopy = guest.getByRole("button", { name: "양은진 우리은행 계좌번호 복사" });
   await brideCopy.focus();
   await guest.keyboard.press("Enter");
   expect(await guest.evaluate(() => navigator.clipboard.readText())).toBe(
@@ -181,7 +181,7 @@ test("공개 페이지: 복사·전화/문자·지도 링크·일정 저장·D-d
   );
 
   // ── 오시는 길: 외부 지도 링크 3종 (예식장 이름으로 검색 — 장소 카드로 바로 연결)
-  const encoded = encodeURIComponent("라온컨벤션");
+  const encoded = encodeURIComponent("공군호텔");
   const mapLinks = guest.locator("[data-map-links] a");
   await expect(mapLinks).toHaveCount(3);
   await expect(mapLinks.nth(0)).toHaveAttribute(
@@ -210,9 +210,9 @@ test("공개 페이지: 복사·전화/문자·지도 링크·일정 저장·D-d
   expect(download.suggestedFilename()).toBe("wedding.ics");
   const ics = await readFile((await download.path())!, "utf-8");
   expect(ics).toContain("BEGIN:VEVENT");
-  expect(ics).toContain("DTSTART:20261114T050000Z"); // 서울 14:00 → UTC 05:00
-  expect(ics).toContain("SUMMARY:김민준 ♥ 이서연 결혼식");
-  expect(ics).toContain("LOCATION:라온컨벤션 3층 그랜드볼룸 서울특별시 강남구 테헤란로 132");
+  expect(ics).toContain("DTSTART:20260919T032000Z"); // 서울 12:20 → UTC 03:20
+  expect(ics).toContain("SUMMARY:이정훈 ♥ 양은진 결혼식");
+  expect(ics).toContain("LOCATION:공군호텔 3층 그랜드볼룸 서울 영등포구 여의대방로 259");
 
   // ── 맺음말: 링크 공유 (Web Share 미지원 → 클립보드 fallback)
   await guest.getByRole("button", { name: "청첩장 링크 공유" }).click();

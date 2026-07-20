@@ -417,3 +417,23 @@
 **Consequences**: 기존 문서·발행 스냅샷은 마이그레이션으로 무손실 승격(카운트다운·바텀시트는 의도적 표시 개선 — 편집기에서 되돌릴 수 있다). 커스텀 폰트 업로드는 asset kind에 font만 추가하면 된다(후속).
 
 **Alternatives**: BGM을 별도 저장 경로로 우회 — 발행 보호·복제 리맵·manifest가 갈라져 기각. 글자 크기를 zoom/transform으로 — 레이아웃 전체가 확대돼 기각. 버전을 슬라이스마다 v7·v8로 — v6 미배포 상태라 불필요한 버전 파편화로 기각.
+
+## ADR-026. 벤치마크 리뉴얼 2차: 스키마 v7 (전면 사진 단일화·pt 직접 입력·커스텀 폰트·모션 미리보기)
+
+**Status**: 확정 (2026-07-22)
+
+**Context**: 1차 이후 실사용 피드백. ① 진입 애니메이션은 이름만 봐서는 결과를 알 수 없다 ② 글자 크기 3단계(작게/보통/크게)로는 원하는 크기를 못 맞추고, 쓰고 싶은 폰트를 직접 올릴 수 없다 ③ 메인은 전면 사진만 쓰므로 레이아웃 선택지가 무의미하고, 상하 여백을 바꾸면 사진 위에 빈 공간이 생기는 버그가 있다 ④ 갤러리 세로 길이가 '내용' 탭에 있어 레이아웃과 따로 논다 ⑤ 약도가 섹션 맨 아래라 늦게 보인다 ⑥ 맺음말 사진도 메인처럼 크게, 밝기를 낮출 수 있어야 한다.
+
+**Decision** (전부 스키마 v6→v7 한 번에):
+
+1. **메인 레이아웃 단일화**: hero layout.variant는 `photoFull` 하나. 테마별 hero 표현(editorial·mono·film 3종)과 `ThemeVariants.hero`를 삭제 — 테마 차이는 토큰(폰트·색·여백)으로만 남는다. 비어 있던 '레이아웃' 탭은 전면 사진 연출(세로 길이 + 효과) 편집기로 대체.
+2. **photoEffects 공용화**: `{fadeBottom, sparkle, brightness, opacity}`를 hero·closing content가 공유하고, 렌더러는 `FullBleedPhoto` 하나로 그린다. 효과는 전부 오버레이/CSS 필터라 레이아웃 자리에 영향이 없다. closing의 `photo` variant도 같은 풀블리드 연출.
+3. **여백 버그의 근본 원인**: `paddingBlock`(축약형)과 `paddingTop: 0`(개별형)을 한 style 객체에 섞어 쓴 것. React는 변경된 속성만 다시 적용하므로 갱신 시 축약형이 나중에 적용돼 flushTop이 풀렸다. 축약형을 쓰지 않고 `paddingTop`/`paddingBottom`만 지정한다.
+4. **글자 크기 = pt 직접 입력**: `typography.scale` enum → `typography.basePt`(7~20pt), 섹션 override도 `style.fontSizePt`. 렌더러는 그대로 `--canvas-fs` 배율을 쓰고, `fontScaleFromPt(pt) = pt*(96/72)/15px`로 환산한다(15px = 렌더러 본문 기준선). 마이그레이션은 sm·md·lg → 10·11·12pt.
+5. **커스텀 폰트**: asset kind에 `font` 추가(ADR-025의 일반화를 그대로 재사용). 문서는 `"custom:<assetId>"` 참조만 갖고 이름은 asset 파일명에서 읽는다(중복 저장 금지). 렌더러가 문서에서 참조된 id를 모아 `@font-face`를 직접 선언하며, family 이름은 `cf-<assetId>` — assetId 형태를 정규식으로 좁히고 URL은 `JSON.stringify`로 이스케이프한다. 브라우저마다 폰트 mime이 제각각이라 확장자까지 보고 표준 mime으로 정규화한다. 사용 중인 폰트는 삭제 불가.
+6. **모션 미리보기**: 편집기 store의 세션 상태 `motionReplay {sectionId, token}` → 렌더러 prop → `SectionShell`이 토큰 변화에 맞춰 자기 자신을 다시 숨겼다 보인다. 이미 선택된 값을 다시 눌러도(문서상 no-op) 재생되도록 토큰은 apply 전에 올린다. 상태 재설정은 effect가 아니라 렌더 중 처리(React 권장 패턴, 계단식 렌더 방지).
+7. **정리**: gallery `filmstrip` 제거(→ slider), `photoAspect`를 strip·slider 양쪽에 적용하고 '레이아웃' 탭으로 이동. venue 약도를 제목 바로 아래로. 5개 이상 선택지의 Segmented는 3열로 접어 320px 패널에서 라벨이 잘리지 않게 한다.
+
+**Consequences**: 아치·텍스트만 히어로를 쓰던 문서는 전면 사진으로 승격된다(사진이 없으면 '이미지 없음' 자리표시자 — 편집기에서 바로 인지된다). 테마별 hero 스크린샷 3종의 기준 이미지가 바뀐다. 커스텀 폰트는 파일을 검증 없이 저장하므로(파싱하지 않는다) 깨진 폰트는 fallback 스택으로 그려질 뿐 렌더가 실패하지 않는다.
+
+**Alternatives**: pt를 CSS `calc()`로 직접 나눠 배율 계산 — 단위 있는 값끼리의 나눗셈이 불가해 기각. 폰트 이름을 문서에 함께 저장 — asset 파일명과 갈라질 수 있어 기각. 애니메이션 미리보기를 별도 재생 버튼으로 — 옵션을 고르는 동작 자체가 미리보기여야 한다는 요구라 기각. `@font-face`를 전역 layout에 주입 — 렌더러가 문서를 단일 소스로 갖는 구조가 깨져 기각.

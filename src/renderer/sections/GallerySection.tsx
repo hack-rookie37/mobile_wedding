@@ -19,7 +19,6 @@ const SIZES = {
   grid2: "215px",
   grid3: "144px",
   slider: "300px",
-  filmstrip: "260px",
   collageFull: "430px",
   collageHalf: "215px",
 } as const;
@@ -27,7 +26,7 @@ const SIZES = {
 export type GalleryLayoutKind = "single" | GallerySectionData["layout"]["variant"];
 
 // 편집기 crop 미리보기도 실제 표시 비율을 재사용한다 (표시 비율의 단일 소스).
-// photoAspect는 strip에서만 쓰인다 — 다른 레이아웃은 고정 비율.
+// photoAspect는 한 장씩 크게 보여주는 레이아웃에서만 쓰인다 — 격자형은 타일이 맞아야 해 고정이다.
 export function galleryItemAspect(
   kind: GalleryLayoutKind,
   index: number,
@@ -35,12 +34,10 @@ export function galleryItemAspect(
 ): string {
   switch (kind) {
     case "strip":
+    case "slider":
       return PHOTO_ASPECT_CSS[photoAspect];
     case "single":
-    case "slider":
       return "4 / 5";
-    case "filmstrip":
-      return "4 / 3";
     case "collage":
       return index % 3 === 0 ? "3 / 2" : "1 / 1";
     default:
@@ -64,18 +61,16 @@ export function GallerySection({ section, index }: { section: GallerySectionData
   const interactive = mode === "published"; // 편집 모드의 클릭은 섹션 선택에 사용된다
 
   const isGrid = kind === "grid2" || kind === "grid3" || kind === "collage";
-  const scroller = kind === "slider" || kind === "filmstrip" || kind === "strip";
+  const scroller = kind === "slider" || kind === "strip";
   // strip은 풀블리드 대형 스트립 — 장식(폴라로이드·기울기) 없이 사진 자체를 크게 보여준다
-  const treatment =
-    kind === "filmstrip" || kind === "strip" ? "plain" : theme.variants.photoTreatment;
-  const tilt = flavor === "film" && kind !== "filmstrip" && kind !== "single" && kind !== "strip";
+  const treatment = kind === "strip" ? "plain" : theme.variants.photoTreatment;
+  const tilt = flavor === "film" && kind !== "single" && kind !== "strip";
 
   const containerClass = clsx(
     kind === "single" && "flex justify-center",
     scroller && "flex snap-x snap-mandatory overflow-x-auto pb-2",
     kind === "strip" && "gap-0.5",
     kind === "slider" && (flavor === "film" ? "gap-5" : "gap-3"),
-    kind === "filmstrip" && "gap-2.5 px-3 py-2.5",
     isGrid && "grid grid-cols-2",
     kind === "grid3" && "grid-cols-3",
     isGrid &&
@@ -95,7 +90,7 @@ export function GallerySection({ section, index }: { section: GallerySectionData
       <PhotoFrame
         asset={resolveAsset(photo.assetId)}
         alt={photo.alt ?? ""}
-        shape={flavor === "mono" || kind === "filmstrip" || kind === "strip" ? "rect" : "soft"}
+        shape={flavor === "mono" || kind === "strip" ? "rect" : "soft"}
         treatment={treatment}
         aspectRatio={galleryItemAspect(kind, i, content.photoAspect)}
         sizes={itemSizes(kind, i)}
@@ -108,8 +103,7 @@ export function GallerySection({ section, index }: { section: GallerySectionData
         className={clsx(
           kind === "single" && "w-full max-w-[300px]",
           kind === "strip" && "w-[88%] shrink-0 snap-center",
-          kind === "slider" && "w-[70%] shrink-0 snap-center",
-          kind === "filmstrip" && "w-[62%] shrink-0 snap-center",
+          kind === "slider" && "w-[80%] shrink-0 snap-center",
           kind === "collage" && i % 3 === 0 && "col-span-2",
           tilt && FILM_TILTS[i % FILM_TILTS.length],
         )}
@@ -132,11 +126,9 @@ export function GallerySection({ section, index }: { section: GallerySectionData
             className={clsx(
               "mt-2 leading-tight",
               kind !== "collage" && "text-center",
-              kind === "filmstrip"
-                ? "text-[length:calc(11px*var(--canvas-fs))] tracking-[0.02em] text-[#D8D2C4]"
-                : flavor === "film"
-                  ? "font-(family-name:--canvas-font-hand) text-[length:calc(16px*var(--canvas-fs))] text-(--canvas-ink-soft)"
-                  : "text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)",
+              flavor === "film"
+                ? "font-(family-name:--canvas-font-hand) text-[length:calc(16px*var(--canvas-fs))] text-(--canvas-ink-soft)"
+                : "text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)",
             )}
           >
             {caption}
@@ -146,22 +138,14 @@ export function GallerySection({ section, index }: { section: GallerySectionData
     );
   });
 
-  // filmstrip: 상하 퍼포레이션이 있는 어두운 필름 띠 안에서 가로 스크롤
-  const body =
-    kind === "filmstrip" ? (
-      <div className="rounded-[4px] bg-[#17150F] px-2 py-2">
-        <FilmPerforation />
-        <div className={containerClass}>{items}</div>
-        <FilmPerforation />
-      </div>
-    ) : (
-      <div
-        className={containerClass}
-        style={isGrid && flavor === "mono" ? { backgroundColor: "var(--canvas-line)" } : undefined}
-      >
-        {items}
-      </div>
-    );
+  const body = (
+    <div
+      className={containerClass}
+      style={isGrid && flavor === "mono" ? { backgroundColor: "var(--canvas-line)" } : undefined}
+    >
+      {items}
+    </div>
+  );
 
   // strip은 풀블리드 — 섹션 패딩을 해제하고 헤더·캡션만 자체 패딩을 준다
   const bleed = kind === "strip";
@@ -180,18 +164,5 @@ export function GallerySection({ section, index }: { section: GallerySectionData
         />
       )}
     </SectionShell>
-  );
-}
-
-function FilmPerforation() {
-  return (
-    <div
-      aria-hidden
-      className="h-[7px] rounded-[1px]"
-      style={{
-        backgroundImage:
-          "repeating-linear-gradient(90deg, transparent 0 5px, rgba(250,247,240,0.85) 5px 13px, transparent 13px 18px)",
-      }}
-    />
   );
 }

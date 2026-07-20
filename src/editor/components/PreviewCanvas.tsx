@@ -13,6 +13,12 @@ export function PreviewCanvas() {
     musicAssetId !== null
       ? (assets.find((a) => a.record.id === musicAssetId)?.fullUrl ?? null)
       : null;
+  const motionReplay = useEditor((s) => s.motionReplay);
+  // 업로드 폰트 파일 URL — 렌더러가 @font-face를 직접 선언한다
+  const resolveFontUrl = (assetId: string) => {
+    const asset = assets.find((a) => a.record.id === assetId);
+    return asset !== undefined && asset.record.kind === "font" ? asset.fullUrl : null;
+  };
   const selected = useEditor((s) => s.selected);
   const width = useEditor((s) => s.previewWidth);
   const mode = useEditor((s) => s.previewMode);
@@ -59,6 +65,8 @@ export function PreviewCanvas() {
             mode={editMode ? "editor-edit" : "published"}
             resolveAsset={resolveAsset}
             musicUrl={musicUrl}
+            resolveFontUrl={resolveFontUrl}
+            motionReplay={editMode ? motionReplay : null}
             selectedSectionId={editMode ? selectedSectionId : null}
             onSectionSelect={
               editMode

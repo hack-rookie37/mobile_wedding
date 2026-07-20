@@ -1,6 +1,14 @@
 import { documentSchema, type InvitationDocument } from "./document";
 
-export const CURRENT_SCHEMA_VERSION = 6;
+export const CURRENT_SCHEMA_VERSION = 7;
+
+// v6의 글자 크기 3단계 → v7의 pt 값. 기존 배율(0.93·1·1.08)에 가장 가까운 정수 pt다.
+const V6_SCALE_TO_PT: Record<string, number> = { sm: 10, md: 11, lg: 12 };
+
+// 새 photoEffects 기본값 — 기존 문서의 fadeBottom(있으면)만 이어받고 나머지는 원본 그대로
+function effectsFrom(fadeBottom: unknown) {
+  return { fadeBottom: fadeBottom !== false, sparkle: false, brightness: 1, opacity: 1 };
+}
 
 export class InvalidDocumentError extends Error {}
 
@@ -90,6 +98,55 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
           return { ...section, layout: { variant: "sheet" } };
         }
         return section;
+      }),
+    };
+  },
+  // v6 → v7: 벤치마크 리뉴얼 2차 (전면 사진 통일·직접 pt 입력·커스텀 폰트)
+  //  * 글자 크기: 3단계 enum → pt 값 (전역 typography.basePt, 섹션 style.fontSizePt)
+  //  * hero: 레이아웃을 전면 사진 하나로 통일하고, fadeBottom을 photoEffects로 승격
+  //  * closing: 메인과 같은 전면 사진 연출을 위해 photoAspect·effects 추가
+  //  * gallery: filmstrip(필름) 제거 — 가장 가까운 가로 스크롤인 slider로 옮긴다
+  6: (raw) => {
+    const doc = raw as {
+      typography?: { scale?: unknown };
+      sections?: Array<{
+        type?: unknown;
+        style?: { fontScale?: unknown };
+        layout?: { variant?: unknown };
+        content?: { fadeBottom?: unknown };
+      }>;
+    };
+    const { scale, ...typographyRest } = doc.typography ?? {};
+    return {
+      ...(raw as object),
+      schemaVersion: 7,
+      typography: { ...typographyRest, basePt: V6_SCALE_TO_PT[String(scale)] ?? 11 },
+      sections: (doc.sections ?? []).map((section) => {
+        const { fontScale, ...styleRest } = section.style ?? {};
+        const style =
+          fontScale === undefined
+            ? styleRest
+            : { ...styleRest, fontSizePt: V6_SCALE_TO_PT[String(fontScale)] ?? 11 };
+        if (section.type === "hero") {
+          const { fadeBottom, ...contentRest } = section.content ?? {};
+          return {
+            ...section,
+            style,
+            layout: { variant: "photoFull" },
+            content: { ...contentRest, effects: effectsFrom(fadeBottom) },
+          };
+        }
+        if (section.type === "closing") {
+          return {
+            ...section,
+            style,
+            content: { ...section.content, photoAspect: "4/5", effects: effectsFrom(true) },
+          };
+        }
+        if (section.type === "gallery" && section.layout?.variant === "filmstrip") {
+          return { ...section, style, layout: { variant: "slider" } };
+        }
+        return { ...section, style };
       }),
     };
   },

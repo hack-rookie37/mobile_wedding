@@ -250,11 +250,11 @@ describe("revisions", () => {
     const originRevision = revisions.find((r) => r.kind === "origin")!;
     const restored = await persistence.restoreRevision(projectId, originRevision.id);
     expect(restored.rev).toBe(4);
-    expect(restored.doc.wedding.groom.name).toBe("김민준"); // 샘플 원본
+    expect(restored.doc.wedding.groom.name).toBe("이정훈"); // 샘플 원본
 
     const loaded = await persistence.load(projectId);
     expect(loaded?.rev).toBe(4);
-    expect(loaded?.doc.wedding.groom.name).toBe("김민준");
+    expect(loaded?.doc.wedding.groom.name).toBe("이정훈");
 
     revisions = await persistence.listRevisions(projectId);
     expect(revisions.map((r) => [r.rev, r.kind, r.label])).toEqual([
@@ -545,7 +545,7 @@ describe("private preview 토큰 (Phase 7)", () => {
     expect(link.token.length).toBeGreaterThanOrEqual(24);
     const preview = await anon.rpc("get_preview_by_token", { p_token: link.token });
     expect(preview.data).not.toBeNull();
-    expect(JSON.stringify(preview.data.doc)).toContain("김민준");
+    expect(JSON.stringify(preview.data.doc)).toContain("이정훈");
 
     // draft 수정이 미리보기에 즉시 반영된다 (미리보기 = 현재 초안)
     const edited = createSampleDocument();

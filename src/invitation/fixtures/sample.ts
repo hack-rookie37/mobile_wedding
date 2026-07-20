@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import type { InvitationDocument, SectionStyle } from "../schema/document";
 
-export const SAMPLE_PROJECT_TITLE = "민준 · 서연 결혼식";
+export const SAMPLE_PROJECT_TITLE = "정훈 · 은진 결혼식";
 
 const style = (
   paddingY: SectionStyle["paddingY"],
@@ -11,46 +11,46 @@ const style = (
   animation,
 });
 
-// 실제 한국 청첩장 관례를 따른 샘플 문서 (인물·장소는 가상)
+// 실제 한국 청첩장 관례를 따른 샘플 문서 (연락처·계좌만 가상)
 export function createSampleDocument(): InvitationDocument {
   return {
-    schemaVersion: 6,
+    schemaVersion: 7,
     wedding: {
       groom: {
-        name: "김민준",
+        name: "이정훈",
         familyRole: "장남",
-        father: { name: "김영호", deceased: false },
-        mother: { name: "박정숙", deceased: false },
+        father: { name: "이길재", deceased: false },
+        mother: { name: "최은주", deceased: false },
       },
       bride: {
-        name: "이서연",
+        name: "양은진",
         familyRole: "차녀",
-        father: { name: "이상철", deceased: false },
-        mother: { name: "최미경", deceased: false },
+        father: { name: "양길모", deceased: false },
+        mother: { name: "임현이", deceased: false },
       },
-      datetime: "2026-11-14T14:00:00+09:00",
+      datetime: "2026-09-19T12:20:00+09:00",
       venue: {
-        name: "라온컨벤션",
+        name: "공군호텔",
         hall: "3층 그랜드볼룸",
-        address: "서울특별시 강남구 테헤란로 132",
-        phone: "02-1234-5678",
+        address: "서울 영등포구 여의대방로 259",
+        phone: "02-844-0336",
       },
     },
     theme: { id: "warm-editorial" },
     music: { assetId: null },
-    typography: { headingFont: "theme", bodyFont: "theme", scale: "md" },
+    typography: { headingFont: "theme", bodyFont: "theme", basePt: 11 },
     sections: [
       {
         id: nanoid(),
         type: "hero",
         visible: true,
-        layout: { variant: "photoArch" },
+        layout: { variant: "photoFull" },
         style: style("lg"),
         content: {
           tagline: "THE MARRIAGE OF",
           photoAssetId: "hero-main",
           photoAspect: "3/4",
-          fadeBottom: true,
+          effects: { fadeBottom: true, sparkle: false, brightness: 1, opacity: 1 },
           showDate: true,
           showVenue: true,
         },
@@ -78,11 +78,11 @@ export function createSampleDocument(): InvitationDocument {
           title: "신랑과 신부를 소개합니다",
           groom: {
             photoAssetId: "gallery-04",
-            intro: "웃음이 많은 사람입니다.\n서연이의 하루를 가장 재밌게 만들어 주고 싶습니다.",
+            intro: "웃음이 많은 사람입니다.\n은진이의 하루를 가장 재밌게 만들어 주고 싶습니다.",
           },
           bride: {
             photoAssetId: "gallery-05",
-            intro: "기록하기를 좋아합니다.\n민준이와의 모든 계절을 차곡차곡 담아가겠습니다.",
+            intro: "기록하기를 좋아합니다.\n정훈이와의 모든 계절을 차곡차곡 담아가겠습니다.",
           },
           showParents: true,
         },
@@ -136,13 +136,22 @@ export function createSampleDocument(): InvitationDocument {
         content: {
           title: "교통 안내",
           items: [
-            { icon: "subway", title: "지하철", body: "2호선 역삼역 3번 출구에서 도보 5분" },
-            { icon: "bus", title: "버스", body: "146 · 341 · 360 역삼역 정류장 하차" },
+            {
+              icon: "subway",
+              title: "지하철",
+              body: "1호선 대방역 5번 출구 (도보 5분)\n신림선 대방역 6번 출구 (도보 5분)\n7호선 보라매역 7번 출구 (도보 15분)\n신림선 서울지방병무청역 2번 출구 (도보 9분)",
+            },
+            {
+              icon: "bus",
+              title: "버스",
+              body: "간선 : 150, 461, 505, 753\n지선 : 5531, 5534, 5623, 5633, 6514, 6713\n광역 : M5609\n마을 : 영등포07",
+            },
             {
               icon: "parking",
               title: "주차",
-              body: "건물 지하 주차장 2시간 무료\n(로비 안내데스크에서 하객 등록 필요)",
+              body: "공군호텔 내 지하주차장 이용 가능\n(예식 하객 기준 3시간 무료주차 제공)\n주차 가능 대수 600~1,000대",
             },
+            { icon: "etc", title: "예식장 전화", body: "02-844-0336" },
           ],
         },
       },
@@ -155,10 +164,10 @@ export function createSampleDocument(): InvitationDocument {
         content: {
           title: "연락하기",
           entries: [
-            { side: "groom", label: "신랑", name: "김민준", phone: "010-1234-5678" },
-            { side: "groom", label: "아버지", name: "김영호", phone: "010-2345-6789" },
-            { side: "bride", label: "신부", name: "이서연", phone: "010-3456-7890" },
-            { side: "bride", label: "어머니", name: "최미경", phone: "010-4567-8901" },
+            { side: "groom", label: "신랑", name: "이정훈", phone: "010-1234-5678" },
+            { side: "groom", label: "아버지", name: "이길재", phone: "010-2345-6789" },
+            { side: "bride", label: "신부", name: "양은진", phone: "010-3456-7890" },
+            { side: "bride", label: "어머니", name: "임현이", phone: "010-4567-8901" },
           ],
         },
       },
@@ -173,9 +182,9 @@ export function createSampleDocument(): InvitationDocument {
           groomLabel: "신랑측",
           brideLabel: "신부측",
           accounts: [
-            { side: "groom", bank: "국민은행", holder: "김민준", number: "123456-01-234567" },
-            { side: "groom", bank: "신한은행", holder: "김영호", number: "110-234-567890" },
-            { side: "bride", bank: "우리은행", holder: "이서연", number: "1002-345-678901" },
+            { side: "groom", bank: "국민은행", holder: "이정훈", number: "123456-01-234567" },
+            { side: "groom", bank: "신한은행", holder: "이길재", number: "110-234-567890" },
+            { side: "bride", bank: "우리은행", holder: "양은진", number: "1002-345-678901" },
           ],
         },
       },
@@ -202,6 +211,8 @@ export function createSampleDocument(): InvitationDocument {
           title: "감사합니다",
           body: "저희 두 사람의 시작을 함께해 주셔서 감사합니다.\n주신 마음 오래 간직하며 예쁘게 살겠습니다.",
           photoAssetId: "gallery-06",
+          photoAspect: "4/5",
+          effects: { fadeBottom: true, sparkle: false, brightness: 1, opacity: 1 },
           showShare: true,
         },
       },

@@ -43,7 +43,7 @@ export const themeSchema = z.object({
 // ── 폰트 — id 목록만 스키마가 안다. CSS 스택 해석은 themes.ts(FONT_CHOICES)가 담당.
 // "theme"은 테마 기본값을 그대로 쓴다는 뜻이다.
 
-export const fontIdSchema = z.enum([
+export const builtinFontIdSchema = z.enum([
   "theme",
   "noto-serif",
   "nanum-myeongjo",
@@ -52,12 +52,19 @@ export const fontIdSchema = z.enum([
   "sans",
 ]);
 
-export const fontScaleSchema = z.enum(["sm", "md", "lg"]); // md = 100%
+// 업로드한 폰트는 "custom:<assetId>" — 파일은 asset 저장소가 갖고 문서는 참조만 한다 (ADR-016)
+export const fontIdSchema = z.union([
+  builtinFontIdSchema,
+  z.templateLiteral(["custom:", z.string().min(1)]),
+]);
+
+// 본문 기준 글자 크기(pt). 렌더러의 모든 px 크기가 이 값에 비례해 곱해진다 — themes.ts가 환산.
+export const fontSizePtSchema = z.number().min(7).max(20);
 
 export const typographySchema = z.object({
   headingFont: fontIdSchema, // 제목·이름 (테마 headingFont 대체)
   bodyFont: fontIdSchema, // 본문 (테마 bodyFont 대체)
-  scale: fontScaleSchema, // 전체 글자 크기
+  basePt: fontSizePtSchema, // 전체 글자 크기 기준
 });
 
 export const sectionStyleSchema = z.object({
@@ -69,7 +76,7 @@ export const sectionStyleSchema = z.object({
   animation: z.enum(["none", "fade", "rise"]),
   // 섹션별 폰트·크기 override — 미지정이면 전역(typography)을 따른다
   fontFamily: fontIdSchema.optional(),
-  fontScale: fontScaleSchema.optional(),
+  fontSizePt: fontSizePtSchema.optional(),
 });
 
 const sectionBase = z.object({
@@ -93,20 +100,28 @@ export const photoFrameSchema = z.object({
 // 값은 CSS aspect-ratio의 가로/세로. 아래로 갈수록 길다.
 export const photoAspectSchema = z.enum(["1/1", "4/5", "3/4", "9/16"]);
 
+// 전면 사진(메인·맺음말)이 공유하는 표시 효과. 레이아웃이 아니라 사진 자체의 연출이다.
+export const photoEffectsSchema = z.object({
+  fadeBottom: z.boolean(), // 사진 하단을 배경색으로 녹인다
+  sparkle: z.boolean(), // 은은한 반짝임 오버레이
+  brightness: z.number().min(0.3).max(1.5), // 1 = 원본
+  opacity: z.number().min(0.2).max(1), // 1 = 불투명
+});
+
 export const heroContentSchema = z.object({
   tagline: z.string(),
   photoAssetId: z.string().nullable(),
   photoFrame: photoFrameSchema.optional(),
-  // photoFull 전용 표시 옵션 — 다른 variant(아치·텍스트만)에서는 무시된다
   photoAspect: photoAspectSchema,
-  fadeBottom: z.boolean(), // 사진 하단을 배경색으로 페이드아웃
+  effects: photoEffectsSchema,
   showDate: z.boolean(),
   showVenue: z.boolean(),
 });
 
+// 메인은 전면 사진 단일 레이아웃이다 — 표현 선택은 layout이 아니라 content.effects가 담당한다
 export const heroSectionSchema = sectionBase.extend({
   type: z.literal("hero"),
-  layout: z.object({ variant: z.enum(["photoFull", "photoArch", "textOnly"]) }),
+  layout: z.object({ variant: z.enum(["photoFull"]) }),
   content: heroContentSchema,
 });
 
@@ -134,14 +149,15 @@ export const galleryPhotoSchema = z.object({
 export const galleryContentSchema = z.object({
   title: z.string(),
   photos: z.array(galleryPhotoSchema).max(30, "갤러리 사진은 최대 30장입니다"),
-  photoAspect: photoAspectSchema, // strip(대형 스트립) 전용 — 다른 variant에서는 무시된다
+  // 한 장씩 크게 보여주는 레이아웃(strip·slider)의 세로 비율 — 격자형은 고정 비율을 쓴다
+  photoAspect: photoAspectSchema,
 });
 
 export const gallerySectionSchema = sectionBase.extend({
   type: z.literal("gallery"),
   // strip: 캔버스 가로를 꽉 채우는 대형 가로 스냅 스트립 (벤치마크 스타일)
   layout: z.object({
-    variant: z.enum(["strip", "grid2", "grid3", "slider", "filmstrip", "collage"]),
+    variant: z.enum(["strip", "grid2", "grid3", "slider", "collage"]),
   }),
   content: galleryContentSchema,
 });
@@ -306,6 +322,9 @@ export const closingContentSchema = z.object({
   body: z.string(),
   photoAssetId: z.string().nullable(),
   photoFrame: photoFrameSchema.optional(),
+  // 메인과 같은 전면 사진 연출 — photo variant에서만 쓰인다
+  photoAspect: photoAspectSchema,
+  effects: photoEffectsSchema,
   showShare: z.boolean(),
 });
 
@@ -371,7 +390,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(6),
+    schemaVersion: z.literal(7),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,
@@ -411,11 +430,12 @@ export type ThemeId = z.infer<typeof themeIdSchema>;
 export type Theme = z.infer<typeof themeSchema>;
 export type Music = z.infer<typeof musicSchema>;
 export type FontId = z.infer<typeof fontIdSchema>;
-export type FontScale = z.infer<typeof fontScaleSchema>;
+export type BuiltinFontId = z.infer<typeof builtinFontIdSchema>;
 export type Typography = z.infer<typeof typographySchema>;
 export type SectionStyle = z.infer<typeof sectionStyleSchema>;
 export type PhotoFrame = z.infer<typeof photoFrameSchema>;
 export type PhotoAspect = z.infer<typeof photoAspectSchema>;
+export type PhotoEffects = z.infer<typeof photoEffectsSchema>;
 export type GalleryPhoto = z.infer<typeof galleryPhotoSchema>;
 export type HeroSection = z.infer<typeof heroSectionSchema>;
 export type GreetingSection = z.infer<typeof greetingSectionSchema>;

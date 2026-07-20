@@ -64,9 +64,9 @@ src/
 ## 3. 문서 모델 (ADR-002)
 
 ```ts
-// invitation/schema — 개념 스케치, 현재 v5 (실제는 Zod 스키마가 단일 진실)
+// invitation/schema — 개념 스케치, 현재 v7 (실제는 Zod 스키마가 단일 진실)
 interface InvitationDocument {
-  schemaVersion: 5;
+  schemaVersion: 7;
   wedding: {
     groom: Person;               // { name, familyRole?("장남"…), father?, mother? }
     bride: Person;               //   Parent = { name, deceased: boolean }
@@ -74,6 +74,12 @@ interface InvitationDocument {
     venue: { name; hall?; address; phone? };
   };
   theme: { id: ThemeId };        // 토큰·variant는 THEMES 레지스트리에서 해석 (ADR-014)
+  music: { assetId: string | null };  // 배경음악 — 참조만 (ADR-025)
+  typography: {                  // 전역 폰트·크기 (ADR-026), 섹션별 override는 style
+    headingFont: FontId;         // "theme" | 내장 id | "custom:<assetId>"
+    bodyFont: FontId;
+    basePt: number;              // 본문 기준 pt — 렌더러가 --canvas-fs 배율로 환산
+  };
   sections: Section[];           // 순서 = 배열 순서
 }
 

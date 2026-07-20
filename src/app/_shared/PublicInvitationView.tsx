@@ -2,7 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { resolveBuiltinAsset } from "@/editor/assets/builtinAssets";
-import { manifestResolver, musicUrlOf, type PublicAssetEntry } from "@/invitation/publicPayload";
+import {
+  fontUrlOf,
+  manifestResolver,
+  musicUrlOf,
+  type PublicAssetEntry,
+} from "@/invitation/publicPayload";
 import type { InvitationDocument } from "@/invitation/schema/document";
 import { InvitationRenderer } from "@/renderer/InvitationRenderer";
 
@@ -24,6 +29,10 @@ export function PublicInvitationView({
 }) {
   const resolveAsset = useMemo(() => manifestResolver(manifest, resolveBuiltinAsset), [manifest]);
   const musicUrl = useMemo(() => musicUrlOf({ doc, assets: manifest }), [doc, manifest]);
+  const resolveFontUrl = useMemo(
+    () => (assetId: string) => fontUrlOf({ doc, assets: manifest }, assetId),
+    [doc, manifest],
+  );
 
   return (
     <main className="flex min-h-dvh justify-center bg-[#eceae5]">
@@ -39,6 +48,7 @@ export function PublicInvitationView({
           resolveAsset={resolveAsset}
           rsvpSlug={rsvpSlug}
           musicUrl={musicUrl}
+          resolveFontUrl={resolveFontUrl}
         />
         {shareTitle !== undefined && <ShareBar title={shareTitle} />}
       </div>

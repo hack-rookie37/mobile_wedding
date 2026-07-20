@@ -22,6 +22,9 @@ export interface EditorState {
   // 미리보기 UI 상태 — 문서·히스토리와 무관한 세션 상태
   previewWidth: PreviewWidth;
   previewMode: PreviewMode;
+  // 진입 애니메이션을 고른 순간 미리보기에서 그 섹션을 다시 재생시키는 신호.
+  // 토큰이 바뀔 때마다 1회 재생된다 — 같은 값을 다시 골라도 재생되도록 카운터를 쓴다.
+  motionReplay: { sectionId: string; token: number } | null;
   dispatch: (action: EditorAction) => void;
   undo: () => void;
   redo: () => void;
@@ -56,6 +59,7 @@ export function createEditorStore({ doc, now = Date.now }: CreateEditorStoreOpti
     saveStatus: "saved",
     previewWidth: 390,
     previewMode: "edit",
+    motionReplay: null,
 
     // 문서 변경의 유일한 진입점 — 검증·적용·no-op 판정은 전부 도메인 엔진(applyAction) 소관
     dispatch: (action) => {
@@ -70,8 +74,19 @@ export function createEditorStore({ doc, now = Date.now }: CreateEditorStoreOpti
         return;
       }
 
+      // 진입 애니메이션은 이미 선택된 값을 다시 눌러도 다시 보여준다 —
+      // 문서상 no-op이어도 "어떻게 보이는지" 확인은 되어야 한다
+      const motionReplay =
+        action.type === "updateSectionSettings" && action.patch.animation !== undefined
+          ? { sectionId: action.sectionId, token: (state.motionReplay?.token ?? 0) + 1 }
+          : state.motionReplay;
+
       const result = applyAction(state.doc, action);
-      if (result.outcome === "noop") return; // no-op은 히스토리에 추가하지 않는다
+      if (result.outcome === "noop") {
+        // no-op은 히스토리에 추가하지 않는다 (재생 신호만 반영)
+        if (motionReplay !== state.motionReplay) set({ motionReplay });
+        return;
+      }
 
       const history = recordEntry(
         { undoStack: state.undoStack, redoStack: state.redoStack },
@@ -88,6 +103,7 @@ export function createEditorStore({ doc, now = Date.now }: CreateEditorStoreOpti
         redoStack: history.redoStack,
         selected: normalizeSelection(state.selected, result.doc),
         saveStatus: state.saveStatus === "conflict" ? "conflict" : "saving",
+        motionReplay,
       });
     },
 

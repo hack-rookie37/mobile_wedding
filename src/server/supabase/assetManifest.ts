@@ -33,10 +33,10 @@ export async function publicAssetManifest(
 // get_preview_by_token RPC가 돌려주는 asset 행 (서버 안에서만 다룬다 — 경로는 클라이언트로 안 나간다)
 const previewAssetRowSchema = z.object({
   id: z.string().min(1),
-  kind: z.enum(["image", "audio"]),
+  kind: z.enum(["image", "audio", "font"]),
   storagePath: z.string().min(1),
   thumbPath: z.string().nullable(),
-  width: z.number().int().min(1).nullable(), // 오디오는 null
+  width: z.number().int().min(1).nullable(), // 오디오·폰트는 null
   height: z.number().int().min(1).nullable(),
 });
 

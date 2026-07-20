@@ -156,9 +156,9 @@ describe("migrateDocument", () => {
     expect(migrated.sections).toEqual(v4.sections); // 콘텐츠 완전 보존
   });
 
-  it("v5 → v6: hero에 photoAspect·fadeBottom, calendar에 ddayStyle이 주입된다 (기존 콘텐츠 보존)", () => {
+  it("v5 → v7: v6 신규 필드가 주입되고 v7의 pt·효과까지 이어진다 (기존 콘텐츠 보존)", () => {
     const base = createSampleDocument();
-    const V6_FIELDS = ["photoAspect", "fadeBottom", "ddayStyle", "mapImageAssetId"];
+    const V6_FIELDS = ["photoAspect", "ddayStyle", "mapImageAssetId", "effects"];
     // v5 문서에는 music·typography가 없었다
     const baseWithoutMusic = Object.fromEntries(
       Object.entries(base).filter(([k]) => k !== "music" && k !== "typography"),
@@ -166,9 +166,10 @@ describe("migrateDocument", () => {
     const v5 = {
       ...baseWithoutMusic,
       schemaVersion: 5,
-      // v5 문서에는 v6 신규 필드가 없었고, rsvp variant는 "default"뿐이었다
+      // v5 문서에는 v6 신규 필드가 없었고, hero는 아치, rsvp variant는 "default"뿐이었다
       sections: base.sections.map((s) => ({
         ...s,
+        ...(s.type === "hero" ? { layout: { variant: "photoArch" } } : {}),
         ...(s.type === "rsvp" ? { layout: { variant: "default" } } : {}),
         content: Object.fromEntries(
           Object.entries(s.content).filter(([k]) => !V6_FIELDS.includes(k)),
@@ -179,8 +180,9 @@ describe("migrateDocument", () => {
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
     const hero = migrated.sections[0];
     if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    expect(hero.layout.variant).toBe("photoFull"); // 전면 사진으로 통일 (v7)
     expect(hero.content.photoAspect).toBe("3/4");
-    expect(hero.content.fadeBottom).toBe(true);
+    expect(hero.content.effects.fadeBottom).toBe(true);
     expect(hero.content.tagline).toBe("THE MARRIAGE OF"); // 콘텐츠 보존
     const calendar = migrated.sections.find((s) => s.type === "calendar");
     if (calendar?.type !== "calendar") throw new Error("calendar가 없습니다");
@@ -198,8 +200,56 @@ describe("migrateDocument", () => {
     if (rsvp?.type !== "rsvp") throw new Error("rsvp가 없습니다");
     expect(rsvp.layout.variant).toBe("sheet"); // default → sheet 개명
     expect(migrated.music).toEqual({ assetId: null }); // 배경음악 슬롯 신설
-    // 폰트·크기 기본값 — 테마 그대로
-    expect(migrated.typography).toEqual({ headingFont: "theme", bodyFont: "theme", scale: "md" });
+    // 폰트는 테마 그대로, 크기는 v6의 '보통'에 해당하는 pt로 환산된다
+    expect(migrated.typography).toEqual({ headingFont: "theme", bodyFont: "theme", basePt: 11 });
+  });
+
+  it("v6 → v7: 글자 크기가 pt로 환산되고 hero·closing·gallery가 새 표현으로 옮겨진다", () => {
+    const base = createSampleDocument();
+    const v6 = {
+      ...base,
+      schemaVersion: 6,
+      typography: { headingFont: "gowun-batang", bodyFont: "theme", scale: "lg" },
+      sections: base.sections.map((s) => {
+        const without = (content: object, drop: string[]) =>
+          Object.fromEntries(Object.entries(content).filter(([k]) => !drop.includes(k)));
+        if (s.type === "hero") {
+          return {
+            ...s,
+            style: { ...s.style, fontScale: "sm" },
+            layout: { variant: "textOnly" },
+            content: { ...without(s.content, ["effects"]), fadeBottom: false },
+          };
+        }
+        if (s.type === "closing") {
+          return {
+            ...s,
+            layout: { variant: "photo" },
+            content: without(s.content, ["effects", "photoAspect"]),
+          };
+        }
+        if (s.type === "gallery") return { ...s, layout: { variant: "filmstrip" } };
+        return s;
+      }),
+    };
+    const migrated = migrateDocument(v6);
+    expect(migrated.schemaVersion).toBe(7);
+    // 3단계 enum → pt (lg = 12pt, sm = 10pt)
+    expect(migrated.typography.basePt).toBe(12);
+    expect(migrated.typography.headingFont).toBe("gowun-batang"); // 폰트 선택 보존
+    const hero = migrated.sections[0];
+    if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    expect(hero.layout.variant).toBe("photoFull"); // 레이아웃 통일
+    expect(hero.content.effects.fadeBottom).toBe(false); // 기존 선택 승계
+    expect(hero.content.effects.brightness).toBe(1); // 새 효과는 원본 그대로가 기본
+    expect(hero.style.fontSizePt).toBe(10);
+    const closing = migrated.sections.find((s) => s.type === "closing");
+    if (closing?.type !== "closing") throw new Error("closing이 없습니다");
+    expect(closing.content.photoAspect).toBe("4/5");
+    expect(closing.content.effects.sparkle).toBe(false);
+    const gallery = migrated.sections.find((s) => s.type === "gallery");
+    if (gallery?.type !== "gallery") throw new Error("gallery가 없습니다");
+    expect(gallery.layout.variant).toBe("slider"); // 필름 제거 → 가장 가까운 가로 스크롤
   });
 
   it("v3 → v4: venue에 showMapButtons가 추가된다 (기존 note 보존)", () => {

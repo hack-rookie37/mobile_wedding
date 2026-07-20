@@ -15,6 +15,8 @@ export interface RendererContextValue {
   // 발행된 공개 페이지의 slug — RSVP 제출 대상 식별자.
   // null이면(편집기·비공개 미리보기) RSVP 폼은 제출 불가 상태로 렌더된다.
   rsvpSlug: string | null;
+  // 편집기에서 진입 애니메이션을 고른 순간 그 섹션을 다시 재생시키는 신호 (토큰이 바뀔 때마다)
+  motionReplay: { sectionId: string; token: number } | null;
 }
 
 const RendererContext = createContext<RendererContextValue | null>(null);

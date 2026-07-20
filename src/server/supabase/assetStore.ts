@@ -9,8 +9,10 @@ import type {
 import { decodeImage, makeThumbnail, sha256Hex } from "@/invitation/assets/imageProcessing";
 import {
   ALLOWED_AUDIO_TYPES,
+  fontMimeOf,
   lowResolutionWarning,
   validateAudioFile,
+  validateFontFile,
   validateUploadFile,
 } from "@/invitation/assets/uploadPolicy";
 import { referencedAssetIds } from "@/invitation/lib/assetRefs";
@@ -25,15 +27,19 @@ const EXTENSIONS: Record<string, string> = {
   "image/webp": "webp",
   "audio/mpeg": "mp3",
   "audio/mp4": "m4a",
+  "font/woff2": "woff2",
+  "font/woff": "woff",
+  "font/ttf": "ttf",
+  "font/otf": "otf",
 };
 
 interface AssetRow {
   id: string;
-  kind: "image" | "audio";
+  kind: "image" | "audio" | "font";
   filename: string;
   mime_type: string;
   bytes: number;
-  width: number | null; // 오디오는 null (DB 제약과 동일)
+  width: number | null; // 오디오·폰트는 null (DB 제약과 동일)
   height: number | null;
   content_hash: string;
   storage_path: string;
@@ -62,9 +68,9 @@ export class SupabaseAssetStore implements AssetStore {
       builtin: false,
     };
     const record: AssetRecord =
-      row.kind === "audio"
-        ? { kind: "audio", ...common }
-        : { kind: "image", ...common, width: row.width ?? 1, height: row.height ?? 1 };
+      row.kind === "image"
+        ? { kind: "image", ...common, width: row.width ?? 1, height: row.height ?? 1 }
+        : { kind: row.kind, ...common };
     return {
       record,
       fullUrl: storagePublicUrl(this.client, row.storage_path),
@@ -84,9 +90,14 @@ export class SupabaseAssetStore implements AssetStore {
 
   async upload(file: File, { onProgress }: UploadOptions = {}): Promise<UploadOutcome> {
     onProgress?.(0.05);
-    const isAudio = file.type in ALLOWED_AUDIO_TYPES;
-    if (isAudio) validateAudioFile(file);
+    // 종류 판별은 업로드 정책이 단일 소스 — 폰트는 mime이 제각각이라 확장자까지 본다
+    const fontMime = fontMimeOf(file);
+    const kind: AssetRow["kind"] =
+      file.type in ALLOWED_AUDIO_TYPES ? "audio" : fontMime !== null ? "font" : "image";
+    if (kind === "audio") validateAudioFile(file);
+    else if (kind === "font") validateFontFile(file);
     else validateUploadFile(file);
+    const contentType = kind === "font" ? fontMime! : file.type;
     const contentHash = await sha256Hex(await file.arrayBuffer());
     onProgress?.(0.2);
 
@@ -103,12 +114,12 @@ export class SupabaseAssetStore implements AssetStore {
       return { asset: this.toStored(existing.data as AssetRow), duplicate: true, warnings: [] };
     }
 
-    // 오디오는 디코드·썸네일 없음 — 치수는 null (DB 제약)
+    // 이미지가 아니면 디코드·썸네일 없음 — 치수는 null (DB 제약)
     let width: number | null = null;
     let height: number | null = null;
     let thumbnail: Blob | null = null;
     let warning: string | null = null;
-    if (!isAudio) {
+    if (kind === "image") {
       const bitmap = await decodeImage(file);
       onProgress?.(0.35);
       thumbnail = await makeThumbnail(bitmap, file.type);
@@ -120,13 +131,10 @@ export class SupabaseAssetStore implements AssetStore {
     // 경로는 내용 주소(content hash) — 파일 업로드 후 행 기록 전에 실패해도
     // 재시도가 같은 경로에 덮어쓰므로(upsert) 고아 파일이 남지 않는다
     const assetId = crypto.randomUUID();
-    const storagePath = `projects/${this.projectId}/${contentHash}.${EXTENSIONS[file.type]}`;
+    const storagePath = `projects/${this.projectId}/${contentHash}.${EXTENSIONS[contentType]}`;
     const bucket = this.client.storage.from(PHOTOS_BUCKET);
 
-    const originalUpload = await bucket.upload(storagePath, file, {
-      contentType: file.type,
-      upsert: true,
-    });
+    const originalUpload = await bucket.upload(storagePath, file, { contentType, upsert: true });
     if (originalUpload.error) {
       throw new AssetStorageError(`업로드 실패: ${originalUpload.error.message}`);
     }
@@ -147,9 +155,9 @@ export class SupabaseAssetStore implements AssetStore {
 
     const row: AssetRow = {
       id: assetId,
-      kind: isAudio ? "audio" : "image",
+      kind,
       filename: file.name,
-      mime_type: file.type,
+      mime_type: contentType,
       bytes: file.size,
       width,
       height,

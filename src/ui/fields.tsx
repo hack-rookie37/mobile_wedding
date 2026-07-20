@@ -179,8 +179,15 @@ export function Segmented<T extends string>({
   onChange: (value: T) => void;
   grow?: boolean; // true면 컨테이너 폭을 균등 분할 (폼용), false면 내용 크기 (툴바용)
 }) {
+  // 5개 이상을 한 줄에 균등 분할하면 320px 인스펙터에서 한글 라벨이 잘린다 — 3열로 접는다
+  const wrapped = grow && options.length > 4;
   return (
-    <div className={clsx("rounded-md bg-tool-bg-deep p-0.5", grow ? "flex" : "inline-flex")}>
+    <div
+      className={clsx(
+        "rounded-md bg-tool-bg-deep p-0.5",
+        wrapped ? "grid grid-cols-3 gap-0.5" : grow ? "flex" : "inline-flex",
+      )}
+    >
       {options.map((option) => (
         <button
           key={option.value}
@@ -188,8 +195,8 @@ export function Segmented<T extends string>({
           aria-pressed={option.value === value}
           onClick={() => onChange(option.value)}
           className={clsx(
-            "h-6.5 rounded-[5px] text-[12px] transition-colors",
-            grow ? "flex-1" : "px-2.5",
+            "h-6.5 rounded-[5px] text-[12px] whitespace-nowrap transition-colors",
+            wrapped ? "px-1" : grow ? "flex-1" : "px-2.5",
             option.value === value
               ? "bg-white font-semibold text-tool-ink shadow-[0_1px_3px_rgba(0,0,0,0.12)] ring-1 ring-black/5"
               : "text-tool-ink-soft hover:text-tool-ink",
@@ -217,6 +224,61 @@ export function SegmentedField<T extends string>({
     <div>
       <FieldLabel>{label}</FieldLabel>
       <Segmented value={value} options={options} onChange={onChange} grow />
+    </div>
+  );
+}
+
+// pt 같은 수치 직접 입력 — 슬라이더와 숫자 입력을 같은 값에 묶는다.
+// 입력 중 빈 문자열·범위 밖 값은 문서로 내보내지 않는다 (문서는 항상 유효한 값만 갖는다).
+export function NumberField({
+  label,
+  value,
+  min,
+  max,
+  step,
+  unit,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+  onChange: (value: number) => void;
+}) {
+  const id = useId();
+  const commit = (raw: string) => {
+    const parsed = Number(raw);
+    if (raw === "" || Number.isNaN(parsed)) return;
+    onChange(Math.min(max, Math.max(min, parsed)));
+  };
+  return (
+    <div>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <div className="flex items-center gap-2">
+        <input
+          type="range"
+          aria-label={`${label} 슬라이더`}
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="min-w-0 flex-1 accent-(--color-tool-accent)"
+        />
+        <input
+          id={id}
+          type="number"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => commit(e.target.value)}
+          className={clsx(inputClass, "h-8 w-16 shrink-0 tabular-nums")}
+        />
+        <span className="shrink-0 text-[12px] text-tool-ink-faint">{unit}</span>
+      </div>
     </div>
   );
 }

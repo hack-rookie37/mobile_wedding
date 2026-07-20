@@ -7,10 +7,11 @@ import {
   formatBytes,
   validateAudioFile,
 } from "@/invitation/assets/uploadPolicy";
-import { FONT_CHOICES, THEME_ORDER, THEMES } from "@/invitation/schema/themes";
-import { FieldLabel, SegmentedField, SelectField } from "@/ui/fields";
+import { THEME_ORDER, THEMES } from "@/invitation/schema/themes";
+import { FieldLabel, NumberField, SelectField } from "@/ui/fields";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor } from "../../EditorStoreContext";
+import { CustomFontUpload, useFontOptions } from "./FontFields";
 
 // 배경음악 — 파일 업로드(오디오) 후 setMusic action으로 문서에 참조를 기록한다.
 // 게스트 화면에는 우상단 음악 켜기/끄기 버튼이 뜬다 (자동재생 없음).
@@ -100,11 +101,7 @@ function TypographyFields() {
   const typography = useEditor((s) => s.doc.typography);
   const dispatch = useEditor((s) => s.dispatch);
   const patch = (p: Record<string, unknown>) => dispatch({ type: "updateTypography", patch: p });
-
-  const fontOptions = [
-    { value: "theme", label: "테마 기본" },
-    ...Object.entries(FONT_CHOICES).map(([value, font]) => ({ value, label: font.label })),
-  ];
+  const fontOptions = useFontOptions("테마 기본", "theme");
 
   return (
     <div className="mt-6 space-y-4">
@@ -121,19 +118,20 @@ function TypographyFields() {
         options={fontOptions}
         onChange={(bodyFont) => patch({ bodyFont })}
       />
-      <SegmentedField
+      <NumberField
         label="전체 글자 크기"
-        value={typography.scale}
-        options={[
-          { value: "sm", label: "작게" },
-          { value: "md", label: "보통" },
-          { value: "lg", label: "크게" },
-        ]}
-        onChange={(scale) => patch({ scale })}
+        value={typography.basePt}
+        min={7}
+        max={20}
+        step={0.5}
+        unit="pt"
+        onChange={(basePt) => patch({ basePt })}
       />
       <p className="text-[11px] leading-[1.5] text-tool-ink-faint">
-        섹션 하나만 다르게 하려면 해당 섹션의 ‘스타일’ 탭에서 바꿀 수 있습니다.
+        본문 기준 크기입니다 — 제목·캡션도 같은 비율로 함께 커집니다. 섹션 하나만 다르게 하려면 해당
+        섹션의 ‘스타일’ 탭에서 바꿀 수 있습니다.
       </p>
+      <CustomFontUpload />
     </div>
   );
 }

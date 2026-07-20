@@ -123,7 +123,14 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
         ...base,
         type,
         layout: { variant: "simple" },
-        content: { title: "감사합니다", body: "", photoAssetId: null, showShare: true },
+        content: {
+          title: "감사합니다",
+          body: "",
+          photoAssetId: null,
+          photoAspect: "4/5",
+          effects: { fadeBottom: true, sparkle: false, brightness: 1, opacity: 1 },
+          showShare: true,
+        },
       };
   }
 }

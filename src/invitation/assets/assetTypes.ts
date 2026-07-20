@@ -5,8 +5,8 @@ import { z } from "zod";
 // 청첩장 JSON에는 assetId와 표시용 metadata(alt·caption·frame)만 저장한다.
 // UI는 이 인터페이스만 알며, 저장 구현(IndexedDB → Supabase Storage)은 교체 가능하다.
 
-// 종류별 치수 규칙: 이미지는 필수, 오디오는 없음 (DB 제약과 동일 — 단일 소스는 이 스키마)
-export const assetKindSchema = z.enum(["image", "audio"]);
+// 종류별 치수 규칙: 이미지는 필수, 오디오·폰트는 없음 (DB 제약과 동일 — 단일 소스는 이 스키마)
+export const assetKindSchema = z.enum(["image", "audio", "font"]);
 
 export const assetRecordSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -23,6 +23,16 @@ export const assetRecordSchema = z.discriminatedUnion("kind", [
   }),
   z.object({
     kind: z.literal("audio"),
+    id: z.string().min(1),
+    filename: z.string().min(1),
+    mimeType: z.string().min(1),
+    size: z.number().int().min(0),
+    contentHash: z.string().min(1),
+    createdAt: z.iso.datetime(),
+    builtin: z.boolean(),
+  }),
+  z.object({
+    kind: z.literal("font"),
     id: z.string().min(1),
     filename: z.string().min(1),
     mimeType: z.string().min(1),

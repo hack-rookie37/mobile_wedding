@@ -19,7 +19,7 @@ describe("sensitive 선언 (스키마 .meta — 단일 소스)", () => {
     const serialized = JSON.stringify(redacted);
     // sensitive가 아닌 필드가 실수로 지워지지 않았다
     expect(serialized).toContain("국민은행");
-    expect(serialized).toContain("김민준");
+    expect(serialized).toContain("이정훈");
   });
 });
 
@@ -47,10 +47,10 @@ describe("redactForAi (sensitive 필드 — PRODUCT_SPEC §9)", () => {
     const contacts = redacted.sections.find((s) => s.type === "contacts");
     if (contacts?.type !== "contacts") throw new Error("contacts가 없습니다");
     expect(contacts.content.entries.map((e) => e.name)).toEqual([
-      "김민준",
-      "김영호",
-      "이서연",
-      "최미경",
+      "이정훈",
+      "이길재",
+      "양은진",
+      "임현이",
     ]);
 
     const gift = redacted.sections.find((s) => s.type === "giftAccount");

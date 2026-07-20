@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ClosingSection as ClosingSectionData } from "@/invitation/schema/document";
 import { BodyText } from "../primitives/BodyText";
-import { PhotoFrame } from "../primitives/PhotoFrame";
+import { FullBleedPhoto } from "../primitives/FullBleedPhoto";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
@@ -55,39 +55,42 @@ function ShareButton() {
   );
 }
 
+// 사진 레이아웃은 메인과 같은 전면 사진이다 — 캔버스 가로를 꽉 채우고 밝기·투명도를 조절한다.
 export function ClosingSection({ section, index }: { section: ClosingSectionData; index: number }) {
-  const { resolveAsset, theme } = useRenderer();
+  const { resolveAsset } = useRenderer();
   const { content, layout } = section;
   const withPhoto = layout.variant === "photo" && content.photoAssetId !== null;
-  const asset =
-    withPhoto && content.photoAssetId !== null ? resolveAsset(content.photoAssetId) : null;
 
   return (
-    <SectionShell section={section} index={index}>
+    <SectionShell section={section} index={index} bleed={withPhoto}>
       <div className="flex flex-col items-center text-center">
-        <SectionHeader label="THANK YOU" title={content.title} index={index} />
-        {withPhoto && (
-          <PhotoFrame
-            asset={asset}
-            alt="마무리 사진"
-            shape="soft"
-            aspectRatio="4 / 3"
-            sizes="382px"
-            frame={content.photoFrame}
-            treatment={theme.variants.photoTreatment}
-            className="mt-8 w-full"
-          />
-        )}
-        {content.body !== "" && (
+        <div className={withPhoto ? "w-full px-6" : "w-full"}>
+          <SectionHeader label="THANK YOU" title={content.title} index={index} />
+        </div>
+        {withPhoto && content.photoAssetId !== null && (
           <div className="mt-8 w-full">
-            <BodyText text={content.body} />
+            <FullBleedPhoto
+              asset={resolveAsset(content.photoAssetId)}
+              alt="마무리 사진"
+              aspect={content.photoAspect}
+              effects={content.effects}
+              frame={content.photoFrame}
+              fadeColor={section.style.background ?? "var(--canvas-paper)"}
+            />
           </div>
         )}
-        {content.showShare && (
-          <div className="mt-8">
-            <ShareButton />
-          </div>
-        )}
+        <div className={withPhoto ? "w-full px-6" : "w-full"}>
+          {content.body !== "" && (
+            <div className="mt-8 w-full">
+              <BodyText text={content.body} />
+            </div>
+          )}
+          {content.showShare && (
+            <div className="mt-8">
+              <ShareButton />
+            </div>
+          )}
+        </div>
       </div>
     </SectionShell>
   );

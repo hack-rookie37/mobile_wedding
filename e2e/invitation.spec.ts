@@ -12,7 +12,7 @@ test("첫 vertical slice 여정과 스크린샷", async ({ page }) => {
   const projectId = new URL(page.url()).pathname.split("/").pop()!;
 
   const preview = page.locator("[data-invitation-root]");
-  await expect(preview.getByRole("heading", { name: /김민준.*이서연/ })).toBeVisible();
+  await expect(preview.getByRole("heading", { name: /이정훈.*양은진/ })).toBeVisible();
 
   // Greeting 텍스트 편집 → 미리보기 즉시 반영
   await page.getByRole("button", { name: "인사말", exact: true }).click();
@@ -31,12 +31,12 @@ test("첫 vertical slice 여정과 스크린샷", async ({ page }) => {
   // 기본 정보(전역 wedding 데이터) 편집 → Hero에 반영
   await page.getByRole("button", { name: "기본 정보" }).click();
   await page.getByLabel("이름", { exact: true }).first().fill("김도윤");
-  await expect(preview.getByRole("heading", { name: /김도윤.*이서연/ })).toBeVisible();
+  await expect(preview.getByRole("heading", { name: /김도윤.*양은진/ })).toBeVisible();
 
   // 자동 저장(1.5s 디바운스) 후 새로고침 복원
   await expect(page.getByText("저장됨")).toBeVisible({ timeout: 5000 });
   await page.reload();
-  await expect(preview.getByRole("heading", { name: /김도윤.*이서연/ })).toBeVisible();
+  await expect(preview.getByRole("heading", { name: /김도윤.*양은진/ })).toBeVisible();
   await expect(preview.getByText("저희 두 사람, 이제 한 길을 함께 걷습니다.")).toBeVisible();
 
   // 섹션 순서 변경: 갤러리를 인사말 위로 드래그 (top edge를 노려 상단 좌표로 드롭)
@@ -57,8 +57,8 @@ test("첫 vertical slice 여정과 스크린샷", async ({ page }) => {
   // public preview (390×844, 같은 renderer)
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(`/preview/${projectId}`);
-  await expect(page.getByRole("heading", { name: /김도윤.*이서연/ })).toBeVisible();
-  await expect(page.getByText("라온컨벤션", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /김도윤.*양은진/ })).toBeVisible();
+  await expect(page.getByText("공군호텔", { exact: true })).toBeVisible();
   await page.screenshot({ path: "screenshots/public-390x844.png" });
   await page.screenshot({ path: "screenshots/public-390-full.png", fullPage: true });
 });

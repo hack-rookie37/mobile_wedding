@@ -10,7 +10,7 @@ const input = (instruction: string) => ({
 });
 
 describe("MockAiProvider — 결정적 테스트 provider", () => {
-  it("예시 요청이 hero variant·여백·갤러리 variant·테마 변경으로 변환되고 검증을 통과한다", async () => {
+  it("예시 요청이 hero 내용·여백·갤러리 variant·테마 변경으로 변환되고 검증을 통과한다", async () => {
     const doc = createSampleDocument();
     const raw = await new MockAiProvider().propose({
       instruction: "첫 화면을 더 미니멀하게 하고 갤러리를 따뜻한 필름 느낌으로 바꿔줘.",
@@ -18,7 +18,7 @@ describe("MockAiProvider — 결정적 테스트 provider", () => {
     });
     const proposal = validateAiProposal(doc, raw);
     expect(proposal.actions.map((a) => a.type)).toEqual([
-      "setSectionVariant",
+      "updateSectionContent",
       "updateSectionSettings",
       "setSectionVariant",
       "setTheme",

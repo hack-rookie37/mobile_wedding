@@ -59,42 +59,13 @@ export function HeroForm({ section }: { section: HeroSection }) {
             slot: { kind: "heroPhoto" },
           })
         }
-      >
-        {section.layout.variant === "textOnly" && content.photoAssetId !== null && (
-          <p className="mt-2 text-[11px] leading-[1.5] text-tool-ink-faint">
-            ‘텍스트만’ 레이아웃에서는 사진이 표시되지 않습니다.
-          </p>
-        )}
-      </PhotoPickField>
-
-      {section.layout.variant === "photoFull" && (
-        <>
-          <SegmentedField
-            label="사진 세로 길이"
-            value={content.photoAspect}
-            options={[
-              { value: "1/1", label: "1:1" },
-              { value: "4/5", label: "4:5" },
-              { value: "3/4", label: "3:4" },
-              { value: "9/16", label: "9:16" },
-            ]}
-            onChange={(photoAspect) => patch({ photoAspect })}
-          />
-          <ToggleField
-            label="사진 하단 페이드아웃"
-            checked={content.fadeBottom}
-            onChange={(fadeBottom) => patch({ fadeBottom })}
-          />
-        </>
-      )}
+      />
 
       {content.photoAssetId !== null && (
         <FrameEditor
           asset={asset}
           frame={content.photoFrame}
-          aspectRatio={
-            section.layout.variant === "photoFull" ? PHOTO_ASPECT_CSS[content.photoAspect] : "4 / 5"
-          }
+          aspectRatio={PHOTO_ASPECT_CSS[content.photoAspect]}
           onChange={(photoFrame) => patch({ photoFrame })}
         />
       )}
@@ -111,7 +82,10 @@ export function HeroForm({ section }: { section: HeroSection }) {
           onChange={(showVenue) => patch({ showVenue })}
         />
       </div>
-      <PhaseNote>이름과 예식 정보는 왼쪽 ‘기본 정보’에서 수정합니다.</PhaseNote>
+      <PhaseNote>
+        이름과 예식 정보는 왼쪽 ‘기본 정보’에서 수정합니다. 사진 세로 길이와 페이드아웃·반짝임 같은
+        연출은 ‘레이아웃’ 탭에 있습니다.
+      </PhaseNote>
     </div>
   );
 }
@@ -367,7 +341,7 @@ export function ClosingForm({ section }: { section: ClosingSection }) {
         <FrameEditor
           asset={asset}
           frame={content.photoFrame}
-          aspectRatio="4 / 3"
+          aspectRatio={PHOTO_ASPECT_CSS[content.photoAspect]}
           onChange={(photoFrame) => patch({ photoFrame })}
         />
       )}
