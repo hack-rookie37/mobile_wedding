@@ -7,6 +7,7 @@ export function referencedAssetIds(doc: InvitationDocument): Set<string> {
   const add = (assetId: string | null) => {
     if (assetId !== null) ids.add(assetId);
   };
+  add(doc.music.assetId); // 배경음악
   for (const section of doc.sections) {
     if (section.type === "hero" || section.type === "closing") {
       add(section.content.photoAssetId);

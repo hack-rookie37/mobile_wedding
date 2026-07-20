@@ -83,6 +83,7 @@ export function AssetLibraryProvider({
     (assetId) => {
       const asset = byId.get(assetId);
       if (!asset) return null; // 누락 asset — renderer가 placeholder로 표시
+      if (asset.record.kind !== "image") return null; // 오디오는 <img> 해석 대상이 아니다
       return {
         src: asset.fullUrl,
         srcSet:

@@ -61,11 +61,13 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
   //  * calendar content에 ddayStyle 추가 — 기존 문서도 실시간 카운트다운으로 전환한다
   //    (요청된 표시 개선 — 배지로 되돌리려면 편집기에서 선택)
   //  * gallery content에 photoAspect 추가 (strip variant 전용 — 기존 variant에서는 무시)
+  //  * 최상위 music 추가 (배경음악 — 기존 문서는 없음)
   5: (raw) => {
     const doc = raw as { sections?: Array<{ type?: unknown; content?: object }> };
     return {
       ...(raw as object),
       schemaVersion: 6,
+      music: { assetId: null },
       sections: (doc.sections ?? []).map((section) => {
         if (section.type === "hero") {
           return {

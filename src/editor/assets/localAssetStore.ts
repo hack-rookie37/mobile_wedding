@@ -7,7 +7,12 @@ import type {
   UploadOutcome,
 } from "@/invitation/assets/assetTypes";
 import { decodeImage, makeThumbnail, sha256Hex } from "@/invitation/assets/imageProcessing";
-import { lowResolutionWarning, validateUploadFile } from "@/invitation/assets/uploadPolicy";
+import {
+  ALLOWED_AUDIO_TYPES,
+  lowResolutionWarning,
+  validateAudioFile,
+  validateUploadFile,
+} from "@/invitation/assets/uploadPolicy";
 import { BUILTIN_ASSETS } from "./builtinAssets";
 
 // Phase 5 로컬 개발용 AssetStore — 원본·썸네일 Blob을 IndexedDB에 저장한다.
@@ -57,6 +62,12 @@ async function withStore<T>(
   }
 }
 
+// kind 도입(BGM) 전에 저장된 로컬 행은 kind가 없다 — 전부 이미지였으므로 읽을 때 보정한다
+function normalizeRow(row: StoredRow): StoredRow {
+  if ("kind" in row.record) return row;
+  return { ...row, record: { ...(row.record as object), kind: "image" } as AssetRecord };
+}
+
 export class LocalAssetStore implements AssetStore {
   // asset당 object URL은 한 번만 만들고 세션 동안 재사용한다
   private urls = new Map<string, { fullUrl: string; thumbUrl: string | null }>();
@@ -64,6 +75,7 @@ export class LocalAssetStore implements AssetStore {
   async list(): Promise<StoredAsset[]> {
     const rows = await withStore<StoredRow[]>("readonly", (store) => store.getAll());
     const uploaded = rows
+      .map(normalizeRow) // kind 도입 전 로컬 행은 전부 이미지였다
       .sort((a, b) => b.record.createdAt.localeCompare(a.record.createdAt))
       .map((row) => this.toStored(row));
     return [...uploaded, ...BUILTIN_ASSETS];
@@ -71,16 +83,39 @@ export class LocalAssetStore implements AssetStore {
 
   async upload(file: File, { onProgress }: UploadOptions = {}): Promise<UploadOutcome> {
     onProgress?.(0.05);
-    validateUploadFile(file);
+    const isAudio = file.type in ALLOWED_AUDIO_TYPES;
+    if (isAudio) validateAudioFile(file);
+    else validateUploadFile(file);
     const contentHash = await sha256Hex(await file.arrayBuffer());
     onProgress?.(0.3);
 
     // 중복 파일: 같은 내용(hash)이 이미 있으면 저장하지 않고 기존 asset을 반환한다
     const rows = await withStore<StoredRow[]>("readonly", (store) => store.getAll());
-    const existing = rows.find((row) => row.record.contentHash === contentHash);
+    const existing = rows.map(normalizeRow).find((row) => row.record.contentHash === contentHash);
     if (existing) {
       onProgress?.(1);
       return { asset: this.toStored(existing), duplicate: true, warnings: [] };
+    }
+
+    if (isAudio) {
+      // 오디오: 디코드·썸네일 없음
+      const row: StoredRow = {
+        record: {
+          kind: "audio",
+          id: nanoid(12),
+          filename: file.name,
+          mimeType: file.type,
+          size: file.size,
+          contentHash,
+          createdAt: new Date().toISOString(),
+          builtin: false,
+        },
+        original: file,
+        thumbnail: null,
+      };
+      await withStore("readwrite", (store) => store.put(row));
+      onProgress?.(1);
+      return { asset: this.toStored(row), duplicate: false, warnings: [] };
     }
 
     const bitmap = await decodeImage(file);
@@ -90,6 +125,7 @@ export class LocalAssetStore implements AssetStore {
 
     const row: StoredRow = {
       record: {
+        kind: "image",
         id: nanoid(12),
         filename: file.name,
         mimeType: file.type,

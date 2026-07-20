@@ -132,6 +132,71 @@ describe("asset ownership", () => {
   });
 });
 
+describe("오디오 asset (배경음악, kind 도입)", () => {
+  it("mp3 업로드가 버킷 mime에 허용되고, 오디오 행은 치수 없이 저장된다", async () => {
+    const projectId = await createProject(userA);
+    const assetId = crypto.randomUUID();
+    const path = `projects/${projectId}/${assetId}.mp3`;
+    const tinyMp3 = Buffer.from([0xff, 0xfb, 0x90, 0x00, ...Array(64).fill(0)]);
+
+    const upload = await userA.storage
+      .from("photos")
+      .upload(path, tinyMp3, { contentType: "audio/mpeg" });
+    expect(upload.error).toBeNull();
+
+    const inserted = await userA.from("project_assets").insert({
+      id: assetId,
+      project_id: projectId,
+      kind: "audio",
+      filename: "bgm.mp3",
+      mime_type: "audio/mpeg",
+      bytes: tinyMp3.byteLength,
+      width: null,
+      height: null,
+      content_hash: `audio-${assetId}`,
+      storage_path: path,
+      thumb_path: null,
+    });
+    expect(inserted.error).toBeNull();
+  });
+
+  it("어중간한 행은 거부된다 — 치수 있는 오디오·치수 없는 이미지 (DB 제약)", async () => {
+    const projectId = await createProject(userA);
+    const base = {
+      project_id: projectId,
+      filename: "x",
+      mime_type: "audio/mpeg",
+      bytes: 1,
+      content_hash: crypto.randomUUID(),
+      storage_path: `projects/${projectId}/x.mp3`,
+      thumb_path: null,
+    };
+    const audioWithDims = await userA
+      .from("project_assets")
+      .insert({ ...base, id: crypto.randomUUID(), kind: "audio", width: 100, height: 100 });
+    expect(audioWithDims.error?.message).toMatch(/dims_check/);
+    const imageWithoutDims = await userA.from("project_assets").insert({
+      ...base,
+      id: crypto.randomUUID(),
+      kind: "image",
+      content_hash: crypto.randomUUID(),
+      width: null,
+      height: null,
+    });
+    expect(imageWithoutDims.error?.message).toMatch(/dims_check/);
+  });
+
+  it("허용 밖 오디오 mime(ogg)은 버킷이 거부한다", async () => {
+    const projectId = await createProject(userA);
+    const upload = await userA.storage
+      .from("photos")
+      .upload(`projects/${projectId}/x.ogg`, Buffer.from([1, 2, 3]), {
+        contentType: "audio/ogg",
+      });
+    expect(upload.error).not.toBeNull();
+  });
+});
+
 describe("save_document 낙관적 동시성", () => {
   it("stale rev 저장은 conflict를 반환하고 문서를 덮어쓰지 않는다", async () => {
     const projectId = await createProject(userA);
@@ -452,7 +517,14 @@ describe("발행 수명주기 (Phase 7)", () => {
     // asset manifest는 공개 URL만 — 내부 storage 경로 필드는 없다
     const assets = (record.data as { assets: Record<string, unknown>[] }).assets;
     for (const entry of assets) {
-      expect(Object.keys(entry).sort()).toEqual(["height", "id", "thumbUrl", "url", "width"]);
+      expect(Object.keys(entry).sort()).toEqual([
+        "height",
+        "id",
+        "kind",
+        "thumbUrl",
+        "url",
+        "width",
+      ]);
     }
     // anon은 revisions 테이블 자체에 접근 불가
     expectNoRows(await anon.from("revisions").select("*").eq("project_id", projectId));

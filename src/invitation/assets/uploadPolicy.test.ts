@@ -5,6 +5,7 @@ import {
   lowResolutionWarning,
   MAX_UPLOAD_BYTES,
   MIN_RECOMMENDED_WIDTH,
+  validateAudioFile,
   validateUploadFile,
 } from "./uploadPolicy";
 
@@ -45,5 +46,28 @@ describe("formatBytes", () => {
     expect(formatBytes(512)).toBe("512B");
     expect(formatBytes(2048)).toBe("2KB");
     expect(formatBytes(10 * 1024 * 1024)).toBe("10.0MB");
+  });
+});
+
+describe("validateAudioFile", () => {
+  it("MP3·M4A만 허용하고 이미지·기타 형식은 거부한다", () => {
+    expect(() =>
+      validateAudioFile({ type: "audio/mpeg", size: 1024, name: "bgm.mp3" }),
+    ).not.toThrow();
+    expect(() =>
+      validateAudioFile({ type: "audio/mp4", size: 1024, name: "bgm.m4a" }),
+    ).not.toThrow();
+    expect(() => validateAudioFile({ type: "audio/ogg", size: 1024, name: "bgm.ogg" })).toThrow(
+      /지원하지 않는 음악 파일 형식/,
+    );
+    expect(() => validateAudioFile({ type: "image/png", size: 1024, name: "a.png" })).toThrow(
+      /지원하지 않는 음악 파일 형식/,
+    );
+  });
+
+  it("10MB 초과는 거부한다", () => {
+    expect(() =>
+      validateAudioFile({ type: "audio/mpeg", size: MAX_UPLOAD_BYTES + 1, name: "big.mp3" }),
+    ).toThrow(/파일이 너무 큽니다/);
   });
 });

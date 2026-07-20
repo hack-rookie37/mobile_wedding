@@ -7,7 +7,12 @@ import type {
   UploadOutcome,
 } from "@/invitation/assets/assetTypes";
 import { decodeImage, makeThumbnail, sha256Hex } from "@/invitation/assets/imageProcessing";
-import { lowResolutionWarning, validateUploadFile } from "@/invitation/assets/uploadPolicy";
+import {
+  ALLOWED_AUDIO_TYPES,
+  lowResolutionWarning,
+  validateAudioFile,
+  validateUploadFile,
+} from "@/invitation/assets/uploadPolicy";
 import { referencedAssetIds } from "@/invitation/lib/assetRefs";
 import { migrateDocument } from "@/invitation/schema/migrate";
 import { PHOTOS_BUCKET, storagePublicUrl } from "./assetManifest";
@@ -18,15 +23,18 @@ const EXTENSIONS: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
+  "audio/mpeg": "mp3",
+  "audio/mp4": "m4a",
 };
 
 interface AssetRow {
   id: string;
+  kind: "image" | "audio";
   filename: string;
   mime_type: string;
   bytes: number;
-  width: number;
-  height: number;
+  width: number | null; // 오디오는 null (DB 제약과 동일)
+  height: number | null;
   content_hash: string;
   storage_path: string;
   thumb_path: string | null;
@@ -44,17 +52,19 @@ export class SupabaseAssetStore implements AssetStore {
   ) {}
 
   private toStored(row: AssetRow): StoredAsset {
-    const record: AssetRecord = {
+    const common = {
       id: row.id,
       filename: row.filename,
       mimeType: row.mime_type,
       size: row.bytes,
-      width: row.width,
-      height: row.height,
       contentHash: row.content_hash,
       createdAt: row.created_at,
       builtin: false,
     };
+    const record: AssetRecord =
+      row.kind === "audio"
+        ? { kind: "audio", ...common }
+        : { kind: "image", ...common, width: row.width ?? 1, height: row.height ?? 1 };
     return {
       record,
       fullUrl: storagePublicUrl(this.client, row.storage_path),
@@ -74,7 +84,9 @@ export class SupabaseAssetStore implements AssetStore {
 
   async upload(file: File, { onProgress }: UploadOptions = {}): Promise<UploadOutcome> {
     onProgress?.(0.05);
-    validateUploadFile(file);
+    const isAudio = file.type in ALLOWED_AUDIO_TYPES;
+    if (isAudio) validateAudioFile(file);
+    else validateUploadFile(file);
     const contentHash = await sha256Hex(await file.arrayBuffer());
     onProgress?.(0.2);
 
@@ -91,12 +103,19 @@ export class SupabaseAssetStore implements AssetStore {
       return { asset: this.toStored(existing.data as AssetRow), duplicate: true, warnings: [] };
     }
 
-    const bitmap = await decodeImage(file);
-    onProgress?.(0.35);
-    const thumbnail = await makeThumbnail(bitmap, file.type);
-    const warning = lowResolutionWarning(bitmap.width);
-    const { width, height } = bitmap;
-    bitmap.close();
+    // 오디오는 디코드·썸네일 없음 — 치수는 null (DB 제약)
+    let width: number | null = null;
+    let height: number | null = null;
+    let thumbnail: Blob | null = null;
+    let warning: string | null = null;
+    if (!isAudio) {
+      const bitmap = await decodeImage(file);
+      onProgress?.(0.35);
+      thumbnail = await makeThumbnail(bitmap, file.type);
+      warning = lowResolutionWarning(bitmap.width);
+      ({ width, height } = bitmap);
+      bitmap.close();
+    }
 
     // 경로는 내용 주소(content hash) — 파일 업로드 후 행 기록 전에 실패해도
     // 재시도가 같은 경로에 덮어쓰므로(upsert) 고아 파일이 남지 않는다
@@ -128,6 +147,7 @@ export class SupabaseAssetStore implements AssetStore {
 
     const row: AssetRow = {
       id: assetId,
+      kind: isAudio ? "audio" : "image",
       filename: file.name,
       mime_type: file.type,
       bytes: file.size,
@@ -170,7 +190,7 @@ export class SupabaseAssetStore implements AssetStore {
       const publishedDoc = migrateDocument(published.data.doc);
       if (referencedAssetIds(publishedDoc).has(assetId)) {
         throw new AssetStorageError(
-          "발행된 청첩장에서 사용 중인 사진입니다 — 발행을 중단하거나, 사진을 빼고 재발행한 뒤 삭제할 수 있습니다",
+          "발행된 청첩장에서 사용 중인 파일입니다 — 발행을 중단하거나, 해당 파일을 빼고 재발행한 뒤 삭제할 수 있습니다",
         );
       }
     }

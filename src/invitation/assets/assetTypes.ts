@@ -5,17 +5,36 @@ import { z } from "zod";
 // 청첩장 JSON에는 assetId와 표시용 metadata(alt·caption·frame)만 저장한다.
 // UI는 이 인터페이스만 알며, 저장 구현(IndexedDB → Supabase Storage)은 교체 가능하다.
 
-export const assetRecordSchema = z.object({
-  id: z.string().min(1),
-  filename: z.string().min(1),
-  mimeType: z.string().min(1),
-  size: z.number().int().min(0), // bytes
-  width: z.number().int().min(1),
-  height: z.number().int().min(1),
-  contentHash: z.string().min(1), // SHA-256 hex — 같은 내용의 중복 업로드 감지
-  createdAt: z.iso.datetime(),
-  builtin: z.boolean(), // 기본 제공 샘플 여부 (삭제 불가)
-});
+// 종류별 치수 규칙: 이미지는 필수, 오디오는 없음 (DB 제약과 동일 — 단일 소스는 이 스키마)
+export const assetKindSchema = z.enum(["image", "audio"]);
+
+export const assetRecordSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("image"),
+    id: z.string().min(1),
+    filename: z.string().min(1),
+    mimeType: z.string().min(1),
+    size: z.number().int().min(0), // bytes
+    width: z.number().int().min(1),
+    height: z.number().int().min(1),
+    contentHash: z.string().min(1), // SHA-256 hex — 같은 내용의 중복 업로드 감지
+    createdAt: z.iso.datetime(),
+    builtin: z.boolean(), // 기본 제공 샘플 여부 (삭제 불가)
+  }),
+  z.object({
+    kind: z.literal("audio"),
+    id: z.string().min(1),
+    filename: z.string().min(1),
+    mimeType: z.string().min(1),
+    size: z.number().int().min(0),
+    contentHash: z.string().min(1),
+    createdAt: z.iso.datetime(),
+    builtin: z.boolean(),
+  }),
+]);
+
+export type AssetKind = z.infer<typeof assetKindSchema>;
+export type ImageAssetRecord = Extract<z.infer<typeof assetRecordSchema>, { kind: "image" }>;
 
 export type AssetRecord = z.infer<typeof assetRecordSchema>;
 

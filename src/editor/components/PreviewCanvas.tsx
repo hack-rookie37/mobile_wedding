@@ -6,8 +6,13 @@ import { useAssetLibrary } from "../assets/AssetLibraryContext";
 import { useEditor, useEditorStoreHandle } from "../EditorStoreContext";
 
 export function PreviewCanvas() {
-  const { resolveAsset } = useAssetLibrary();
+  const { resolveAsset, assets } = useAssetLibrary();
   const doc = useEditor((s) => s.doc);
+  const musicAssetId = doc.music.assetId;
+  const musicUrl =
+    musicAssetId !== null
+      ? (assets.find((a) => a.record.id === musicAssetId)?.fullUrl ?? null)
+      : null;
   const selected = useEditor((s) => s.selected);
   const width = useEditor((s) => s.previewWidth);
   const mode = useEditor((s) => s.previewMode);
@@ -53,6 +58,7 @@ export function PreviewCanvas() {
             doc={doc}
             mode={editMode ? "editor-edit" : "published"}
             resolveAsset={resolveAsset}
+            musicUrl={musicUrl}
             selectedSectionId={editMode ? selectedSectionId : null}
             onSectionSelect={
               editMode

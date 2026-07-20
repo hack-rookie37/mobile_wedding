@@ -37,6 +37,7 @@ export function createSampleDocument(): InvitationDocument {
       },
     },
     theme: { id: "warm-editorial" },
+    music: { assetId: null },
     sections: [
       {
         id: nanoid(),

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { resolveBuiltinAsset } from "@/editor/assets/builtinAssets";
-import { manifestResolver, type PublicAssetEntry } from "@/invitation/publicPayload";
+import { manifestResolver, musicUrlOf, type PublicAssetEntry } from "@/invitation/publicPayload";
 import type { InvitationDocument } from "@/invitation/schema/document";
 import { InvitationRenderer } from "@/renderer/InvitationRenderer";
 
@@ -23,6 +23,7 @@ export function PublicInvitationView({
   rsvpSlug?: string; // 발행된 공개 페이지만 전달 — 비공개 미리보기의 RSVP 폼은 제출 불가
 }) {
   const resolveAsset = useMemo(() => manifestResolver(manifest, resolveBuiltinAsset), [manifest]);
+  const musicUrl = useMemo(() => musicUrlOf({ doc, assets: manifest }), [doc, manifest]);
 
   return (
     <main className="flex min-h-dvh justify-center bg-[#eceae5]">
@@ -37,6 +38,7 @@ export function PublicInvitationView({
           mode="published"
           resolveAsset={resolveAsset}
           rsvpSlug={rsvpSlug}
+          musicUrl={musicUrl}
         />
         {shareTitle !== undefined && <ShareBar title={shareTitle} />}
       </div>

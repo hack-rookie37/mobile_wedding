@@ -6,6 +6,12 @@ export const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   "image/webp": "WebP",
 };
 
+// 배경음악 — 모바일 브라우저가 보편 지원하는 형식만 (버킷 mime 제한과 동일 목록)
+export const ALLOWED_AUDIO_TYPES: Record<string, string> = {
+  "audio/mpeg": "MP3",
+  "audio/mp4": "M4A",
+};
+
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
 export const MIN_RECOMMENDED_WIDTH = 800; // px — 미만이면 저해상도 경고 (거부 아님)
 export const THUMBNAIL_WIDTH = 640; // px — 그리드 표시용 파생 이미지 폭
@@ -17,6 +23,19 @@ export function validateUploadFile(file: { type: string; size: number; name: str
   if (!(file.type in ALLOWED_IMAGE_TYPES)) {
     throw new AssetValidationError(
       `지원하지 않는 파일 형식입니다: ${file.name} — ${Object.values(ALLOWED_IMAGE_TYPES).join("·")}만 업로드할 수 있습니다`,
+    );
+  }
+  if (file.size > MAX_UPLOAD_BYTES) {
+    throw new AssetValidationError(
+      `파일이 너무 큽니다: ${file.name} (${formatBytes(file.size)}) — 최대 ${formatBytes(MAX_UPLOAD_BYTES)}`,
+    );
+  }
+}
+
+export function validateAudioFile(file: { type: string; size: number; name: string }): void {
+  if (!(file.type in ALLOWED_AUDIO_TYPES)) {
+    throw new AssetValidationError(
+      `지원하지 않는 음악 파일 형식입니다: ${file.name} — ${Object.values(ALLOWED_AUDIO_TYPES).join("·")}만 업로드할 수 있습니다`,
     );
   }
   if (file.size > MAX_UPLOAD_BYTES) {

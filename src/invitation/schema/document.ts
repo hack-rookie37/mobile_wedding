@@ -338,6 +338,12 @@ export const SECTION_LAYOUT_SCHEMAS = {
   closing: closingSectionSchema.shape.layout,
 } as const;
 
+// ── 배경음악 — 문서에는 asset 참조만 (ADR-016). 재생 on/off는 게스트가 화면에서 조작한다.
+
+export const musicSchema = z.object({
+  assetId: z.string().nullable(), // null = 배경음악 없음
+});
+
 // ── 문서
 
 export const documentSchema = z
@@ -345,6 +351,7 @@ export const documentSchema = z
     schemaVersion: z.literal(6),
     wedding: weddingSchema,
     theme: themeSchema,
+    music: musicSchema,
     sections: z.array(sectionSchema).min(1),
   })
   .superRefine((doc, ctx) => {
@@ -378,6 +385,7 @@ export type Person = z.infer<typeof personSchema>;
 export type Wedding = z.infer<typeof weddingSchema>;
 export type ThemeId = z.infer<typeof themeIdSchema>;
 export type Theme = z.infer<typeof themeSchema>;
+export type Music = z.infer<typeof musicSchema>;
 export type SectionStyle = z.infer<typeof sectionStyleSchema>;
 export type PhotoFrame = z.infer<typeof photoFrameSchema>;
 export type PhotoAspect = z.infer<typeof photoAspectSchema>;

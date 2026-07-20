@@ -159,8 +159,12 @@ describe("migrateDocument", () => {
   it("v5 → v6: hero에 photoAspect·fadeBottom, calendar에 ddayStyle이 주입된다 (기존 콘텐츠 보존)", () => {
     const base = createSampleDocument();
     const V6_FIELDS = ["photoAspect", "fadeBottom", "ddayStyle", "mapImageAssetId"];
+    // v5 문서에는 music이 없었다
+    const baseWithoutMusic = Object.fromEntries(
+      Object.entries(base).filter(([k]) => k !== "music"),
+    );
     const v5 = {
-      ...base,
+      ...baseWithoutMusic,
       schemaVersion: 5,
       // v5 문서에는 v6 신규 필드가 없었고, rsvp variant는 "default"뿐이었다
       sections: base.sections.map((s) => ({
@@ -193,6 +197,7 @@ describe("migrateDocument", () => {
     const rsvp = migrated.sections.find((s) => s.type === "rsvp");
     if (rsvp?.type !== "rsvp") throw new Error("rsvp가 없습니다");
     expect(rsvp.layout.variant).toBe("sheet"); // default → sheet 개명
+    expect(migrated.music).toEqual({ assetId: null }); // 배경음악 슬롯 신설
   });
 
   it("v3 → v4: venue에 showMapButtons가 추가된다 (기존 note 보존)", () => {

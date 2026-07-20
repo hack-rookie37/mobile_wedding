@@ -251,6 +251,11 @@ function mutate(
       break;
     }
 
+    case "setMusic": {
+      draft.music.assetId = action.assetId;
+      break;
+    }
+
     case "updateWedding": {
       Object.assign(draft.wedding, action.patch);
       break;

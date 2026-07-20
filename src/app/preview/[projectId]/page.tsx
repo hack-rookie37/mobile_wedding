@@ -14,8 +14,19 @@ import { useDeferredLoad } from "@/ui/useDeferredLoad";
 // 소유자용 draft 미리보기 (세션 필수 — middleware가 보호).
 // 게스트에게 공유하는 공개 페이지는 발행 후 /i/[slug]다 (ADR-012).
 function PreviewBody({ doc }: { doc: InvitationDocument }) {
-  const { resolveAsset } = useAssetLibrary();
-  return <InvitationRenderer doc={doc} mode="published" resolveAsset={resolveAsset} />;
+  const { resolveAsset, assets } = useAssetLibrary();
+  const musicUrl =
+    doc.music.assetId !== null
+      ? (assets.find((a) => a.record.id === doc.music.assetId)?.fullUrl ?? null)
+      : null;
+  return (
+    <InvitationRenderer
+      doc={doc}
+      mode="published"
+      resolveAsset={resolveAsset}
+      musicUrl={musicUrl}
+    />
+  );
 }
 
 export default function PreviewPage({ params }: { params: Promise<{ projectId: string }> }) {

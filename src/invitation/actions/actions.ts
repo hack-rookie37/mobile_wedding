@@ -93,6 +93,12 @@ export const updateWeddingActionSchema = z.object({
   patch: weddingSchema.partial(),
 });
 
+// 배경음악 지정·해제 — AI allowlist에 넣지 않는다 (오디오는 사용자가 직접 고른다)
+export const setMusicActionSchema = z.object({
+  type: z.literal("setMusic"),
+  assetId: z.string().min(1).nullable(),
+});
+
 // 갤러리 사진 한 장 이동 — 드래그·키보드·메뉴가 같은 action을 쓴다.
 // 연속 이동이 undo 1스텝으로 뭉치지 않도록 coalescing 대상이 아니다.
 export const moveGalleryPhotoActionSchema = z.object({
@@ -151,6 +157,7 @@ const documentActionSchemas = [
   updateSectionSettingsActionSchema,
   setSectionVariantActionSchema,
   setThemeActionSchema,
+  setMusicActionSchema,
   updateWeddingActionSchema,
   assignAssetActionSchema,
   removeAssetReferenceActionSchema,

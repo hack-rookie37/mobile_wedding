@@ -55,5 +55,9 @@ export function remapAssetIds(
     }
   };
 
-  return { ...doc, sections: doc.sections.map(mapSection) };
+  return {
+    ...doc,
+    music: { ...doc.music, assetId: mapId(doc.music.assetId) },
+    sections: doc.sections.map(mapSection),
+  };
 }

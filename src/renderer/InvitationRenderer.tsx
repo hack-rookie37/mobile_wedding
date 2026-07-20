@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import type { ResolveAsset } from "@/invitation/assets/assetTypes";
 import type { InvitationDocument, Section, Wedding } from "@/invitation/schema/document";
 import { THEMES } from "@/invitation/schema/themes";
+import { MusicToggle } from "./MusicToggle";
 import { RendererProvider, type RendererMode } from "./RendererContext";
 import { CalendarSection } from "./sections/CalendarSection";
 import { ClosingSection } from "./sections/ClosingSection";
@@ -63,6 +64,8 @@ export interface InvitationRendererProps {
   onSectionSelect?: (sectionId: string) => void;
   // 발행된 공개 페이지(/i/[slug])만 전달한다 — 그 외 화면의 RSVP 폼은 제출 불가 상태
   rsvpSlug?: string;
+  // 배경음악 파일 URL — 호스트(공개 페이지·미리보기·편집기)가 doc.music.assetId를 해석해 전달
+  musicUrl?: string | null;
 }
 
 // 편집기 미리보기와 공개 페이지가 공유하는 유일한 renderer (ADR-004).
@@ -75,6 +78,7 @@ export function InvitationRenderer({
   selectedSectionId = null,
   onSectionSelect,
   rsvpSlug,
+  musicUrl = null,
 }: InvitationRendererProps) {
   const theme = THEMES[doc.theme.id];
   const t = theme.tokens;
@@ -113,6 +117,7 @@ export function InvitationRenderer({
         className="w-full bg-(--canvas-paper) text-(--canvas-ink) antialiased"
         style={canvasVars}
       >
+        {musicUrl !== null && <MusicToggle url={musicUrl} />}
         {doc.sections
           .filter((section) => section.visible)
           .map((section, index) => (

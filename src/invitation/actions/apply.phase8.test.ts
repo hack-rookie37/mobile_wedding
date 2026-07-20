@@ -297,3 +297,19 @@ describe("variant 변경 시 content 보존 (Phase 8 섹션 전체)", () => {
     ).toThrow(/사용할 수 없는 variant/);
   });
 });
+
+describe("setMusic (배경음악)", () => {
+  it("음악을 지정·해제하고, 문서 참조 추적에 포함된다", async () => {
+    const { referencedAssetIds } = await import("../lib/assetRefs");
+    const doc = createSampleDocument();
+    expect(doc.music.assetId).toBeNull();
+
+    const set = applied(applyAction(doc, { type: "setMusic", assetId: "bgm-asset" }));
+    expect(set.doc.music.assetId).toBe("bgm-asset");
+    expect(referencedAssetIds(set.doc).has("bgm-asset")).toBe(true);
+
+    const cleared = applied(applyAction(set.doc, { type: "setMusic", assetId: null }));
+    expect(cleared.doc.music.assetId).toBeNull();
+    expect(referencedAssetIds(cleared.doc).has("bgm-asset")).toBe(false);
+  });
+});

@@ -10,13 +10,20 @@ import type { InvitationDocument } from "./schema/document";
 //  * asset: 공개 URL·치수만 — 내부 storage 경로·해시·파일명은 스키마가 거부한다
 // revision 이력·doc_rev·프로젝트 메타는 이 payload에 존재하지 않는다.
 
-export const publicAssetEntrySchema = z.object({
-  id: z.string().min(1),
-  url: z.string().min(1),
-  thumbUrl: z.string().nullable(),
-  width: z.number().int().min(1),
-  height: z.number().int().min(1),
-});
+export const publicAssetEntrySchema = z
+  .strictObject({
+    id: z.string().min(1),
+    kind: z.enum(["image", "audio"]),
+    url: z.string().min(1),
+    thumbUrl: z.string().nullable(),
+    width: z.number().int().min(1).nullable(), // 오디오는 null
+    height: z.number().int().min(1).nullable(),
+  })
+  .superRefine((entry, ctx) => {
+    if (entry.kind === "image" && (entry.width === null || entry.height === null)) {
+      ctx.addIssue({ code: "custom", message: "이미지 entry는 width/height가 필수입니다" });
+    }
+  });
 
 export type PublicAssetEntry = z.infer<typeof publicAssetEntrySchema>;
 
@@ -31,8 +38,14 @@ export function buildPublicPayload(rawDoc: unknown, rawAssets: unknown): PublicI
     // 숨긴 섹션은 내용째 제거한다 — 렌더에 안 쓰는 데이터(예: 숨긴 계좌·연락처)를
     // 게스트 응답에 실어 보내지 않는다 (hero는 숨길 수 없어 불변식이 유지된다)
     doc: { ...doc, sections: doc.sections.filter((section) => section.visible) },
-    // strict: 화이트리스트 밖 키(예: storagePath)가 섞여 있으면 통과가 아니라 실패 (fail fast)
-    assets: z.array(publicAssetEntrySchema.strict()).parse(rawAssets),
+    // strict: 화이트리스트 밖 키(예: storagePath)가 섞여 있으면 통과가 아니라 실패 (fail fast).
+    // kind 도입(BGM) 전 발행 스냅샷의 entry에는 kind가 없다 — 전부 이미지였으므로 보정한다.
+    assets: z.array(publicAssetEntrySchema).parse(
+      z
+        .array(z.looseObject({}))
+        .parse(rawAssets)
+        .map((entry) => ("kind" in entry ? entry : { ...entry, kind: "image" })),
+    ),
   };
 }
 
@@ -44,7 +57,10 @@ export function manifestResolver(
   const byId = new Map(manifest.map((entry) => [entry.id, entry]));
   return (assetId) => {
     const entry = byId.get(assetId);
-    if (!entry) return fallback(assetId);
+    // 오디오는 <img> 해석 대상이 아니다 — 이미지 슬롯에 잘못 참조돼도 placeholder로 표시
+    if (!entry || entry.kind !== "image" || entry.width === null || entry.height === null) {
+      return fallback(assetId);
+    }
     return {
       src: entry.url,
       srcSet:
@@ -55,6 +71,14 @@ export function manifestResolver(
       height: entry.height,
     };
   };
+}
+
+// 배경음악 URL — 문서의 music.assetId를 manifest에서 찾는다 (오디오 entry만 인정)
+export function musicUrlOf(payload: PublicInvitationPayload): string | null {
+  const assetId = payload.doc.music.assetId;
+  if (assetId === null) return null;
+  const entry = payload.assets.find((a) => a.id === assetId && a.kind === "audio");
+  return entry?.url ?? null;
 }
 
 // social metadata 파생 — 공개 페이지의 <meta> 구성용

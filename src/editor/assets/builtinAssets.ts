@@ -15,6 +15,7 @@ const BUILTIN_DEFS: { id: string; filename: string; width: number; height: numbe
 
 export const BUILTIN_ASSETS: StoredAsset[] = BUILTIN_DEFS.map((def) => ({
   record: {
+    kind: "image",
     id: def.id,
     filename: def.filename,
     mimeType: "image/svg+xml",
@@ -32,6 +33,6 @@ export const BUILTIN_ASSETS: StoredAsset[] = BUILTIN_DEFS.map((def) => ({
 // 업로드 asset이 필요 없는 화면(테마 비교·fixture)용 정적 해석기
 export function resolveBuiltinAsset(assetId: string): ResolvedAsset | null {
   const found = BUILTIN_ASSETS.find((asset) => asset.record.id === assetId);
-  if (!found) return null;
+  if (!found || found.record.kind !== "image") return null;
   return { src: found.fullUrl, width: found.record.width, height: found.record.height };
 }

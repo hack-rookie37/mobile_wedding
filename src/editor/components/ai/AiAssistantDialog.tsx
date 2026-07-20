@@ -89,11 +89,12 @@ export function AiAssistantDialog({
       projectId,
       instruction: trimmed,
       doc,
-      assets: assets.map(({ record }) => ({
-        id: record.id,
-        width: record.width,
-        height: record.height,
-      })),
+      // 사진 배치 제안용 메타 — 오디오(BGM)는 AI 제안 대상이 아니다
+      assets: assets.flatMap(({ record }) =>
+        record.kind === "image"
+          ? [{ id: record.id, width: record.width, height: record.height }]
+          : [],
+      ),
     })
       .then((proposal) => {
         setChecked(proposal.actions.map(() => true));

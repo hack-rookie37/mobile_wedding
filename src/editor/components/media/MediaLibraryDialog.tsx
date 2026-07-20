@@ -45,7 +45,9 @@ export function MediaLibraryDialog({
   mode: MediaPickMode;
   onClose: () => void;
 }) {
-  const { status, errorMessage, assets, upload, remove } = useAssetLibrary();
+  const { status, errorMessage, assets: allAssets, upload, remove } = useAssetLibrary();
+  // 사진 보관함은 이미지 전용 — 오디오(BGM)는 테마 패널의 배경음악 설정에서 다룬다
+  const assets = allAssets.filter((asset) => asset.record.kind === "image");
   const dispatch = useEditor((s) => s.dispatch);
   const doc = useEditor((s) => s.doc);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -353,6 +355,7 @@ function AssetTile({
   onConfirmDelete: () => void;
 }) {
   const { record } = asset;
+  if (record.kind !== "image") return null; // 목록에서 이미 걸러진다 — 타입 좁힘용 가드
   const lowRes = record.width < MIN_RECOMMENDED_WIDTH;
 
   return (
