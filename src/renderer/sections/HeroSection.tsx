@@ -12,6 +12,16 @@ import { roleStyle } from "../textRoles";
 // 사진 위 문구 — 사진 밖으로 흘러넘치지 않게 사진과 같은 칸에 겹쳐 놓는다.
 // 밝기·투명도(effects)를 먹은 사진 위에 그리되 글자는 그 필터를 받지 않는다:
 // 사진을 어둡게 깔고 글자는 또렷하게 두는 것이 이 문구를 쓰는 이유다.
+// 세기 하나가 진하기와 번짐을 함께 움직인다 — 40이 v12까지 못박혀 있던 '검정 40% · 10px'다.
+// 색에 알파를 8자리 hex로 붙인다: rgb로 풀어 쓰지 않아도 되고 사용자가 고른 색이 그대로 남는다.
+function textShadowOf(overlay: HeroOverlay): string | undefined {
+  if (!overlay.shadow) return undefined;
+  const alpha = Math.round((overlay.shadowStrength / 100) * 255)
+    .toString(16)
+    .padStart(2, "0");
+  return `0 1px ${overlay.shadowStrength / 4}px ${overlay.shadowColor}${alpha}`;
+}
+
 function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
   // top과 translateY에 같은 %를 주면 0%는 위쪽 끝, 100%는 아래쪽 끝에 딱 맞는다 —
   // top만 쓰면 100%에서 글자가 사진 밖으로 절반 넘어간다.
@@ -30,7 +40,7 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
             fontFamily: fontCssOf(overlay.font) ?? "var(--canvas-font-heading)",
             color: overlay.color,
             // 밝은 사진 위에서 읽히게 해 주지만, 어두운 사진에서는 없는 편이 깔끔하다
-            textShadow: overlay.shadow ? "0 1px 10px rgba(0,0,0,0.4)" : undefined,
+            textShadow: textShadowOf(overlay),
           }}
         >
           {overlay.text}

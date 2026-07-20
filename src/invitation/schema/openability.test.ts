@@ -42,13 +42,37 @@ function v11Document(overrides: { headingPt?: number; bodyPt?: number } = {}) {
       // 파생 pt는 전역뿐 아니라 섹션에서도 최솟값 아래로 떨어질 수 있다
       style.headingPt = overrides.headingPt ?? 12;
       style.bodyPt = overrides.bodyPt ?? 9;
-      // v11의 메인 사진 위 문구는 3단 위치였고 그림자 설정이 없었다
-      const { positionPct: _pct, shadow: _shadow, ...overlay } = section.content.overlay;
+      // v11의 메인 사진 위 문구는 3단 위치였고 그림자 설정이 하나도 없었다
+      const {
+        positionPct: _pct,
+        shadow: _shadow,
+        shadowColor: _shadowColor,
+        shadowStrength: _shadowStrength,
+        ...overlay
+      } = section.content.overlay;
       return {
         ...section,
         style,
         content: { ...section.content, overlay: { ...overlay, position: "bottom" } },
       };
+    }),
+  };
+}
+
+// v12에 저장돼 있던 문서 — 사진 위 문구의 위치·on/off는 있지만 그림자 색·세기가 없다.
+function v12Document() {
+  const doc = createSampleDocument();
+  return {
+    ...doc,
+    schemaVersion: 12,
+    sections: doc.sections.map((section) => {
+      if (section.type !== "hero") return section;
+      const {
+        shadowColor: _color,
+        shadowStrength: _strength,
+        ...overlay
+      } = section.content.overlay;
+      return { ...section, content: { ...section.content, overlay } };
     }),
   };
 }
@@ -69,6 +93,20 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
     if (greeting?.type !== "greeting") throw new Error("greeting이 없습니다");
     expect(greeting.style.text.heading.font).toBe("gowun-dodum");
     expect(greeting.style.text.body.color).toBe("#334455");
+  });
+
+  it("v12 문서가 열리고, 그때 보이던 그림자가 그대로다", () => {
+    const opened = migrateDocument(v12Document());
+    expect(opened.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+
+    const hero = opened.sections[0];
+    if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    // v12까지 그림자는 검정 40%로 못박혀 있었다 — 열었더니 모습이 달라지면 안 된다
+    expect(hero.content.overlay.shadowColor).toBe("#000000");
+    expect(hero.content.overlay.shadowStrength).toBe(40);
+    // 나머지 칸은 저장돼 있던 값 그대로 (기본값이 덮어쓰면 안 된다)
+    expect(hero.content.overlay.text).toBe("we're getting married");
+    expect(hero.content.overlay.positionPct).toBe(50);
   });
 
   // 파생 pt(눈썹 = 제목 × 0.55, 항목 제목 = 본문 × 0.9)는 원본이 작으면 최솟값 아래로
@@ -93,8 +131,10 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
 
   // 마이그레이션을 두 번 태워도 같은 문서가 나와야 한다 — 저장·재로드가 반복되는 자리다
   it("이미 열린 문서를 다시 태워도 그대로다", () => {
-    const opened = migrateDocument(v11Document());
-    expect(migrateDocument(opened)).toEqual(opened);
-    expect(documentSchema.safeParse(opened).success).toBe(true);
+    for (const stored of [v11Document(), v12Document()]) {
+      const opened = migrateDocument(stored);
+      expect(migrateDocument(opened)).toEqual(opened);
+      expect(documentSchema.safeParse(opened).success).toBe(true);
+    }
   });
 });

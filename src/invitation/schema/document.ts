@@ -178,6 +178,12 @@ export const photoEffectsSchema = z.object({
 // 메인 사진 위에 얹는 한 줄 ("we're getting married" 같은 문구).
 // 사진 아래 tagline과 달리 사진 위에 겹치므로 크기·글꼴·색을 따로 고른다 —
 // 전역 typography를 따르게 하면 사진마다 달라지는 균형을 맞출 수 없다.
+// 그림자 세기 — 진하기(알파)와 번짐(blur)을 한 숫자로 함께 움직인다.
+// 둘을 따로 고르게 하면 어울리는 조합을 사용자가 직접 찾아야 한다.
+// 0을 허용하지 않는 이유: 그건 '그림자 끄기'와 같은 말이고, 그 스위치는 이미 있다.
+export const SHADOW_STRENGTH_MIN = 5;
+export const SHADOW_STRENGTH_MAX = 100;
+
 export const heroOverlaySchema = z.object({
   text: z.string(), // 빈 문자열이면 아무것도 얹지 않는다
   // 사진 안에서의 세로 위치(%). 0이면 위쪽 끝, 100이면 아래쪽 끝에 붙는다 (가로는 항상 가운데).
@@ -187,9 +193,14 @@ export const heroOverlaySchema = z.object({
   sizePt: fontSizePtSchema,
   color: hexColorSchema,
   shadow: z.boolean(), // 사진 위 가독성용 그림자 — 어두운 사진에서는 없는 편이 깔끔하다
+  // 검정 그림자가 늘 답은 아니다: 밝은 글자에는 사진의 어두운 색, 어두운 글자에는
+  // 흰 그림자(테두리처럼 보인다)가 더 읽힌다.
+  shadowColor: hexColorSchema,
+  shadowStrength: z.number().min(SHADOW_STRENGTH_MIN).max(SHADOW_STRENGTH_MAX),
 });
 
 // 빈 문구 = 얹지 않음. 흰색은 사진 위에서 가장 자주 읽히는 색이다 (렌더러가 그림자를 함께 깐다).
+// 그림자 검정 40%는 v12까지 렌더러에 못박혀 있던 값이다 — 기본값이 그대로라 모습이 변하지 않는다.
 export const DEFAULT_HERO_OVERLAY = {
   text: "",
   positionPct: 50,
@@ -197,6 +208,8 @@ export const DEFAULT_HERO_OVERLAY = {
   sizePt: 14,
   color: "#ffffff",
   shadow: true,
+  shadowColor: "#000000",
+  shadowStrength: 40,
 } as const;
 
 // 섹션 제목과 그 위의 눈썹 라벨. 12개 섹션이 공유한다 — 같은 지식을 열두 번 적지 않는다.
@@ -528,7 +541,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(12),
+    schemaVersion: z.literal(13),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,

@@ -16,7 +16,7 @@ import {
   PT_MIN,
 } from "./themes";
 
-export const CURRENT_SCHEMA_VERSION = 12;
+export const CURRENT_SCHEMA_VERSION = 13;
 
 // v6의 글자 크기 3단계 → v7의 pt 값. 기존 배율(0.93·1·1.08)에 가장 가까운 정수 pt다.
 const V6_SCALE_TO_PT: Record<string, number> = { sm: 10, md: 11, lg: 12 };
@@ -436,6 +436,28 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
           },
         };
       }),
+    };
+  },
+  // v12 → v13: 메인 사진 위 문구의 그림자 색·세기를 고를 수 있게 한다 (ADR-037).
+  // v12까지 그림자는 '검정 40% · 번짐 10px'로 렌더러에 못박혀 있었고 기본값이 그 값이다 —
+  // 열었을 때 그림자 모습이 달라지지 않는다.
+  12: (raw) => {
+    const doc = raw as { sections?: Array<{ type?: unknown; content?: { overlay?: object } }> };
+    return {
+      ...(raw as object),
+      schemaVersion: 13,
+      sections: (doc.sections ?? []).map((section) =>
+        section.type !== "hero"
+          ? section
+          : {
+              ...section,
+              content: {
+                ...section.content,
+                // 빠진 칸만 기본값으로 채운다 — 이미 있는 값은 그대로 이긴다(두 번 태워도 같다)
+                overlay: { ...DEFAULT_HERO_OVERLAY, ...section.content?.overlay },
+              },
+            },
+      ),
     };
   },
 };

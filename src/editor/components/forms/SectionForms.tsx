@@ -4,6 +4,8 @@ import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import { parseVideoUrl } from "@/invitation/lib/videoEmbed";
 import {
   SECTION_LABEL_MAX,
+  SHADOW_STRENGTH_MAX,
+  SHADOW_STRENGTH_MIN,
   type CalendarSection,
   type ClosingSection,
   type FontId,
@@ -124,6 +126,31 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
               밝은 사진 위에서 글자가 읽히게 해 줍니다. 어두운 사진에서는 꺼 두는 편이 깔끔합니다.
             </p>
           </div>
+          {/* 끈 그림자의 색을 고르게 두면 아무 일도 일어나지 않는 손잡이가 된다 */}
+          {overlay.shadow && (
+            <>
+              <ColorField
+                label="그림자 색"
+                value={overlay.shadowColor}
+                onChange={(shadowColor) => patchOverlay({ shadowColor })}
+              />
+              <div>
+                <NumberField
+                  label="그림자 정도"
+                  value={overlay.shadowStrength}
+                  min={SHADOW_STRENGTH_MIN}
+                  max={SHADOW_STRENGTH_MAX}
+                  step={5}
+                  unit="%"
+                  onChange={(shadowStrength) => patchOverlay({ shadowStrength })}
+                />
+                <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+                  올릴수록 진하고 넓게 번집니다. 밝은 글자에는 어두운 색, 어두운 글자에는 흰색이 잘
+                  맞습니다.
+                </p>
+              </div>
+            </>
+          )}
           <p className="text-[11px] leading-[1.5] text-tool-ink-faint">
             사진의 밝기·투명도를 낮춰도 이 문구는 또렷하게 남습니다.
           </p>
