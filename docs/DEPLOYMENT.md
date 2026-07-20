@@ -31,7 +31,7 @@ npm run test:e2e
 - [ ] **운영 계정 생성**: Authentication → Users → *Add user* → *Create new user*로
       직접 만든다(이메일 확인을 켰다면 *Auto Confirm User* 체크). 가입 화면이 없으므로
       계정 추가 경로는 이곳뿐이다.
-- [ ] Storage: `photos` 버킷은 마이그레이션이 생성한다(공개 읽기·20MB·jpeg/png/webp — ADR-030).
+- [ ] Storage: `photos` 버킷은 마이그레이션이 생성한다(공개 읽기·10MB·jpeg/png/webp/mp3/m4a/폰트).
       대시보드에서 존재·설정만 확인
 - [ ] **service role 키는 어떤 환경 변수에도 넣지 않는다** (ADR-006)
 

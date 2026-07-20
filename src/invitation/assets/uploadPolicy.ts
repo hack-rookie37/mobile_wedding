@@ -35,7 +35,10 @@ export function fontMimeOf(file: { type: string; name: string }): string | null 
   return FONT_EXTENSION_TYPES[extension] ?? null;
 }
 
-export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB — 받아주는 파일 크기
+// 받아주는 파일 크기. 저장할 때 1600px로 줄이므로(아래) 이 값은 "고를 수 있는 크기"일 뿐이지만,
+// storage 버킷의 file_size_limit과 **반드시 같아야 한다** — 어긋나면 앱이 통과시킨 파일을
+// 스토리지가 거부해서 이유 없는 실패로 보인다 (버킷 값은 20260717010000_init.sql).
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
 export const MIN_RECOMMENDED_WIDTH = 800; // px — 미만이면 저해상도 경고 (거부 아님)
 export const THUMBNAIL_WIDTH = 640; // px — 그리드 표시용 파생 이미지 폭
 
