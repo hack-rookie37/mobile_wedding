@@ -64,9 +64,9 @@ src/
 ## 3. 문서 모델 (ADR-002)
 
 ```ts
-// invitation/schema — 개념 스케치, 현재 v13 (실제는 Zod 스키마가 단일 진실)
+// invitation/schema — 개념 스케치, 현재 v14 (실제는 Zod 스키마가 단일 진실)
 interface InvitationDocument {
-  schemaVersion: 13;
+  schemaVersion: 14;
   wedding: {
     groom: Person;               // { name, familyRole?("아들"…), father?, mother? }
     bride: Person;               //   Parent = { name, deceased: boolean }

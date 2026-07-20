@@ -16,7 +16,7 @@ import {
   PT_MIN,
 } from "./themes";
 
-export const CURRENT_SCHEMA_VERSION = 13;
+export const CURRENT_SCHEMA_VERSION = 14;
 
 // v6의 글자 크기 3단계 → v7의 pt 값. 기존 배율(0.93·1·1.08)에 가장 가까운 정수 pt다.
 const V6_SCALE_TO_PT: Record<string, number> = { sm: 10, md: 11, lg: 12 };
@@ -455,6 +455,35 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
                 ...section.content,
                 // 빠진 칸만 기본값으로 채운다 — 이미 있는 값은 그대로 이긴다(두 번 태워도 같다)
                 overlay: { ...DEFAULT_HERO_OVERLAY, ...section.content?.overlay },
+              },
+            },
+      ),
+    };
+  },
+  // v13 → v14: 메인 사진 위 문구에 타자 효과, 사진 아래 글을 내리는 여백, 그리고
+  // 캘린더 저장·참석 여부 전달 버튼의 색을 연다 (ADR-038).
+  // 색은 전부 optional이라 채울 것이 없다 — 비어 있으면 테마 강조색을 따른다.
+  // 반드시 채워야 하는 것은 hero의 두 칸뿐이고, 둘 다 '지금과 같은 모습'인 값이다.
+  13: (raw) => {
+    const doc = raw as {
+      sections?: Array<{
+        type?: unknown;
+        content?: { overlay?: object; contentOffsetPx?: unknown };
+      }>;
+    };
+    return {
+      ...(raw as object),
+      schemaVersion: 14,
+      sections: (doc.sections ?? []).map((section) =>
+        section.type !== "hero"
+          ? section
+          : {
+              ...section,
+              content: {
+                ...section.content,
+                overlay: { ...DEFAULT_HERO_OVERLAY, ...section.content?.overlay },
+                // 0 = 지금까지의 자리 그대로 (타자 효과도 기본값이 꺼짐이다)
+                contentOffsetPx: section.content?.contentOffsetPx ?? 0,
               },
             },
       ),

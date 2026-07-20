@@ -38,6 +38,11 @@ export const hexColorSchema = z
   .string()
   .regex(/^#[0-9a-fA-F]{6}$/, "색은 #rrggbb 형식이어야 합니다");
 
+// 채워진 버튼의 색 — 비우면 테마 강조색을 따른다.
+// 버튼 위 글자·심볼 색은 이 색의 밝기에서 자동으로 정해진다(renderer/colors.ts).
+// 카카오 공유·캘린더 저장·참석 여부 전달이 같은 규칙을 쓴다 — 한 청첩장에서 버튼은 한 색이다.
+export const buttonColorSchema = hexColorSchema.optional();
+
 // 테마 색 override — 고른 테마 위에 개별 색만 덮어쓴다. 비어 있으면 테마 토큰 그대로.
 // ink-soft·line은 여기 없다: ink와 paper를 섞어 자동으로 만든다 (themes.ts) —
 // 다섯 색을 따로 맞추게 하면 서로 안 어울리는 조합이 나오기 쉽다.
@@ -165,7 +170,9 @@ export const photoFrameSchema = z.object({
 
 // 대형 사진 세로 비율 (hero photoFull·gallery strip 공용) —
 // 값은 CSS aspect-ratio의 가로/세로. 아래로 갈수록 길다.
-export const photoAspectSchema = z.enum(["1/1", "4/5", "3/4", "9/16"]);
+// 9/20·9/24는 '파노라마' — 폰 첫 화면을 사진만으로 채우려고 넣었다.
+// 430px 캔버스에서 9/20이면 956px라 세로 844px짜리 화면을 넘긴다.
+export const photoAspectSchema = z.enum(["1/1", "4/5", "3/4", "9/16", "9/20", "9/24"]);
 
 // 전면 사진(메인·맺음말)이 공유하는 표시 효과. 레이아웃이 아니라 사진 자체의 연출이다.
 export const photoEffectsSchema = z.object({
@@ -178,6 +185,11 @@ export const photoEffectsSchema = z.object({
 // 메인 사진 위에 얹는 한 줄 ("we're getting married" 같은 문구).
 // 사진 아래 tagline과 달리 사진 위에 겹치므로 크기·글꼴·색을 따로 고른다 —
 // 전역 typography를 따르게 하면 사진마다 달라지는 균형을 맞출 수 없다.
+// 사진 위 문구는 역할 글자(최대 28pt)와 달리 훨씬 크게 쓴다 — 사진 한 장을 덮는 한 줄이라
+// 28pt로는 작다. 역할 pt는 배율로 환산되지만 이 값은 절대 크기라 따로 열어도 안전하다.
+export const OVERLAY_PT_MAX = 72;
+export const overlayFontSizePtSchema = z.number().min(7).max(OVERLAY_PT_MAX);
+
 // 그림자 세기 — 진하기(알파)와 번짐(blur)을 한 숫자로 함께 움직인다.
 // 둘을 따로 고르게 하면 어울리는 조합을 사용자가 직접 찾아야 한다.
 // 0을 허용하지 않는 이유: 그건 '그림자 끄기'와 같은 말이고, 그 스위치는 이미 있다.
@@ -190,8 +202,14 @@ export const heroOverlaySchema = z.object({
   // 3단 고르기에서 숫자로 바꿨다 — 사진마다 얼굴·여백 자리가 달라 세 칸으로는 안 맞았다.
   positionPct: z.number().min(0).max(100),
   font: fontIdSchema, // "theme" = 제목 글꼴
-  sizePt: fontSizePtSchema,
+  sizePt: overlayFontSizePtSchema,
   color: hexColorSchema,
+  // 문구가 나타나는 방식. CSS 애니메이션 지연만으로 그리므로 JS가 없어도 글자는 다 보인다.
+  //  fade/rise:          문단 통째로 (떠오르기 / 아래에서 올라오기)
+  //  typing/letterFade:  글자마다 (타자기처럼 찍히기 / 스르륵 나타나기)
+  //  writing:            줄마다 왼쪽에서 오른쪽으로 쓸려 나온다 — 손으로 쓰는 것에 가장 가깝다.
+  //    획을 따라 그리는 진짜 필기는 글리프마다 SVG 경로가 있어야 해서 임의의 글자로는 못 만든다.
+  animation: z.enum(["none", "fade", "rise", "typing", "letterFade", "writing"]),
   shadow: z.boolean(), // 사진 위 가독성용 그림자 — 어두운 사진에서는 없는 편이 깔끔하다
   // 검정 그림자가 늘 답은 아니다: 밝은 글자에는 사진의 어두운 색, 어두운 글자에는
   // 흰 그림자(테두리처럼 보인다)가 더 읽힌다.
@@ -207,10 +225,15 @@ export const DEFAULT_HERO_OVERLAY = {
   font: "theme",
   sizePt: 14,
   color: "#ffffff",
+  animation: "none",
   shadow: true,
   shadowColor: "#000000",
   shadowStrength: 40,
 } as const;
+
+// 사진 아래 글(태그라인·이름·일시·장소)을 얼마나 더 내릴지(px).
+// 파노라마 사진과 짝을 이룬다: 사진으로 첫 화면을 채우고 나머지는 스크롤해야 보이게 한다.
+export const HERO_OFFSET_MAX = 320;
 
 // 섹션 제목과 그 위의 눈썹 라벨. 12개 섹션이 공유한다 — 같은 지식을 열두 번 적지 않는다.
 // label은 빈 문자열이면 눈썹 없이 제목만 나온다 (맺음말의 기본값이 그렇다).
@@ -224,6 +247,7 @@ export const titledContentSchema = z.object({
 export const heroContentSchema = z.object({
   tagline: z.string(),
   overlay: heroOverlaySchema,
+  contentOffsetPx: z.number().min(0).max(HERO_OFFSET_MAX),
   photoAssetId: z.string().nullable(),
   photoFrame: photoFrameSchema.optional(),
   photoAspect: photoAspectSchema,
@@ -337,6 +361,7 @@ export const calendarContentSchema = titledContentSchema.extend({
   showDday: z.boolean(),
   // badge: "D-N" 텍스트 / countdown: 일:시:분:초 실시간 (showDday가 켜져 있을 때만 의미)
   ddayStyle: z.enum(["badge", "countdown"]),
+  buttonColor: buttonColorSchema, // '캘린더에 일정 저장'
 });
 
 export const calendarSectionSchema = sectionBase.extend({
@@ -432,6 +457,7 @@ export const rsvpContentSchema = titledContentSchema.extend({
   body: z.string(), // 안내 문구
   deadline: z.iso.datetime({ offset: true }).nullable(), // null = 마감 없음
   collect: rsvpCollectSchema, // 성명·참석 여부·개인정보 동의는 항상 수집한다 (A-16)
+  buttonColor: buttonColorSchema, // '참석 여부 전달하기'와 시트 안 제출 버튼
 });
 
 export const rsvpSectionSchema = sectionBase.extend({
@@ -462,8 +488,10 @@ export const closingSectionSchema = sectionBase.extend({
 // 링크 복사는 어디서나 되고, 카카오톡 공유는 호스트가 카카오 JS 키를 넘겨줄 때만 나타난다.
 export const shareContentSchema = titledContentSchema.extend({
   body: z.string(),
-  // 카카오톡 버튼 색. 비우면 테마 강조색을 따른다 — 글자·심볼 색은 이 색의 밝기에서 자동으로 정해진다.
-  kakaoButtonColor: hexColorSchema.optional(),
+  kakaoButtonColor: buttonColorSchema,
+  // 어두운 판의 색. dark variant일 때만 쓰이고, 비우면 기본 먹색(#1A1A1A)이다.
+  // 글자·구분선 색은 이 색의 밝기에서 자동으로 만들어진다 — 밝은 색을 골라도 글자가 살아남는다.
+  darkColor: hexColorSchema.optional(),
 });
 
 export const shareSectionSchema = sectionBase.extend({
@@ -541,7 +569,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(13),
+    schemaVersion: z.literal(14),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,

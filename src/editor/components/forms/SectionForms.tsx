@@ -3,6 +3,7 @@
 import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import { parseVideoUrl } from "@/invitation/lib/videoEmbed";
 import {
+  OVERLAY_PT_MAX,
   SECTION_LABEL_MAX,
   SHADOW_STRENGTH_MAX,
   SHADOW_STRENGTH_MIN,
@@ -20,6 +21,7 @@ import {
   type VideoSection,
 } from "@/invitation/schema/document";
 import { PT_MAX, PT_MIN, resolvePalette, THEMES } from "@/invitation/schema/themes";
+import { DEFAULT_TONE_COLOR } from "@/renderer/colors";
 import { PHOTO_ASPECT_CSS } from "@/renderer/primitives/PhotoFrame";
 import {
   ColorField,
@@ -27,6 +29,7 @@ import {
   FieldLabel,
   NumberField,
   SegmentedField,
+  SelectField,
   TextAreaField,
   TextField,
   ToggleField,
@@ -64,6 +67,16 @@ export function SectionLabelField({ section }: { section: TitledSection }) {
   );
 }
 
+// 이름은 '무엇처럼 보이는가'로 짓는다 — 사용자는 fade·rise가 아니라 결과를 고른다
+const OVERLAY_ANIMATION_OPTIONS = [
+  { value: "none", label: "없음" },
+  { value: "fade", label: "서서히 나타나기" },
+  { value: "rise", label: "아래에서 올라오기" },
+  { value: "typing", label: "한 글자씩 (타자기)" },
+  { value: "letterFade", label: "글자마다 스르륵" },
+  { value: "writing", label: "펜으로 쓰듯" },
+] as const;
+
 // 사진 위에 얹는 문구 — 글자·위치·크기·글꼴·색을 한자리에서 고른다.
 // 다른 섹션은 전역 typography를 따르지만 여기는 사진 위라 균형이 사진마다 달라진다.
 function HeroOverlayFields({ section }: { section: HeroSection }) {
@@ -74,11 +87,13 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
 
   return (
     <div className="space-y-4 rounded-md border border-tool-border p-3">
-      <TextField
+      {/* 여러 줄 입력 — 줄을 바꾼 그대로 사진 위에 얹힌다 */}
+      <TextAreaField
         label="사진 위 문구"
         value={overlay.text}
         onChange={(text) => patchOverlay({ text })}
-        placeholder="we're getting married"
+        rows={2}
+        placeholder={"we're getting married"}
       />
       {overlay.text !== "" && (
         <>
@@ -96,11 +111,12 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
               0%는 사진 위쪽 끝, 50%는 한가운데, 100%는 아래쪽 끝입니다.
             </p>
           </div>
+          {/* 역할 글자(최대 28pt)와 달리 사진 한 장을 덮는 한 줄이라 훨씬 크게 열어 둔다 */}
           <NumberField
             label="글자 크기"
             value={overlay.sizePt}
             min={PT_MIN}
-            max={PT_MAX}
+            max={OVERLAY_PT_MAX}
             step={0.5}
             unit="pt"
             onChange={(sizePt) => patchOverlay({ sizePt })}
@@ -151,6 +167,18 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
               </div>
             </>
           )}
+          <div>
+            <SelectField
+              label="나타나는 효과"
+              value={overlay.animation}
+              options={[...OVERLAY_ANIMATION_OPTIONS]}
+              onChange={(animation) => patchOverlay({ animation })}
+            />
+            <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+              화면에 처음 그려질 때 한 번 재생됩니다. ‘펜으로 쓰듯’은 손글씨 글꼴과 함께 쓰면 가장
+              그럴듯합니다. 모션을 줄이도록 설정한 기기에서는 효과 없이 바로 보입니다.
+            </p>
+          </div>
           <p className="text-[11px] leading-[1.5] text-tool-ink-faint">
             사진의 밝기·투명도를 낮춰도 이 문구는 또렷하게 남습니다.
           </p>
@@ -280,6 +308,12 @@ export function CalendarForm({ section }: { section: CalendarSection }) {
           onChange={(ddayStyle) => patch({ ddayStyle })}
         />
       )}
+      <ButtonColorField
+        label="‘캘린더에 일정 저장’ 버튼 색"
+        value={content.buttonColor}
+        onChange={(buttonColor) => patch({ buttonColor })}
+        hint="버튼 위 글자색은 고른 색의 밝기에 맞춰 자동으로 정해집니다."
+      />
       <PhaseNote>
         날짜와 시간은 왼쪽 ‘기본 정보’의 예식 일시를 따릅니다. 게스트는 ‘캘린더에 일정 저장’
         버튼으로 자신의 캘린더에 일정을 추가할 수 있습니다.
@@ -417,6 +451,12 @@ export function RsvpForm({ section }: { section: RsvpSection }) {
           마감 후에는 게스트가 제출할 수 없습니다. 비워 두면 마감 없이 받습니다.
         </p>
       </div>
+      <ButtonColorField
+        label="‘참석 여부 전달하기’ 버튼 색"
+        value={content.buttonColor}
+        onChange={(buttonColor) => patch({ buttonColor })}
+        hint="시트 안의 제출 버튼도 같은 색을 씁니다. 버튼 위 글자색은 고른 색의 밝기에 맞춰 자동으로 정해집니다."
+      />
       <div>
         <FieldLabel>게스트에게 물어볼 항목</FieldLabel>
         <div className="space-y-1">
@@ -441,15 +481,45 @@ export function RsvpForm({ section }: { section: RsvpSection }) {
   );
 }
 
+// 채워진 버튼의 색 — 카카오 공유·캘린더 저장·참석 여부 전달이 같은 규칙을 쓴다.
+// 스와치가 비었을 때 보여 줄 색은 캔버스가 실제로 칠하는 강조색과 같아야 한다.
+function useAccentColor(): string {
+  const theme = useEditor((s) => s.doc.theme);
+  return resolvePalette(THEMES[theme.id].tokens, theme.palette).accent;
+}
+
+function ButtonColorField({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: string | undefined;
+  onChange: (value: string | undefined) => void;
+  hint: string;
+}) {
+  const accentColor = useAccentColor();
+  return (
+    <div>
+      <ColorOverrideField
+        label={label}
+        value={value}
+        fallback={accentColor}
+        resetLabel="테마 강조색 따르기"
+        onChange={onChange}
+      />
+      <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">{hint}</p>
+    </div>
+  );
+}
+
 // 공유하기 — 링크 복사는 어디서나 되지만, 카카오톡 공유는 카카오 JS 앱 키가 있어야 한다.
 // 키가 없으면 공개 페이지에 카카오 버튼이 아예 나오지 않으므로 그 사실을 여기서 알린다.
 export function ShareForm({ section }: { section: ShareSection }) {
   const patch = usePatchContent(section.id);
-  const theme = useEditor((s) => s.doc.theme);
-  const { content } = section;
+  const { content, layout } = section;
   const kakaoReady = kakaoJsKeyFromEnv() !== null;
-  // 색을 고르지 않았을 때 스와치가 보여 줄 색 — 캔버스가 실제로 칠하는 강조색과 같아야 한다
-  const accentColor = resolvePalette(THEMES[theme.id].tokens, theme.palette).accent;
 
   return (
     <div className="space-y-4">
@@ -460,19 +530,28 @@ export function ShareForm({ section }: { section: ShareSection }) {
         onChange={(body) => patch({ body })}
         rows={3}
       />
-      <div>
-        <ColorOverrideField
-          label="카카오톡 버튼 색"
-          value={content.kakaoButtonColor}
-          fallback={accentColor}
-          resetLabel="테마 강조색 따르기"
-          onChange={(kakaoButtonColor) => patch({ kakaoButtonColor })}
-        />
-        <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
-          버튼 위 글자·심볼 색은 고른 색의 밝기에 맞춰 자동으로 정해집니다. 카카오 브랜드 노랑을
-          쓰려면 #FEE500을 고르세요.
-        </p>
-      </div>
+      <ButtonColorField
+        label="카카오톡 버튼 색"
+        value={content.kakaoButtonColor}
+        onChange={(kakaoButtonColor) => patch({ kakaoButtonColor })}
+        hint="버튼 위 글자·심볼 색은 고른 색의 밝기에 맞춰 자동으로 정해집니다. 카카오 브랜드 노랑을 쓰려면 #FEE500을 고르세요."
+      />
+      {/* 어두운 판은 '레이아웃' 탭에서 켠다 — 켜져 있을 때만 그 색을 고를 수 있다 */}
+      {layout.variant === "dark" && (
+        <div>
+          <ColorOverrideField
+            label="어두운 판 색"
+            value={content.darkColor}
+            fallback={DEFAULT_TONE_COLOR}
+            resetLabel="기본 먹색으로"
+            onChange={(darkColor) => patch({ darkColor })}
+          />
+          <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+            글자색·구분선은 고른 색의 밝기에 맞춰 자동으로 만들어집니다. 밝은 색을 골라도 글자가
+            묻히지 않습니다.
+          </p>
+        </div>
+      )}
       <p className="rounded-md bg-tool-bg px-3 py-2.5 text-[12px] leading-[1.6] text-tool-ink-soft">
         {kakaoReady
           ? "링크 복사와 카카오톡 공유 버튼이 게스트 화면에 표시됩니다. 두 버튼은 발행된 페이지에서만 눌립니다."

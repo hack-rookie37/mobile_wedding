@@ -42,40 +42,59 @@ function v11Document(overrides: { headingPt?: number; bodyPt?: number } = {}) {
       // 파생 pt는 전역뿐 아니라 섹션에서도 최솟값 아래로 떨어질 수 있다
       style.headingPt = overrides.headingPt ?? 12;
       style.bodyPt = overrides.bodyPt ?? 9;
-      // v11의 메인 사진 위 문구는 3단 위치였고 그림자 설정이 하나도 없었다
+      // v11의 메인 사진 위 문구는 3단 위치였고 그림자·타자 효과 설정이 하나도 없었다
       const {
         positionPct: _pct,
         shadow: _shadow,
         shadowColor: _shadowColor,
         shadowStrength: _shadowStrength,
+        animation: _animation,
         ...overlay
       } = section.content.overlay;
+      const { contentOffsetPx: _offset, ...content } = section.content;
       return {
         ...section,
         style,
-        content: { ...section.content, overlay: { ...overlay, position: "bottom" } },
+        content: { ...content, overlay: { ...overlay, position: "bottom" } },
       };
     }),
   };
 }
 
-// v12에 저장돼 있던 문서 — 사진 위 문구의 위치·on/off는 있지만 그림자 색·세기가 없다.
-function v12Document() {
+// 버전마다 '그때 없던 칸'을 지운 메인 섹션을 만든다.
+// 새 버전을 올릴 때마다 여기에 그 버전에서 생긴 칸을 적으면 케이스가 하나 늘어난다.
+function heroWithout(
+  schemaVersion: number,
+  drop: { overlay?: string[]; content?: string[] },
+): Record<string, unknown> {
   const doc = createSampleDocument();
+  const without = (source: object, keys: string[]) =>
+    Object.fromEntries(Object.entries(source).filter(([key]) => !keys.includes(key)));
   return {
     ...doc,
-    schemaVersion: 12,
+    schemaVersion,
     sections: doc.sections.map((section) => {
       if (section.type !== "hero") return section;
-      const {
-        shadowColor: _color,
-        shadowStrength: _strength,
-        ...overlay
-      } = section.content.overlay;
-      return { ...section, content: { ...section.content, overlay } };
+      return {
+        ...section,
+        content: {
+          ...without(section.content, drop.content ?? []),
+          overlay: without(section.content.overlay, drop.overlay ?? []),
+        },
+      };
     }),
   };
 }
+
+// v12: 그림자 색·세기가 없고, 타자 효과·글 내리기도 아직 없었다.
+const v12Document = () =>
+  heroWithout(12, {
+    overlay: ["shadowColor", "shadowStrength", "animation"],
+    content: ["contentOffsetPx"],
+  });
+
+// v13: 그림자는 갖췄지만 타자 효과·글 내리기가 없었다.
+const v13Document = () => heroWithout(13, { overlay: ["animation"], content: ["contentOffsetPx"] });
 
 describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
   it("v11 문서가 열리고, 그때 보이던 자리·설정이 이어진다", () => {
@@ -109,6 +128,21 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
     expect(hero.content.overlay.positionPct).toBe(50);
   });
 
+  it("v13 문서가 열리고, 타자 효과·글 내리기는 꺼진 채로 들어온다", () => {
+    const opened = migrateDocument(v13Document());
+    expect(opened.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+
+    const hero = opened.sections[0];
+    if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    // 둘 다 '지금까지와 같은 모습'인 값이어야 한다 — 열었더니 글자가 타이핑되면 안 된다
+    expect(hero.content.overlay.animation).toBe("none");
+    expect(hero.content.contentOffsetPx).toBe(0);
+    // 버튼 색은 optional이라 비어 있고, 그 뜻은 '테마 강조색을 따른다'이다
+    const calendar = opened.sections.find((s) => s.type === "calendar");
+    if (calendar?.type !== "calendar") throw new Error("calendar가 없습니다");
+    expect(calendar.content.buttonColor).toBeUndefined();
+  });
+
   // 파생 pt(눈썹 = 제목 × 0.55, 항목 제목 = 본문 × 0.9)는 원본이 작으면 최솟값 아래로
   // 떨어진다. 자르지 않으면 "글자를 작게 해 둔 사람만" 문서가 열리지 않는다.
   it("어떤 글자 크기로 저장돼 있어도 열린다", () => {
@@ -131,7 +165,7 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
 
   // 마이그레이션을 두 번 태워도 같은 문서가 나와야 한다 — 저장·재로드가 반복되는 자리다
   it("이미 열린 문서를 다시 태워도 그대로다", () => {
-    for (const stored of [v11Document(), v12Document()]) {
+    for (const stored of [v11Document(), v12Document(), v13Document()]) {
       const opened = migrateDocument(stored);
       expect(migrateDocument(opened)).toEqual(opened);
       expect(documentSchema.safeParse(opened).success).toBe(true);

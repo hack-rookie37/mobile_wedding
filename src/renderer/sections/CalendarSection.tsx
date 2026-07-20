@@ -9,6 +9,7 @@ import {
   weddingCalendarMonth,
 } from "@/invitation/lib/calendarGrid";
 import type { CalendarSection as CalendarSectionData, Wedding } from "@/invitation/schema/document";
+import { readableInk } from "../colors";
 import { formatDateStamp, formatWeddingDate } from "../format";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
@@ -91,12 +92,13 @@ function CountdownBar({ datetime }: { datetime: string }) {
 // 일정 저장 — 서버가 text/calendar로 내려주는 주소로 그냥 이동한다.
 // blob + <a download>으로 만들면 데스크톱에서만 되고 iOS Safari에서는 아무 일도 일어나지 않는다:
 // 파일 다운로드로는 '캘린더에 추가' 시트가 뜨지 않기 때문이다.
-function CalendarSaveButton() {
-  const { calendarIcsUrl } = useRenderer();
+function CalendarSaveButton({ buttonColor }: { buttonColor: string | undefined }) {
+  const { calendarIcsUrl, accentColor } = useRenderer();
+  const color = buttonColor ?? accentColor;
   const className =
-    "flex h-10 items-center rounded-full px-5 text-[length:calc(13px*var(--canvas-fs))] font-medium text-(--canvas-ink)";
-  const style = { border: "1px solid var(--canvas-line)" } as const;
-  const label = "📅 캘린더에 일정 저장";
+    "flex h-10 items-center rounded-full px-5 text-[length:calc(13px*var(--canvas-fs))] font-medium";
+  const style = { backgroundColor: color, color: readableInk(color) } as const;
+  const label = "캘린더에 일정 저장";
 
   // 편집기 미리보기에는 내려받을 주소가 없다 — 자리만 보여 준다
   if (calendarIcsUrl === null) {
@@ -214,7 +216,7 @@ export function CalendarSection({
             <DdayBadge datetime={wedding.datetime} />
           ))}
         <div className="mt-6 flex justify-center">
-          <CalendarSaveButton />
+          <CalendarSaveButton buttonColor={content.buttonColor} />
         </div>
       </div>
     </SectionShell>

@@ -22,6 +22,80 @@ function textShadowOf(overlay: HeroOverlay): string | undefined {
   return `0 1px ${overlay.shadowStrength / 4}px ${overlay.shadowColor}${alpha}`;
 }
 
+// 등장 효과는 전부 CSS 애니메이션의 지연만으로 그린다 — JS 타이머가 없으므로 서버 렌더
+// 결과에 글자가 전부 들어 있고, 스크립트가 죽어도 문구는 그대로 읽힌다.
+
+// 문단 통째로 움직이는 효과
+const BLOCK_EFFECTS: Record<string, string> = {
+  fade: "canvas-fade-in 900ms ease-out both",
+  rise: "canvas-rise-in 900ms ease-out both",
+};
+
+// 글자마다 시작 시각을 미는 효과. 타자기는 지연이 끝나면 1ms 만에 나타나 '찍히는' 것처럼,
+// 스르륵은 천천히 겹쳐 떠오르는 것처럼 보인다 — 같은 keyframe에 시간만 다르다.
+const CHAR_EFFECTS: Record<string, { stepMs: number; durationMs: number; ease: string }> = {
+  typing: { stepMs: 70, durationMs: 1, ease: "linear" },
+  letterFade: { stepMs: 45, durationMs: 420, ease: "ease-out" },
+};
+
+const WRITE_MS_PER_CHAR = 60; // 한 글자 폭을 쓸고 지나가는 시간
+
+// 손으로 쓰는 효과 — 줄마다 왼쪽에서 오른쪽으로 잉크가 드러난다.
+// 획을 따라가는 진짜 필기는 글리프마다 SVG 경로가 있어야 해서 임의의 글자로는 만들 수 없다.
+// 줄 단위로 쓸어 주는 것이 글꼴을 가리지 않고 '쓰는 중'으로 읽히는 가장 가까운 모양이다.
+//
+// 줄을 직접 나누는 이유: clip-path는 요소 상자를 기준으로 자르는데, 가운데 정렬된 문단은
+// 상자가 캔버스 폭 전체라 왼쪽 빈 여백부터 쓸고 지나간다. 줄마다 inline-block으로 감싸면
+// 상자가 글자에 딱 붙어서 잉크가 나오는 순간과 쓸리는 속도가 맞는다.
+function WrittenText({ text }: { text: string }) {
+  const lines = text.split("\n");
+  const durations = lines.map((line) => Math.max([...line].length, 1) * WRITE_MS_PER_CHAR);
+  // 각 줄은 앞 줄을 다 쓴 뒤에 시작한다
+  const delayOf = (index: number) => durations.slice(0, index).reduce((sum, ms) => sum + ms, 0);
+
+  return (
+    <>
+      {lines.map((line, i) => (
+        <span key={i} className="block">
+          <span
+            data-canvas-anim
+            className="inline-block"
+            style={{
+              animation: `canvas-write-in ${durations[i]}ms linear ${delayOf(i)}ms backwards`,
+            }}
+          >
+            {line === "" ? " " : line /* 빈 줄도 높이를 가져야 줄이 밀린다 */}
+          </span>
+        </span>
+      ))}
+    </>
+  );
+}
+
+// 코드포인트 단위로 쪼갠다 — split("")은 이모지를 반쪽씩 잘라 깨뜨린다.
+// 줄바꿈(\n)도 한 글자로 취급되며, 부모의 whitespace-pre-line이 그대로 줄을 넘긴다.
+function OverlayText({ overlay }: { overlay: HeroOverlay }) {
+  if (overlay.animation === "writing") return <WrittenText text={overlay.text} />;
+
+  const effect = CHAR_EFFECTS[overlay.animation];
+  if (effect === undefined) return <>{overlay.text}</>;
+  return (
+    <>
+      {[...overlay.text].map((char, i) => (
+        <span
+          key={i}
+          data-canvas-anim
+          style={{
+            animation: `canvas-fade-in ${effect.durationMs}ms ${effect.ease} ${i * effect.stepMs}ms backwards`,
+          }}
+        >
+          {char}
+        </span>
+      ))}
+    </>
+  );
+}
+
 function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
   // top과 translateY에 같은 %를 주면 0%는 위쪽 끝, 100%는 아래쪽 끝에 딱 맞는다 —
   // top만 쓰면 100%에서 글자가 사진 밖으로 절반 넘어간다.
@@ -43,7 +117,18 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
             textShadow: textShadowOf(overlay),
           }}
         >
-          {overlay.text}
+          {/* 문단 통째로 움직이는 효과는 여기 안쪽 상자에 건다 — <p>의 transform은
+              세로 위치를 잡는 데 이미 쓰이고 있어서 애니메이션이 덮으면 자리가 틀어진다 */}
+          <span
+            className="block"
+            style={
+              BLOCK_EFFECTS[overlay.animation] === undefined
+                ? undefined
+                : { animation: BLOCK_EFFECTS[overlay.animation] }
+            }
+          >
+            <OverlayText overlay={overlay} />
+          </span>
         </p>
       </div>
     </div>
@@ -79,7 +164,12 @@ export function HeroSection({
         />
         {content.overlay.text !== "" && <PhotoOverlay overlay={content.overlay} />}
       </div>
-      <div className="flex flex-col items-center px-6 text-center">
+      {/* 사진 아래 글을 더 내린다 — 파노라마 사진과 짝을 이뤄 첫 화면을 사진만으로 채운다.
+          flex 컨테이너라 이 여백이 자식의 mt-7과 합쳐지지 않고 그대로 더해진다. */}
+      <div
+        className="flex flex-col items-center px-6 text-center"
+        style={{ marginTop: `${content.contentOffsetPx}px` }}
+      >
         {content.tagline !== "" && (
           <p
             className="mt-7"

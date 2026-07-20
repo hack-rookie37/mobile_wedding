@@ -3,6 +3,7 @@
 import {
   GALLERY_GAP_MAX,
   GALLERY_GAP_MIN,
+  HERO_OFFSET_MAX,
   SECTION_PAD_X_MAX,
   SECTION_PAD_X_MIN,
   TRANSPORT_COLUMNS_MAX,
@@ -33,11 +34,14 @@ function InfoNote({ children }: { children: string }) {
   );
 }
 
+// 9:20·9:24는 폰 첫 화면을 사진만으로 채우기 위한 세로 파노라마다
 const PHOTO_ASPECT_OPTIONS = [
   { value: "1/1", label: "1:1" },
   { value: "4/5", label: "4:5" },
   { value: "3/4", label: "3:4" },
   { value: "9/16", label: "9:16" },
+  { value: "9/20", label: "9:20" },
+  { value: "9/24", label: "9:24" },
 ] as const;
 
 function usePatchContent(sectionId: string) {
@@ -93,6 +97,29 @@ function PhotoEffectsFields({ section }: { section: HeroSection | ClosingSection
         unit="%"
         onChange={(percent) => patchEffects({ opacity: percent / 100 })}
       />
+    </div>
+  );
+}
+
+// 사진 아래 글(태그라인·이름·일시·장소)을 얼마나 더 내릴지.
+// 세로 파노라마 사진과 짝을 이룬다 — 사진으로 첫 화면을 채우고 나머지는 스크롤해야 보이게 한다.
+function HeroContentOffsetField({ section }: { section: HeroSection }) {
+  const patch = usePatchContent(section.id);
+  return (
+    <div>
+      <NumberField
+        label="사진 아래 글 내리기"
+        value={section.content.contentOffsetPx}
+        min={0}
+        max={HERO_OFFSET_MAX}
+        step={10}
+        unit="px"
+        onChange={(contentOffsetPx) => patch({ contentOffsetPx })}
+      />
+      <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+        사진 세로 길이를 9:20 이상으로 두고 이 값을 올리면, 첫 화면에는 사진과 사진 위 문구만 보이고
+        이름·일시·장소는 스크롤해야 나옵니다.
+      </p>
     </div>
   );
 }
@@ -192,6 +219,7 @@ export function LayoutForm({ section }: { section: Section }) {
     return (
       <div className="space-y-4">
         <PhotoEffectsFields section={section} />
+        <HeroContentOffsetField section={section} />
         <PaddingXField section={section} />
       </div>
     );

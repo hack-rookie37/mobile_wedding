@@ -12,6 +12,7 @@ import { formatWeddingDate } from "@/invitation/lib/format";
 import { RSVP_MEAL_LABELS, RSVP_SIDE_LABELS } from "@/invitation/rsvp/responses";
 import { RSVP_LIMITS, type RsvpMeal } from "@/invitation/rsvp/submission";
 import type { ContactSide, RsvpSection as RsvpSectionData } from "@/invitation/schema/document";
+import { readableInk } from "../colors";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { rsvpTargetKey, useRenderer, type RsvpTarget } from "../RendererContext";
@@ -124,7 +125,9 @@ function RsvpForm({
   storedToken: string | null;
   onDone: (result: "created" | "updated") => void;
 }) {
-  const { mode } = useRenderer();
+  const { mode, accentColor } = useRenderer();
+  // 시트 안 제출 버튼도 바깥의 '참석 여부 전달하기'와 같은 색이어야 한다 — 같은 행동이다
+  const buttonColor = section.content.buttonColor ?? accentColor;
   const submittable = mode === "published" && target !== null;
   const { collect } = section.content;
 
@@ -327,7 +330,7 @@ function RsvpForm({
         data-rsvp-submit
         disabled={!submittable || phase.kind === "submitting"}
         className="h-12 w-full rounded-full text-[length:calc(14px*var(--canvas-fs))] font-medium transition-opacity disabled:opacity-45"
-        style={{ backgroundColor: "var(--canvas-ink)", color: "var(--canvas-paper)" }}
+        style={{ backgroundColor: buttonColor, color: readableInk(buttonColor) }}
       >
         {phase.kind === "submitting" ? "전달 중…" : "참석 의사 전달하기"}
       </button>
@@ -422,7 +425,8 @@ function NoticePanel({
 }
 
 export function RsvpSection({ section, index }: { section: RsvpSectionData; index: number }) {
-  const { mode, rsvpTarget } = useRenderer();
+  const { mode, rsvpTarget, accentColor } = useRenderer();
+  const buttonColor = section.content.buttonColor ?? accentColor;
   const { content } = section;
   const sheetVariant = section.layout.variant === "sheet";
 
@@ -515,7 +519,7 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
           disabled={mode !== "published"}
           onClick={() => setSheetOpen(true)}
           className="mt-8 h-12 w-full rounded-full text-[length:calc(14px*var(--canvas-fs))] font-medium transition-opacity disabled:opacity-45"
-          style={{ backgroundColor: "var(--canvas-ink)", color: "var(--canvas-paper)" }}
+          style={{ backgroundColor: buttonColor, color: readableInk(buttonColor) }}
         >
           참석 여부 전달하기
         </button>

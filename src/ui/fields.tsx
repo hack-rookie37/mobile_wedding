@@ -52,11 +52,13 @@ export function TextAreaField({
   value,
   onChange,
   rows = 5,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   rows?: number;
+  placeholder?: string;
 }) {
   const id = useId();
   return (
@@ -66,6 +68,7 @@ export function TextAreaField({
         id={id}
         value={value}
         rows={rows}
+        placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         className={clsx(inputClass, "resize-y py-2 leading-[1.6]")}
       />

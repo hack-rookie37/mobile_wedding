@@ -14,6 +14,8 @@ export const PHOTO_ASPECT_CSS: Record<PhotoAspect, string> = {
   "4/5": "4 / 5",
   "3/4": "3 / 4",
   "9/16": "9 / 16",
+  "9/20": "9 / 20",
+  "9/24": "9 / 24",
 };
 
 // frame(crop) → CSS: 초점을 object-position과 transform-origin에 동시에 두면

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { absoluteImageUrl, kakaoSharePayload } from "@/invitation/lib/kakaoShare";
 import type { ShareSection as ShareSectionData, Wedding } from "@/invitation/schema/document";
+import { DEFAULT_TONE_COLOR, readableInk } from "../colors";
 import { shareToKakao } from "../kakaoSdk";
 import { BodyText } from "../primitives/BodyText";
 import { SectionHeader } from "../primitives/SectionHeader";
@@ -14,17 +15,6 @@ const COPIED_FEEDBACK_MS = 2000;
 const buttonClass =
   "flex h-12 flex-1 items-center justify-center gap-2 rounded-full px-5 " +
   "text-[length:calc(13.5px*var(--canvas-fs))] font-medium disabled:opacity-60";
-
-// 버튼 색을 고르면 그 위 글자색도 따라 정해져야 한다 — 밝은 색에는 검은 글자, 어두운 색에는 흰 글자.
-// sRGB 상대 휘도(WCAG)로 판단한다: 사람이 느끼는 밝기는 채널마다 가중치가 다르다.
-function readableInk(hex: string): string {
-  const channel = (offset: number) => {
-    const value = parseInt(hex.slice(offset, offset + 2), 16) / 255;
-    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
-  };
-  const luminance = 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
-  return luminance > 0.45 ? "#1A1A1A" : "#FFFFFF";
-}
 
 // 카카오 심볼 — 말풍선. 버튼 색에서 정해진 글자색을 그대로 쓴다.
 function KakaoIcon({ color }: { color: string }) {
@@ -91,7 +81,7 @@ export function ShareSection({
     <SectionShell
       section={section}
       index={index}
-      tone={layout.variant === "dark" ? "dark" : "default"}
+      tone={layout.variant === "dark" ? (content.darkColor ?? DEFAULT_TONE_COLOR) : undefined}
     >
       <div className="flex flex-col items-center text-center">
         <SectionHeader label={content.label} title={content.title} index={index} />

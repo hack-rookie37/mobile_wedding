@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Section } from "@/invitation/schema/document";
+import { toneVars } from "../colors";
 import { useRenderer } from "../RendererContext";
 import { INHERITED_BODY_STYLE, textRoleVars } from "../textRoles";
 
@@ -12,33 +13,22 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-// 어두운 판 — 캔버스 색 변수를 이 섹션에서만 뒤집으면 헤더·본문·버튼이 손대지 않고 따라온다.
-// 테마 색을 그대로 뒤집지 않고 고정값을 쓴다: 모던 모노크롬의 강조색은 #141414라
-// 어두운 판 위에서 사라지고, 같은 요소에서 var(--canvas-ink)를 참조하면 순환이 된다.
-const DARK_TONE_VARS = {
-  backgroundColor: "#1A1A1A",
-  "--canvas-paper": "#1A1A1A",
-  "--canvas-ink": "#FFFFFF",
-  "--canvas-ink-soft": "rgba(255,255,255,0.72)",
-  "--canvas-accent": "rgba(255,255,255,0.88)",
-  "--canvas-line": "rgba(255,255,255,0.28)",
-} as CSSProperties;
-
 export function SectionShell({
   section,
   index,
   children,
   flushTop = false,
   flushBottom = false,
-  tone = "default",
+  tone,
 }: {
   section: Section;
   index: number;
   children: ReactNode;
   flushTop?: boolean; // 상단 패딩 해제 — 콘텐츠가 캔버스 맨 위에 붙는다 (전면 사진 히어로)
   flushBottom?: boolean; // 하단 패딩 해제 — 콘텐츠가 캔버스 맨 아래에 붙는다 (전면 사진 맺음말)
-  // "dark": 어두운 판 위 밝은 글자. 섹션 좌우 여백 밖까지 색이 차야 해서 shell이 칠한다.
-  tone?: "default" | "dark";
+  // 판 색(hex) — 이 섹션의 캔버스 색 변수를 통째로 갈아 끼운다. 섹션 좌우 여백 밖까지
+  // 색이 차야 해서 shell이 칠한다. 글자·구분선 색은 이 색의 밝기에서 자동으로 나온다.
+  tone?: string;
 }) {
   const { mode, selectedSectionId, onSectionSelect, theme, motionReplay } = useRenderer();
   const editing = mode === "editor-edit";
@@ -122,8 +112,8 @@ export function SectionShell({
         // 좌우 여백은 섹션 설정값 하나로 정해진다. 변수로 내려 두면 구분선과 섹션 내부
         // (갤러리 헤더 등)가 같은 값을 따라간다 — 24px을 여러 곳에 다시 적지 않는다.
         ...({ "--canvas-pad-x": `${section.style.paddingX}px` } as CSSProperties),
-        // 어두운 판보다 직접 고른 색이 우선한다 — 아래 override들이 뒤에서 덮어쓴다
-        ...(tone === "dark" ? DARK_TONE_VARS : {}),
+        // 판 색보다 '고급' 탭에서 직접 고른 배경색이 우선한다 — 아래에서 덮어쓴다
+        ...(tone === undefined ? {} : toneVars(tone)),
         ...(section.style.background ? { backgroundColor: section.style.background } : {}),
         // 이 섹션만의 글자 설정 (ADR-035). 비운 값은 변수를 내보내지 않아 전역이 그대로 산다.
         ...textRoleVars(section.style.text),
