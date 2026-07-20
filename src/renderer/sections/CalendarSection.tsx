@@ -13,6 +13,7 @@ import { formatDateStamp, formatWeddingDate } from "../format";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
+import { roleStyle } from "../textRoles";
 
 const emptySubscribe = () => () => {};
 
@@ -118,7 +119,15 @@ function CalendarGrid({ datetime }: { datetime: string }) {
   // 콘텐츠 폭(캔버스 - 좌우 패딩)을 꽉 채운다 — 칸 높이만 고정해 세로 리듬 유지
   return (
     <div className="w-full">
-      <p className="text-center font-(family-name:--canvas-font-heading) text-[length:calc(16px*var(--canvas-fs-heading))] font-semibold tracking-[0.06em] text-(--canvas-ink) tabular-nums">
+      <p
+        className="text-center tabular-nums"
+        style={roleStyle("itemTitle", {
+          size: "calc(16px * var(--canvas-fs-item))",
+          font: "var(--canvas-font-heading)",
+          weight: "600",
+          tracking: "0.06em",
+        })}
+      >
         {year}. {String(month).padStart(2, "0")}
       </p>
       <table

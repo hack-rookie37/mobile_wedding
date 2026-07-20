@@ -3,8 +3,8 @@
 import clsx from "clsx";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Section } from "@/invitation/schema/document";
-import { fontCssOf, fontScaleFromPt, headingScaleFromPt } from "@/invitation/schema/themes";
 import { useRenderer } from "../RendererContext";
+import { INHERITED_BODY_STYLE, textRoleVars } from "../textRoles";
 
 function prefersReducedMotion(): boolean {
   return (
@@ -125,31 +125,11 @@ export function SectionShell({
         // 어두운 판보다 직접 고른 색이 우선한다 — 아래 override들이 뒤에서 덮어쓴다
         ...(tone === "dark" ? DARK_TONE_VARS : {}),
         ...(section.style.background ? { backgroundColor: section.style.background } : {}),
-        // 섹션별 폰트·크기 override — CSS 변수를 지역 재정의하면 하위 텍스트가 전부 따라온다
-        ...(section.style.fontFamily !== undefined && fontCssOf(section.style.fontFamily) !== null
-          ? ({
-              "--canvas-font-heading": fontCssOf(section.style.fontFamily),
-              "--canvas-font-body": fontCssOf(section.style.fontFamily),
-              fontFamily: "var(--canvas-font-body)",
-            } as CSSProperties)
-          : {}),
-        ...(section.style.bodyPt !== undefined
-          ? ({ "--canvas-fs": fontScaleFromPt(section.style.bodyPt) } as CSSProperties)
-          : {}),
-        ...(section.style.headingPt !== undefined
-          ? ({
-              "--canvas-fs-heading": headingScaleFromPt(section.style.headingPt),
-            } as CSSProperties)
-          : {}),
-        // 섹션 글자색 — ink에서 파생되는 soft·line까지 같이 옮겨야 색이 따로 놀지 않는다
-        ...(section.style.color !== undefined
-          ? ({
-              "--canvas-ink": section.style.color,
-              "--canvas-ink-soft": `color-mix(in srgb, ${section.style.color} 68%, transparent)`,
-              "--canvas-line": `color-mix(in srgb, ${section.style.color} 22%, transparent)`,
-              color: "var(--canvas-ink)",
-            } as CSSProperties)
-          : {}),
+        // 이 섹션만의 글자 설정 (ADR-035). 비운 값은 변수를 내보내지 않아 전역이 그대로 산다.
+        ...textRoleVars(section.style.text),
+        // 본문 역할은 '상속되는 속성'으로도 깔아야 한다 — 스스로 값을 적지 않은 수십 곳이
+        // 이 한 벌만으로 따라온다. 변수를 정의한 바로 이 요소에 함께 붙어야 효력이 있다.
+        ...INHERITED_BODY_STYLE,
       }}
     >
       {theme.variants.sectionDivider && index > 0 && (

@@ -7,8 +7,14 @@ import {
   type InvitationDocument,
 } from "./document";
 import { DEFAULT_SECTION_LABELS } from "./sectionDefaults";
+import {
+  DEFAULT_BODY_PT,
+  DEFAULT_HEADING_PT,
+  ITEM_PT_OF_BODY,
+  LABEL_PT_OF_HEADING,
+} from "./themes";
 
-export const CURRENT_SCHEMA_VERSION = 11;
+export const CURRENT_SCHEMA_VERSION = 12;
 
 // v6의 글자 크기 3단계 → v7의 pt 값. 기존 배율(0.93·1·1.08)에 가장 가까운 정수 pt다.
 const V6_SCALE_TO_PT: Record<string, number> = { sm: 10, md: 11, lg: 12 };
@@ -329,7 +335,112 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
       }),
     };
   },
+  // v11 → v12: 글자 설정을 네 역할(눈썹·제목·항목 제목·본문)로 나눈다 (ADR-035)
+  //  * 전역 headingFont/bodyFont/headingPt/bodyPt → typography.roles 네 벌.
+  //  * 섹션 style의 fontFamily·headingPt·bodyPt·color → style.text 네 벌.
+  //  눈썹은 그때까지 '제목' 배율을, 항목 제목은 '본문' 배율을 따라가고 있었다. 역할이 갈라져도
+  //  처음 모습이 같도록 그 관계를 pt로 환산해 심는다 (제목 15pt → 눈썹 8.25pt).
+  //  섹션 글자색(style.color)은 본문 역할의 색이 된다 — 섹션의 기본 글자색이라는 뜻이 같고,
+  //  렌더러도 그 색에서 흐린 글자색·구분선을 파생시키던 자리를 그대로 잇는다.
+  11: (raw) => {
+    const doc = raw as {
+      typography?: {
+        roles?: unknown;
+        headingFont?: unknown;
+        bodyFont?: unknown;
+        headingPt?: unknown;
+        bodyPt?: unknown;
+      };
+      sections?: Array<{
+        style?: {
+          text?: unknown;
+          fontFamily?: unknown;
+          headingPt?: unknown;
+          bodyPt?: unknown;
+          color?: unknown;
+        };
+      }>;
+    };
+    const typography = doc.typography ?? {};
+    // 이미 있던 역할 설정이 옛 필드보다 우선한다 — 옛 버전 번호가 찍힌 최신 문서를 다시
+    // 태워도 사용자가 맞춰 둔 자간·굵기가 기본값으로 되돌아가면 안 된다 (섹션도 같은 규칙).
+    const keptRoles = (typography.roles ?? {}) as Record<string, object>;
+    const roleOf = (name: string, legacy: object) => ({ ...legacy, ...(keptRoles[name] ?? {}) });
+    const headingFont = typography.headingFont ?? "theme";
+    const bodyFont = typography.bodyFont ?? "theme";
+    const headingPt = ptOr(typography.headingPt, DEFAULT_HEADING_PT);
+    const bodyPt = ptOr(typography.bodyPt, DEFAULT_BODY_PT);
+
+    return {
+      ...(raw as object),
+      schemaVersion: 12,
+      typography: {
+        roles: {
+          // 눈썹은 제목 글꼴이 아니라 본문 글꼴을 쓰고 있었다 (색만 강조색)
+          label: roleOf("label", {
+            font: bodyFont,
+            sizePt: halfPt(headingPt * LABEL_PT_OF_HEADING),
+          }),
+          heading: roleOf("heading", { font: headingFont, sizePt: headingPt }),
+          itemTitle: roleOf("itemTitle", {
+            font: bodyFont,
+            sizePt: halfPt(bodyPt * ITEM_PT_OF_BODY),
+          }),
+          body: roleOf("body", { font: bodyFont, sizePt: bodyPt }),
+        },
+      },
+      sections: (doc.sections ?? []).map((section) => {
+        const {
+          fontFamily,
+          headingPt: sectionHeadingPt,
+          bodyPt: sectionBodyPt,
+          color,
+          ...styleRest
+        } = section.style ?? {};
+        // 섹션 글꼴 override는 제목·본문 양쪽을 한꺼번에 바꾸고 있었다 → 네 역할 모두에 건다
+        const font = fontFamily === undefined ? {} : { font: fontFamily };
+        const tint = color === undefined ? {} : { color };
+        const headingOf =
+          sectionHeadingPt === undefined ? undefined : ptOr(sectionHeadingPt, headingPt);
+        const bodyOf = sectionBodyPt === undefined ? undefined : ptOr(sectionBodyPt, bodyPt);
+        const size = (pt: number | undefined) => (pt === undefined ? {} : { sizePt: pt });
+        // 이미 있던 역할 설정이 있으면 그것이 이긴다 — 앞 단계에서 만들어진 값만 채워 넣는다
+        const kept = (section.style?.text ?? {}) as Record<string, object>;
+        const merge = (role: string, legacy: object) => ({ ...legacy, ...(kept[role] ?? {}) });
+        return {
+          ...section,
+          style: {
+            ...styleRest,
+            text: {
+              label: merge("label", {
+                ...font,
+                ...size(headingOf && halfPt(headingOf * LABEL_PT_OF_HEADING)),
+              }),
+              heading: merge("heading", { ...font, ...size(headingOf) }),
+              itemTitle: merge("itemTitle", {
+                ...font,
+                ...tint,
+                ...size(bodyOf && halfPt(bodyOf * ITEM_PT_OF_BODY)),
+              }),
+              // 섹션 글자색은 본문 역할이 이어받는다 (항목 제목도 같은 잉크를 쓰고 있었다)
+              body: merge("body", { ...font, ...tint, ...size(bodyOf) }),
+            },
+          },
+        };
+      }),
+    };
+  },
 };
+
+// 0.5pt 단위로 맞춘다 — 편집기의 pt 입력이 0.5 눈금이라, 어긋난 값이 들어가면
+// 사용자가 한 번 건드리는 순간 크기가 눈에 띄게 튄다.
+function halfPt(pt: number): number {
+  return Math.round(pt * 2) / 2;
+}
+
+function ptOr(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
 
 // v9까지 좌우 여백이 0이던 자리: 전면 사진(메인·맺음말 photo)과 갤러리 대형 스트립.
 function wasEdgeToEdge(section: { type?: unknown; layout?: { variant?: unknown } }): boolean {

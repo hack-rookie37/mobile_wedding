@@ -8,14 +8,12 @@ import {
   TRANSPORT_COLUMNS_MAX,
   TRANSPORT_COLUMNS_MIN,
   type ClosingSection,
-  type FontId,
   type GallerySection,
   type HeroSection,
   type PhotoEffects,
   type Section,
   type TransportationSection,
 } from "@/invitation/schema/document";
-import { PT_MAX, PT_MIN } from "@/invitation/schema/themes";
 import {
   ColorOverrideField,
   FieldLabel,
@@ -25,8 +23,7 @@ import {
 } from "@/ui/fields";
 import { useEditor } from "../../EditorStoreContext";
 import { SECTION_VARIANT_OPTIONS } from "../../sectionMeta";
-import { useFontOptions } from "./FontFields";
-import { FontPicker } from "./FontPicker";
+import { TextRoleEditor } from "./TextRoleFields";
 
 function InfoNote({ children }: { children: string }) {
   return (
@@ -226,47 +223,10 @@ export function LayoutForm({ section }: { section: Section }) {
   );
 }
 
-// 섹션 override 한 줄 — 값이 없으면 전체 설정값을 보여주고, 있으면 되돌리기 버튼이 붙는다
-function SectionOverride({
-  label,
-  value,
-  fallback,
-  onChange,
-}: {
-  label: string;
-  value: number | undefined;
-  fallback: number;
-  onChange: (value: number | undefined) => void;
-}) {
-  return (
-    <div>
-      <NumberField
-        label={label}
-        value={value ?? fallback}
-        min={PT_MIN}
-        max={PT_MAX}
-        step={0.5}
-        unit="pt"
-        onChange={onChange}
-      />
-      {value !== undefined && (
-        <button
-          type="button"
-          onClick={() => onChange(undefined)}
-          className="mt-1.5 text-[12px] text-tool-ink-soft underline underline-offset-2"
-        >
-          전체 설정 따르기
-        </button>
-      )}
-    </div>
-  );
-}
-
 // '스타일' 탭 — updateSectionSettings (여백·진입 애니메이션·섹션별 글꼴·색)
 export function StyleForm({ section }: { section: Section }) {
   const dispatch = useEditor((s) => s.dispatch);
   const typography = useEditor((s) => s.doc.typography);
-  const fontOptions = useFontOptions("전체 설정 따름", "inherit");
   const patch = (p: Record<string, unknown>) =>
     dispatch({ type: "updateSectionSettings", sectionId: section.id, patch: p });
 
@@ -297,33 +257,22 @@ export function StyleForm({ section }: { section: Section }) {
           고르면 미리보기에서 그 자리에서 한 번 재생됩니다.
         </p>
       </div>
-      <FontPicker
-        label="글꼴 (이 섹션만)"
-        value={section.style.fontFamily ?? "inherit"}
-        options={fontOptions}
-        onChange={(value) =>
-          patch({ fontFamily: value === "inherit" ? undefined : (value as FontId) })
-        }
-      />
-      <SectionOverride
-        label="제목 크기 (이 섹션만)"
-        value={section.style.headingPt}
-        fallback={typography.headingPt}
-        onChange={(headingPt) => patch({ headingPt })}
-      />
-      <SectionOverride
-        label="본문 크기 (이 섹션만)"
-        value={section.style.bodyPt}
-        fallback={typography.bodyPt}
-        onChange={(bodyPt) => patch({ bodyPt })}
-      />
-      <ColorOverrideField
-        label="글자색 (이 섹션만)"
-        value={section.style.color}
-        fallback="#222222"
-        resetLabel="전체 설정 따르기"
-        onChange={(color) => patch({ color })}
-      />
+      <div className="border-t border-tool-border pt-4">
+        <FieldLabel>글자 (이 섹션만)</FieldLabel>
+        <TextRoleEditor
+          roles={section.style.text}
+          inherited={typography.roles}
+          scope="section"
+          onPatch={(role, rolePatch) =>
+            patch({
+              text: {
+                ...section.style.text,
+                [role]: { ...section.style.text[role], ...rolePatch },
+              },
+            })
+          }
+        />
+      </div>
       <InfoNote>모던 모노크롬 테마는 모션을 사용하지 않아 애니메이션이 적용되지 않습니다.</InfoNote>
     </div>
   );

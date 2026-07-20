@@ -10,6 +10,7 @@ import { Collapsible } from "../primitives/Collapsible";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
+import { roleStyle } from "../textRoles";
 
 const COPIED_FEEDBACK_MS = 1800;
 
@@ -95,7 +96,15 @@ function SideGroup({
   }
   return (
     <div>
-      <p className="mb-1 text-[length:calc(11px*var(--canvas-fs))] font-medium tracking-[0.14em] text-(--canvas-accent)">
+      <p
+        className="mb-1"
+        style={roleStyle("itemTitle", {
+          size: "calc(11px * var(--canvas-fs-item))",
+          weight: "500",
+          tracking: "0.14em",
+          color: "var(--canvas-accent)",
+        })}
+      >
         {label}
       </p>
       {list}

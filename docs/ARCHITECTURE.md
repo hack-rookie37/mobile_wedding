@@ -64,9 +64,9 @@ src/
 ## 3. 문서 모델 (ADR-002)
 
 ```ts
-// invitation/schema — 개념 스케치, 현재 v11 (실제는 Zod 스키마가 단일 진실)
+// invitation/schema — 개념 스케치, 현재 v12 (실제는 Zod 스키마가 단일 진실)
 interface InvitationDocument {
-  schemaVersion: 11;
+  schemaVersion: 12;
   wedding: {
     groom: Person;               // { name, familyRole?("아들"…), father?, mother? }
     bride: Person;               //   Parent = { name, deceased: boolean }
@@ -78,12 +78,18 @@ interface InvitationDocument {
            volume: number;            // 0~1, 속도·자동재생과 함께 v11에서 추가 (ADR-034)
            speed: number;             // 0.5~1.5
            autoplay: boolean };       // '시도'다 — 차단되면 첫 스크롤·터치에 다시 켠다
-  typography: {                  // 전역 폰트·크기 (ADR-028: headingPt·bodyPt), 섹션별 override는 style
-    headingFont: FontId;         // "theme" | 내장 id | "custom:<assetId>"
-    bodyFont: FontId;
-    headingPt: number;           // 제목·본문 각각의 pt (ADR-028) — 렌더러가 --canvas-fs 배율로 환산
-    bodyPt: number;
+  typography: {                  // 전역 글자 설정 — 네 역할 (v12, ADR-035)
+    roles: {                     //   label(눈썹·메인 태그라인) / heading(제목·메인 이름)
+      label: GlobalTextStyle;    //   itemTitle(반복 항목의 제목) / body(나머지 전부)
+      heading: GlobalTextStyle;
+      itemTitle: GlobalTextStyle;
+      body: GlobalTextStyle;
+    };
   };
+  // GlobalTextStyle  = { font: FontId; sizePt: number; bold?; italic?; color?; letterSpacing?; lineHeight? }
+  // SectionTextStyle = 위와 같되 전부 optional (비우면 전역을 따른다)
+  // sizePt는 절대 크기가 아니라 역할 기준선(11/20/13.5/15px)에 대한 배율로 환산된다 —
+  // 그래야 크기를 키워도 역할 안의 위계(메인 이름 26px vs 섹션 제목 20px)가 유지된다.
   sections: Section[];           // 순서 = 배열 순서
 }
 
@@ -96,7 +102,8 @@ interface Section {
   content: SectionContent;       // 타입별 zod discriminated union
   layout: { variant: string };   // 타입별 enum — Phase 8 섹션은 모두 2개 이상 (예: contacts: inline|accordion)
   style: { paddingY: "sm"|"md"|"lg"; paddingX: number /*0~48px, 0=풀블리드*/;
-           background?: string; animation: "none"|"fade"|"rise" };
+           background?: string; animation: "none"|"fade"|"rise";
+           text: Record<TextRole, SectionTextStyle> /* 이 섹션만의 글자 설정 (ADR-035) */ };
 }
 
 // Phase 8 content 요약 (전역 wedding 참조 원칙 유지 — 이름·일시·장소는 섹션에 중복 저장하지 않는다)

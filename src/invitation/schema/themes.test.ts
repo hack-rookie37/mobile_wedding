@@ -49,9 +49,9 @@ describe("customFontAssetIds", () => {
     const doc = createSampleDocument();
     expect(customFontAssetIds(doc).size).toBe(0); // 샘플은 내장 폰트만 쓴다
 
-    doc.typography.headingFont = "custom:font-a";
-    doc.sections[1].style.fontFamily = "custom:font-b";
-    doc.sections[2].style.fontFamily = "gowun-dodum";
+    doc.typography.roles.heading.font = "custom:font-a";
+    doc.sections[1].style.text.body.font = "custom:font-b";
+    doc.sections[2].style.text.label.font = "gowun-dodum";
     expect([...customFontAssetIds(doc)].sort()).toEqual(["font-a", "font-b"]);
   });
 });

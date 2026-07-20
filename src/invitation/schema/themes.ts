@@ -69,19 +69,44 @@ export const FONT_CHOICES: Record<
 // 곱해지므로, 입력한 pt를 이 기준에 대한 배율로 환산하면 그 무리가 함께 커진다.
 // 제목과 본문의 기준선을 따로 두는 이유: 각각의 pt가 실제 렌더 크기와 맞아떨어져야
 // "제목 15pt"라고 적힌 값이 화면의 제목 크기를 뜻하게 된다.
+// 역할별 기준선(px). 한 역할 안에서도 요소마다 크기가 다르므로(제목 h2는 20px,
+// 메인의 이름은 26px) pt는 절대 크기가 아니라 이 기준선에 대한 배율로 환산한다 —
+// 그래야 크기를 키워도 역할 안의 위계가 무너지지 않는다.
 export const BASE_BODY_PX = 15; // 본문 기준 (BodyText 등)
 export const BASE_HEADING_PX = 20; // 제목 기준 (SectionHeader의 h2)
+export const BASE_LABEL_PX = 11; // 눈썹 라벨 기준 (에디토리얼 눈썹·메인 태그라인)
+export const BASE_ITEM_PX = 13.5; // 항목 제목 기준 (교통 안내 항목 제목 등)
 const PT_TO_PX = 96 / 72;
 
 export const DEFAULT_BODY_PT = 11; // ≈ 14.7px
 export const DEFAULT_HEADING_PT = 15; // = 20px
 
+// v12 전까지 눈썹은 제목 배율을, 항목 제목은 본문 배율을 그대로 따랐다.
+// 역할이 갈라져도 처음 모습이 같도록, 그 관계를 그대로 유지하는 기본 pt를 계산한다.
+export const LABEL_PT_OF_HEADING = BASE_LABEL_PX / BASE_HEADING_PX; // 0.55
+export const ITEM_PT_OF_BODY = BASE_ITEM_PX / BASE_BODY_PX; // 0.9
+
+export const TEXT_ROLES = ["label", "heading", "itemTitle", "body"] as const;
+export type TextRole = (typeof TEXT_ROLES)[number];
+
+const ROLE_BASE_PX: Record<TextRole, number> = {
+  label: BASE_LABEL_PX,
+  heading: BASE_HEADING_PX,
+  itemTitle: BASE_ITEM_PX,
+  body: BASE_BODY_PX,
+};
+
+// pt → 그 역할 기준선에 대한 배율
+export function roleScaleFromPt(role: TextRole, pt: number): number {
+  return (pt * PT_TO_PX) / ROLE_BASE_PX[role];
+}
+
 export function fontScaleFromPt(pt: number): number {
-  return (pt * PT_TO_PX) / BASE_BODY_PX;
+  return roleScaleFromPt("body", pt);
 }
 
 export function headingScaleFromPt(pt: number): number {
-  return (pt * PT_TO_PX) / BASE_HEADING_PX;
+  return roleScaleFromPt("heading", pt);
 }
 
 // 테마 토큰 + 문서의 색 override → 실제로 칠할 색.

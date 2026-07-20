@@ -12,6 +12,7 @@ import { PhotoFrame } from "../primitives/PhotoFrame";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
+import { roleStyle } from "../textRoles";
 
 function ProfileCard({
   roleLabel,
@@ -46,7 +47,15 @@ function ProfileCard({
         <p className="text-[length:calc(11px*var(--canvas-fs))] font-medium tracking-[0.16em] text-(--canvas-accent)">
           {roleLabel}
         </p>
-        <p className="mt-1 font-(family-name:--canvas-font-heading) text-[length:calc(17px*var(--canvas-fs-heading))] leading-[1.5] font-semibold text-(--canvas-ink)">
+        <p
+          className="mt-1"
+          style={roleStyle("itemTitle", {
+            size: "calc(17px * var(--canvas-fs-item))",
+            font: "var(--canvas-font-heading)",
+            weight: "600",
+            leading: "1.5",
+          })}
+        >
           {person.name}
         </p>
         {showParents && parents !== null && (

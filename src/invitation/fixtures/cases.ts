@@ -57,14 +57,24 @@ export function createCaseDocument(kind: FixtureCase): InvitationDocument {
     // 폰트 선택 + 큰 글자 + 섹션별 override (인사말만 고운돋움·작게)
     case "typography": {
       doc.typography = {
-        headingFont: "nanum-myeongjo",
-        bodyFont: "gowun-batang",
-        headingPt: 17,
-        bodyPt: 13,
+        roles: {
+          label: { font: "gowun-batang", sizePt: 9.5, letterSpacing: 0.2 },
+          heading: { font: "nanum-myeongjo", sizePt: 17 },
+          itemTitle: { font: "gowun-batang", sizePt: 11.5, bold: true },
+          body: { font: "gowun-batang", sizePt: 13, lineHeight: 1.9 },
+        },
       };
       const greeting = doc.sections.find((s) => s.type === "greeting");
       if (greeting?.type !== "greeting") throw new Error("greeting 섹션이 없습니다");
-      greeting.style = { ...greeting.style, fontFamily: "gowun-dodum", bodyPt: 9, headingPt: 12 };
+      greeting.style = {
+        ...greeting.style,
+        text: {
+          label: { font: "gowun-dodum" },
+          heading: { font: "gowun-dodum", sizePt: 12 },
+          itemTitle: { font: "gowun-dodum" },
+          body: { font: "gowun-dodum", sizePt: 9, italic: true },
+        },
+      };
       return doc;
     }
 

@@ -1,9 +1,11 @@
 import { nanoid } from "nanoid";
 import {
   DEFAULT_SECTION_PAD_X,
+  EMPTY_SECTION_TEXT,
   type InvitationDocument,
   type SectionStyle,
 } from "../schema/document";
+import { DEFAULT_BODY_PT, DEFAULT_HEADING_PT } from "../schema/themes";
 
 export const SAMPLE_PROJECT_TITLE = "정훈 · 은진 결혼식";
 
@@ -15,12 +17,13 @@ const style = (
   paddingY,
   paddingX,
   animation,
+  text: EMPTY_SECTION_TEXT,
 });
 
 // 실제 한국 청첩장 관례를 따른 샘플 문서 (연락처·계좌만 가상)
 export function createSampleDocument(): InvitationDocument {
   return {
-    schemaVersion: 11,
+    schemaVersion: 12,
     wedding: {
       groom: {
         name: "이정훈",
@@ -44,7 +47,15 @@ export function createSampleDocument(): InvitationDocument {
     },
     theme: { id: "warm-editorial", palette: {} },
     music: { assetId: null, volume: 1, speed: 1, autoplay: false },
-    typography: { headingFont: "theme", bodyFont: "theme", headingPt: 15, bodyPt: 11 },
+    typography: {
+      roles: {
+        // 눈썹은 제목 배율의 11/20, 항목 제목은 본문 배율의 13.5/15 — v12 전의 모습 그대로다
+        label: { font: "theme", sizePt: 8.5 },
+        heading: { font: "theme", sizePt: DEFAULT_HEADING_PT },
+        itemTitle: { font: "theme", sizePt: 10 },
+        body: { font: "theme", sizePt: DEFAULT_BODY_PT },
+      },
+    },
     sections: [
       {
         id: nanoid(),
@@ -56,10 +67,11 @@ export function createSampleDocument(): InvitationDocument {
           tagline: "THE MARRIAGE OF",
           overlay: {
             text: "we're getting married",
-            position: "center",
+            positionPct: 50,
             font: "theme",
             sizePt: 14,
             color: "#ffffff",
+            shadow: true,
           },
           photoAssetId: "hero-main",
           photoAspect: "3/4",

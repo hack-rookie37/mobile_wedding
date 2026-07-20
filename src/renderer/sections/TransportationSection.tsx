@@ -9,6 +9,7 @@ import { Collapsible } from "../primitives/Collapsible";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
+import { roleStyle } from "../textRoles";
 
 export const TRANSPORT_ICON_LABELS: Record<TransportIcon, string> = {
   subway: "지하철",
@@ -47,7 +48,14 @@ function Body({ text }: { text: string }) {
 
 function Title({ text }: { text: string }) {
   return (
-    <p className="text-[length:calc(13.5px*var(--canvas-fs))] leading-[1.5] font-semibold break-keep text-(--canvas-ink)">
+    <p
+      className="break-keep"
+      style={roleStyle("itemTitle", {
+        size: "calc(13.5px * var(--canvas-fs-item))",
+        weight: "600",
+        leading: "1.5",
+      })}
+    >
       {text}
     </p>
   );

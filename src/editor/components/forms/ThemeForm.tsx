@@ -9,12 +9,12 @@ import {
   validateAudioFile,
 } from "@/invitation/assets/uploadPolicy";
 import { MUSIC_SPEED_MAX, MUSIC_SPEED_MIN } from "@/invitation/schema/document";
-import { PT_MAX, PT_MIN, THEME_ORDER, THEMES } from "@/invitation/schema/themes";
+import { THEME_ORDER, THEMES } from "@/invitation/schema/themes";
 import { FieldLabel, NumberField, ToggleField } from "@/ui/fields";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor } from "../../EditorStoreContext";
-import { CustomFontUpload, useFontOptions } from "./FontFields";
-import { FontPicker } from "./FontPicker";
+import { CustomFontUpload } from "./FontFields";
+import { TextRoleEditor } from "./TextRoleFields";
 
 // 배경음악 — 파일 업로드(오디오) 후 setMusic action으로 문서에 참조를 기록한다.
 // 게스트 화면에는 우상단 음악 켜기/끄기 버튼이 뜬다 (자동재생 없음).
@@ -143,50 +143,27 @@ function MusicPlaybackFields() {
   );
 }
 
-// 전역 폰트·글자 크기 — updateTypography action (undo 가능, 섹션별 override는 스타일 탭)
+// 전역 글자 설정 — 네 역할(눈썹·제목·항목 제목·본문)을 각각 고른다 (ADR-035).
+// 섹션별 override는 그 섹션의 '스타일' 탭에 같은 화면으로 있다.
 function TypographyFields() {
-  const typography = useEditor((s) => s.doc.typography);
+  const roles = useEditor((s) => s.doc.typography.roles);
   const dispatch = useEditor((s) => s.dispatch);
-  const patch = (p: Record<string, unknown>) => dispatch({ type: "updateTypography", patch: p });
-  const fontOptions = useFontOptions("테마 기본", "theme");
 
   return (
     <div className="mt-6 space-y-4">
-      <FieldLabel>폰트</FieldLabel>
-      <FontPicker
-        label="제목·이름 폰트"
-        value={typography.headingFont}
-        options={fontOptions}
-        onChange={(headingFont) => patch({ headingFont })}
+      <FieldLabel>글자</FieldLabel>
+      <TextRoleEditor
+        roles={roles}
+        inherited={roles}
+        scope="global"
+        onPatch={(role, patch) =>
+          dispatch({
+            type: "updateTypography",
+            // 역할 한 벌만 바꾸고 나머지는 그대로 — 통째로 보내야 지운 값이 지워진다
+            patch: { roles: { ...roles, [role]: { ...roles[role], ...patch } } },
+          })
+        }
       />
-      <FontPicker
-        label="본문 폰트"
-        value={typography.bodyFont}
-        options={fontOptions}
-        onChange={(bodyFont) => patch({ bodyFont })}
-      />
-      <NumberField
-        label="제목 글자 크기"
-        value={typography.headingPt}
-        min={PT_MIN}
-        max={PT_MAX}
-        step={0.5}
-        unit="pt"
-        onChange={(headingPt) => patch({ headingPt })}
-      />
-      <NumberField
-        label="본문 글자 크기"
-        value={typography.bodyPt}
-        min={PT_MIN}
-        max={PT_MAX}
-        step={0.5}
-        unit="pt"
-        onChange={(bodyPt) => patch({ bodyPt })}
-      />
-      <p className="text-[11px] leading-[1.5] text-tool-ink-faint">
-        제목 크기는 섹션 제목·이름·날짜처럼 제목 글꼴을 쓰는 글자에, 본문 크기는 나머지에
-        적용됩니다. 섹션 하나만 다르게 하려면 그 섹션의 ‘스타일’ 탭에서 바꿀 수 있습니다.
-      </p>
       <CustomFontUpload />
     </div>
   );

@@ -15,6 +15,7 @@ import type { ContactSide, RsvpSection as RsvpSectionData } from "@/invitation/s
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { rsvpTargetKey, useRenderer, type RsvpTarget } from "../RendererContext";
+import { roleStyle } from "../textRoles";
 
 // 참석 의사 전달 (RSVP) — 게스트 폼 (PRODUCT_SPEC §8).
 // 제출은 published 모드 + 제출 대상이 있을 때만 가능하다. 응답은 /api/rsvp를 거쳐
@@ -402,7 +403,12 @@ function NoticePanel({
       className="mt-8 flex flex-col items-center gap-2 rounded-xl px-6 py-9 text-center"
       style={{ border: "1px solid var(--canvas-line)" }}
     >
-      <p className="text-[length:calc(15px*var(--canvas-fs))] font-medium text-(--canvas-ink)">
+      <p
+        style={roleStyle("itemTitle", {
+          size: "calc(15px * var(--canvas-fs-item))",
+          weight: "500",
+        })}
+      >
         {title}
       </p>
       {detail !== undefined && (

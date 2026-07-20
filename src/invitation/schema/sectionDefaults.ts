@@ -1,4 +1,5 @@
 import {
+  EMPTY_SECTION_TEXT,
   DEFAULT_GALLERY_GAP_PX,
   DEFAULT_SECTION_PAD_X,
   DEFAULT_TRANSPORT_COLUMNS,
@@ -49,7 +50,12 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
   const base = {
     id,
     visible: true,
-    style: { paddingY: "md", paddingX: DEFAULT_SECTION_PAD_X, animation: "none" },
+    style: {
+      paddingY: "md",
+      paddingX: DEFAULT_SECTION_PAD_X,
+      animation: "none",
+      text: EMPTY_SECTION_TEXT,
+    },
   } as const;
 
   switch (type) {

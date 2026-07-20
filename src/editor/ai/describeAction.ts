@@ -151,15 +151,11 @@ export function describeAiAction(doc: InvitationDocument, action: AiAction): AiC
             ? "상하 여백"
             : key === "animation"
               ? "진입 모션"
-              : key === "fontFamily"
-                ? "글꼴"
-                : key === "bodyPt"
-                  ? "본문 크기"
-                  : key === "headingPt"
-                    ? "제목 크기"
-                    : key === "color"
-                      ? "글자색"
-                      : "배경색";
+              : key === "paddingX"
+                ? "좌우 여백"
+                : key === "text"
+                  ? "글자 설정"
+                  : "배경색";
         const styleValue = (value: unknown) =>
           typeof value === "string" ? (STYLE_VALUE_LABELS[value] ?? value) : displayValue(value);
         return {

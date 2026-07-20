@@ -9,6 +9,7 @@ import { Collapsible } from "../primitives/Collapsible";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
+import { roleStyle } from "../textRoles";
 
 export const CONTACT_SIDE_LABELS: Record<ContactSide, string> = {
   groom: "신랑측",
@@ -35,7 +36,14 @@ function ContactRow({ entry }: { entry: ContactEntry }) {
           <span className="mr-1.5 text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)">
             {entry.label}
           </span>
-          <span className="font-medium">{entry.name}</span>
+          <span
+            style={roleStyle("itemTitle", {
+              size: "calc(13.5px * var(--canvas-fs-item))",
+              weight: "500",
+            })}
+          >
+            {entry.name}
+          </span>
         </p>
       </div>
       {interactive ? (
@@ -87,7 +95,15 @@ function SideGroup({
   }
   return (
     <div>
-      <p className="mb-1 text-[length:calc(11px*var(--canvas-fs))] font-medium tracking-[0.14em] text-(--canvas-accent)">
+      <p
+        className="mb-1"
+        style={roleStyle("itemTitle", {
+          size: "calc(11px * var(--canvas-fs-item))",
+          weight: "500",
+          tracking: "0.14em",
+          color: "var(--canvas-accent)",
+        })}
+      >
         {CONTACT_SIDE_LABELS[side]}
       </p>
       {list}

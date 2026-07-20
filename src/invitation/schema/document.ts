@@ -76,12 +76,59 @@ export const fontIdSchema = z.union([
 // 제목과 본문은 기준선이 달라서(20px·15px) 각각의 pt가 실제 렌더 크기와 맞아떨어진다.
 export const fontSizePtSchema = z.number().min(7).max(28);
 
-export const typographySchema = z.object({
-  headingFont: fontIdSchema, // 제목·이름 (테마 headingFont 대체)
-  bodyFont: fontIdSchema, // 본문 (테마 bodyFont 대체)
-  headingPt: fontSizePtSchema, // 제목 글자 크기 — 제목 글꼴을 쓰는 텍스트 전체
-  bodyPt: fontSizePtSchema, // 본문 글자 크기 — 그 외 전체
+// ── 글자 역할 (v12, ADR-035)
+//
+// 청첩장의 글자는 네 무리로 나뉜다. 한 무리 안에서도 요소마다 크기가 다르므로
+// (제목 h2는 20px, 메인의 이름은 26px) 크기는 절대값이 아니라 배율로 적용된다 —
+// 키워도 무리 안의 위계가 유지된다.
+export const textRoleSchema = z.enum(["label", "heading", "itemTitle", "body"]);
+
+// 자간은 em(글자 크기 대비), 행간은 배수. 둘 다 크기를 따라 움직여야 하는 값이라
+// px로 두지 않는다 — 글자를 키웠는데 줄 간격만 그대로면 답답해진다.
+export const LETTER_SPACING_MIN = -0.05;
+export const LETTER_SPACING_MAX = 0.4;
+export const LINE_HEIGHT_MIN = 1;
+export const LINE_HEIGHT_MAX = 2.4;
+
+// 글꼴·크기를 뺀 나머지. 전역·섹션 어느 층에서도 "미지정 = 아래가 원래 하던 대로"다 —
+// bold를 false로 두는 것과 아예 정하지 않는 것은 다르다: 전자는 굵기를 400으로 못박고,
+// 후자는 요소가 원래 갖고 있던 굵기(항목 제목의 semibold 등)를 그대로 둔다.
+export const textAccentsSchema = z.object({
+  bold: z.boolean().optional(),
+  italic: z.boolean().optional(),
+  color: hexColorSchema.optional(),
+  letterSpacing: z.number().min(LETTER_SPACING_MIN).max(LETTER_SPACING_MAX).optional(),
+  lineHeight: z.number().min(LINE_HEIGHT_MIN).max(LINE_HEIGHT_MAX).optional(),
 });
+
+// 전역은 글꼴과 크기를 반드시 갖는다 — 모든 글자가 결국 어떤 글꼴·배율로든 그려져야 한다.
+// font의 "theme"은 테마 기본 글꼴을 쓴다는 뜻이다 (v12 전의 headingFont·bodyFont와 같다).
+export const globalTextStyleSchema = textAccentsSchema.extend({
+  font: fontIdSchema,
+  sizePt: fontSizePtSchema,
+});
+// 섹션은 전부 선택 — 비우면 전역을 따른다.
+export const sectionTextStyleSchema = textAccentsSchema.extend({
+  font: fontIdSchema.optional(),
+  sizePt: fontSizePtSchema.optional(),
+});
+
+const rolesOf = <T extends z.ZodTypeAny>(style: T) =>
+  z.object({ label: style, heading: style, itemTitle: style, body: style });
+
+export const typographySchema = z.object({
+  roles: rolesOf(globalTextStyleSchema),
+});
+
+export const sectionTextRolesSchema = rolesOf(sectionTextStyleSchema);
+
+// 아무것도 덮어쓰지 않는 섹션 글자 설정 — 전부 전역을 따른다.
+export const EMPTY_SECTION_TEXT = {
+  label: {},
+  heading: {},
+  itemTitle: {},
+  body: {},
+} as const;
 
 // 좌우 여백(px). 0이면 콘텐츠가 캔버스 가로를 꽉 채운다 — v10 전까지 전면 사진과
 // 대형 스트립만 누리던 모습이고, 나머지는 24px로 고정이었다.
@@ -93,12 +140,10 @@ export const sectionStyleSchema = z.object({
   paddingY: z.enum(["sm", "md", "lg"]),
   paddingX: z.number().int().min(SECTION_PAD_X_MIN).max(SECTION_PAD_X_MAX),
   background: hexColorSchema.optional(), // 섹션 배경색
-  color: hexColorSchema.optional(), // 섹션 글자색
   animation: z.enum(["none", "fade", "rise"]),
-  // 섹션별 폰트·크기 override — 미지정이면 전역(typography)을 따른다
-  fontFamily: fontIdSchema.optional(),
-  headingPt: fontSizePtSchema.optional(),
-  bodyPt: fontSizePtSchema.optional(),
+  // 이 섹션만의 글자 설정 — 비운 값은 전역(typography.roles)을 따른다.
+  // v12 전의 fontFamily·headingPt·bodyPt·color가 전부 여기로 들어왔다 (ADR-035).
+  text: sectionTextRolesSchema,
 });
 
 const sectionBase = z.object({
@@ -135,19 +180,23 @@ export const photoEffectsSchema = z.object({
 // 전역 typography를 따르게 하면 사진마다 달라지는 균형을 맞출 수 없다.
 export const heroOverlaySchema = z.object({
   text: z.string(), // 빈 문자열이면 아무것도 얹지 않는다
-  position: z.enum(["top", "center", "bottom"]), // 사진 안에서의 세로 위치 (가로는 항상 가운데)
+  // 사진 안에서의 세로 위치(%). 0이면 위쪽 끝, 100이면 아래쪽 끝에 붙는다 (가로는 항상 가운데).
+  // 3단 고르기에서 숫자로 바꿨다 — 사진마다 얼굴·여백 자리가 달라 세 칸으로는 안 맞았다.
+  positionPct: z.number().min(0).max(100),
   font: fontIdSchema, // "theme" = 제목 글꼴
   sizePt: fontSizePtSchema,
   color: hexColorSchema,
+  shadow: z.boolean(), // 사진 위 가독성용 그림자 — 어두운 사진에서는 없는 편이 깔끔하다
 });
 
 // 빈 문구 = 얹지 않음. 흰색은 사진 위에서 가장 자주 읽히는 색이다 (렌더러가 그림자를 함께 깐다).
 export const DEFAULT_HERO_OVERLAY = {
   text: "",
-  position: "center",
+  positionPct: 50,
   font: "theme",
   sizePt: 14,
   color: "#ffffff",
+  shadow: true,
 } as const;
 
 // 섹션 제목과 그 위의 눈썹 라벨. 12개 섹션이 공유한다 — 같은 지식을 열두 번 적지 않는다.
@@ -479,7 +528,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(11),
+    schemaVersion: z.literal(12),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,
@@ -522,6 +571,11 @@ export type Music = z.infer<typeof musicSchema>;
 export type FontId = z.infer<typeof fontIdSchema>;
 export type BuiltinFontId = z.infer<typeof builtinFontIdSchema>;
 export type Typography = z.infer<typeof typographySchema>;
+export type TextRole = z.infer<typeof textRoleSchema>;
+export type TextAccents = z.infer<typeof textAccentsSchema>;
+export type GlobalTextStyle = z.infer<typeof globalTextStyleSchema>;
+export type SectionTextStyle = z.infer<typeof sectionTextStyleSchema>;
+export type SectionTextRoles = z.infer<typeof sectionTextRolesSchema>;
 export type SectionStyle = z.infer<typeof sectionStyleSchema>;
 export type PhotoFrame = z.infer<typeof photoFrameSchema>;
 export type PhotoAspect = z.infer<typeof photoAspectSchema>;

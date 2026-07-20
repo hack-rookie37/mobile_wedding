@@ -4,14 +4,9 @@ import type { CSSProperties } from "react";
 import type { ResolveAsset } from "@/invitation/assets/assetTypes";
 import { customFontAssetIds } from "@/invitation/lib/assetRefs";
 import type { InvitationDocument, Section, Wedding } from "@/invitation/schema/document";
-import {
-  fontCssOf,
-  fontScaleFromPt,
-  headingScaleFromPt,
-  resolvePalette,
-  THEMES,
-} from "@/invitation/schema/themes";
+import { resolvePalette, THEMES } from "@/invitation/schema/themes";
 import { CustomFontFaces, type ResolveFontUrl } from "./CustomFontFaces";
+import { INHERITED_BODY_STYLE, textRoleVars } from "./textRoles";
 import { MusicToggle } from "./MusicToggle";
 import { RendererProvider, type RendererMode, type RsvpTarget } from "./RendererContext";
 import { CalendarSection } from "./sections/CalendarSection";
@@ -111,9 +106,8 @@ export function InvitationRenderer({
   const heroPhotoId = doc.sections.find((s) => s.type === "hero")?.content.photoAssetId ?? null;
   const shareImageUrl = heroPhotoId === null ? null : (resolveAsset(heroPhotoId)?.src ?? null);
 
-  // 문서 typography가 테마 폰트를 덮어쓴다 ("theme"이면 테마 기본).
-  // 크기는 --canvas-fs 곱으로 — 섹션별 override는 SectionShell이 같은 변수를 지역 재정의한다.
-  const { typography } = doc;
+  // 글자 역할(ADR-035)은 CSS 변수로만 전달된다 — 섹션이 같은 이름을 다시 정의해 덮는다.
+  // 여기의 --canvas-font-*는 '테마가 주는 기본 글꼴'이고, 문서가 고른 글꼴은 역할 변수로 온다.
   const palette = resolvePalette(t, doc.theme.palette);
   const canvasVars = {
     "--canvas-paper": palette.paper,
@@ -121,11 +115,10 @@ export function InvitationRenderer({
     "--canvas-ink-soft": palette.inkSoft,
     "--canvas-accent": palette.accent,
     "--canvas-line": palette.line,
-    "--canvas-font-heading": fontCssOf(typography.headingFont) ?? t.headingFont,
-    "--canvas-font-body": fontCssOf(typography.bodyFont) ?? t.bodyFont,
+    "--canvas-font-heading": t.headingFont,
+    "--canvas-font-body": t.bodyFont,
     "--canvas-font-hand": t.handFont,
-    "--canvas-fs": fontScaleFromPt(typography.bodyPt),
-    "--canvas-fs-heading": headingScaleFromPt(typography.headingPt),
+    ...textRoleVars(doc.typography.roles),
     "--canvas-radius-photo": t.radiusPhoto,
     "--canvas-pad-sm": t.padSm,
     "--canvas-pad-md": t.padMd,
@@ -154,8 +147,8 @@ export function InvitationRenderer({
       <div
         data-invitation-root
         data-canvas-theme={theme.id}
-        className="w-full bg-(--canvas-paper) font-(family-name:--canvas-font-body) text-(--canvas-ink) antialiased"
-        style={canvasVars}
+        className="w-full bg-(--canvas-paper) antialiased"
+        style={{ ...canvasVars, ...INHERITED_BODY_STYLE }}
       >
         <CustomFontFaces assetIds={fontAssetIds} resolveFontUrl={resolveFontUrl ?? null} />
         {musicUrl !== null && (

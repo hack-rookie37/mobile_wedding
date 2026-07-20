@@ -2,13 +2,13 @@
 
 import { mapSearchLinks, venueMapQuery } from "@/invitation/lib/mapLinks";
 import type { VenueSection as VenueSectionData, Wedding } from "@/invitation/schema/document";
-import { formatDateStamp, formatWeddingDate } from "../format";
 import { MapAppIcon } from "../primitives/MapAppIcon";
 import { MetaList, MetaRow } from "../primitives/MetaRow";
 import { PhotoFrame } from "../primitives/PhotoFrame";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
+import { roleStyle } from "../textRoles";
 
 // 외부 지도 열기 — MVP는 지도 API 없이 URL·딥링크만 사용 (Phase 8).
 // 각 버튼은 해당 앱의 아이콘을 위에 달아 글자 없이도 어디로 열리는지 알아볼 수 있게 한다.
@@ -97,7 +97,6 @@ export function VenueSection({
               {venue.hall && <span className="text-(--canvas-ink-soft)"> {venue.hall}</span>}
             </MetaRow>
             <MetaRow label="주소">{venue.address}</MetaRow>
-            <MetaRow label="일시">{formatWeddingDate(wedding.datetime)}</MetaRow>
             {venue.phone && (
               <MetaRow label="연락처">
                 <a href={`tel:${venue.phone}`} className="underline underline-offset-4">
@@ -127,7 +126,14 @@ export function VenueSection({
         <SectionHeader label={content.label} title={content.title} index={index} />
         <VenueMap assetId={content.mapImageAssetId} />
         <div className="mt-7 space-y-1">
-          <p className="font-(family-name:--canvas-font-heading) text-[length:calc(18px*var(--canvas-fs-heading))] leading-[1.5] font-semibold text-(--canvas-ink)">
+          <p
+            style={roleStyle("itemTitle", {
+              size: "calc(18px * var(--canvas-fs-item))",
+              font: "var(--canvas-font-heading)",
+              weight: "600",
+              leading: "1.5",
+            })}
+          >
             {venue.name}
           </p>
           {venue.hall && (
@@ -137,9 +143,6 @@ export function VenueSection({
           )}
           <p className="pt-2 text-[length:calc(14px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink)">
             {venue.address}
-          </p>
-          <p className="text-[length:calc(13px*var(--canvas-fs))] leading-[1.7] tracking-[0.04em] text-(--canvas-ink-soft) tabular-nums">
-            {formatDateStamp(wedding.datetime)}
           </p>
           {venue.phone && (
             <p className="text-[length:calc(13px*var(--canvas-fs))] leading-[1.7]">
@@ -179,7 +182,14 @@ export function VenueSection({
         <SectionHeader label={content.label} title={content.title} index={index} />
         <VenueMap assetId={content.mapImageAssetId} />
         <div className="mt-8">
-          <p className="font-(family-name:--canvas-font-heading) text-[length:calc(19px*var(--canvas-fs-heading))] leading-[1.5] font-semibold text-(--canvas-ink)">
+          <p
+            style={roleStyle("itemTitle", {
+              size: "calc(19px * var(--canvas-fs-item))",
+              font: "var(--canvas-font-heading)",
+              weight: "600",
+              leading: "1.5",
+            })}
+          >
             {venue.name}
           </p>
           {venue.hall && (
@@ -191,9 +201,6 @@ export function VenueSection({
         <div className="mt-5 space-y-1">
           <p className="text-[length:calc(15px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink)">
             {venue.address}
-          </p>
-          <p className="text-[length:calc(14px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
-            {formatWeddingDate(wedding.datetime)}
           </p>
           {venue.phone && (
             <p className="text-[length:calc(14px*var(--canvas-fs))] leading-[1.7]">

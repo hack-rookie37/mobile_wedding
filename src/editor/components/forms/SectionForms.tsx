@@ -80,16 +80,20 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
       />
       {overlay.text !== "" && (
         <>
-          <SegmentedField
-            label="위치"
-            value={overlay.position}
-            options={[
-              { value: "top", label: "위" },
-              { value: "center", label: "가운데" },
-              { value: "bottom", label: "아래" },
-            ]}
-            onChange={(position) => patchOverlay({ position })}
-          />
+          <div>
+            <NumberField
+              label="세로 위치"
+              value={overlay.positionPct}
+              min={0}
+              max={100}
+              step={1}
+              unit="%"
+              onChange={(positionPct) => patchOverlay({ positionPct })}
+            />
+            <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+              0%는 사진 위쪽 끝, 50%는 한가운데, 100%는 아래쪽 끝입니다.
+            </p>
+          </div>
           <NumberField
             label="글자 크기"
             value={overlay.sizePt}
@@ -110,9 +114,18 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
             value={overlay.color}
             onChange={(color) => patchOverlay({ color })}
           />
+          <div>
+            <ToggleField
+              label="글자 그림자"
+              checked={overlay.shadow}
+              onChange={(shadow) => patchOverlay({ shadow })}
+            />
+            <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+              밝은 사진 위에서 글자가 읽히게 해 줍니다. 어두운 사진에서는 꺼 두는 편이 깔끔합니다.
+            </p>
+          </div>
           <p className="text-[11px] leading-[1.5] text-tool-ink-faint">
-            사진 위에서 읽히도록 옅은 그림자가 함께 깔립니다. 사진의 밝기·투명도를 낮춰도 이 문구는
-            또렷하게 남습니다.
+            사진의 밝기·투명도를 낮춰도 이 문구는 또렷하게 남습니다.
           </p>
         </>
       )}

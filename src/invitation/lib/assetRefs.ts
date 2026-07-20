@@ -1,5 +1,5 @@
 import type { InvitationDocument } from "../schema/document";
-import { customFontAssetIdOf } from "../schema/themes";
+import { customFontAssetIdOf, TEXT_ROLES } from "../schema/themes";
 
 // 문서가 쓰는 업로드 폰트 — 전역 typography와 섹션별 override 양쪽에서 모은다.
 // 렌더러의 @font-face 주입과 asset 삭제 보호가 이 목록 하나를 공유한다.
@@ -10,9 +10,11 @@ export function customFontAssetIds(doc: InvitationDocument): Set<string> {
     const assetId = customFontAssetIdOf(fontId as never);
     if (assetId !== null) ids.add(assetId);
   };
-  add(doc.typography.headingFont);
-  add(doc.typography.bodyFont);
-  for (const section of doc.sections) add(section.style.fontFamily);
+  // 네 역할이 각각 글꼴을 가질 수 있다 — 전역과 섹션 양쪽에서 모은다 (ADR-035)
+  for (const role of TEXT_ROLES) {
+    add(doc.typography.roles[role].font);
+    for (const section of doc.sections) add(section.style.text[role].font);
+  }
   return ids;
 }
 

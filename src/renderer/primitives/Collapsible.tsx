@@ -2,6 +2,7 @@
 
 import { useId, useState, type ReactNode } from "react";
 import { useRenderer } from "../RendererContext";
+import { roleStyle } from "../textRoles";
 
 // 접기/펼치기 그룹 (연락처·마음 전하실 곳 공용).
 // 편집 모드에서는 항상 펼쳐서 제작자가 내용을 바로 확인하게 하고,
@@ -31,7 +32,13 @@ export function Collapsible({
         onClick={() => setOpen((v) => !v)}
         className="flex h-11 w-full items-center justify-between px-4 text-left"
       >
-        <span className="text-[length:calc(13px*var(--canvas-fs))] font-medium tracking-[0.02em] text-(--canvas-ink)">
+        <span
+          style={roleStyle("itemTitle", {
+            size: "calc(13px * var(--canvas-fs-item))",
+            weight: "500",
+            tracking: "0.02em",
+          })}
+        >
           {summary}
         </span>
         {interactive && (

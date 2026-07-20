@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createSampleDocument } from "../fixtures/sample";
-import { documentSchema } from "./document";
+import { documentSchema, EMPTY_SECTION_TEXT } from "./document";
 import { CURRENT_SCHEMA_VERSION, InvalidDocumentError, migrateDocument } from "./migrate";
 
 describe("documentSchema", () => {
@@ -204,12 +204,8 @@ describe("migrateDocument", () => {
     expect(migrated.music).toEqual({ assetId: null, volume: 1, speed: 1, autoplay: false });
     // 폰트는 테마 그대로, 크기는 v6의 '보통' → 11pt로 환산된 뒤 v8에서 제목·본문으로 갈린다.
     // 제목 14.5pt는 기존 화면 크기(19.6px)를 지키는 값이다 — 새 문서 기본값(15pt = 20px)과는 다르다.
-    expect(migrated.typography).toEqual({
-      headingFont: "theme",
-      bodyFont: "theme",
-      headingPt: 14.5,
-      bodyPt: 11,
-    });
+    expect(migrated.typography.roles.heading).toEqual({ font: "theme", sizePt: 14.5 });
+    expect(migrated.typography.roles.body).toEqual({ font: "theme", sizePt: 11 });
   });
 
   it("v6 → v7: 글자 크기가 pt로 환산되고 hero·closing·gallery가 새 표현으로 옮겨진다", () => {
@@ -242,17 +238,22 @@ describe("migrateDocument", () => {
     };
     const migrated = migrateDocument(v6);
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
-    // 3단계 enum → pt (lg = 12pt), 그리고 v8에서 제목은 본문의 4/3배로 갈린다
-    expect(migrated.typography.bodyPt).toBe(12);
-    expect(migrated.typography.headingPt).toBe(16);
-    expect(migrated.typography.headingFont).toBe("gowun-batang"); // 폰트 선택 보존
+    // 3단계 enum → pt (lg = 12pt), v8에서 제목이 본문의 4/3배로 갈리고,
+    // v12에서 눈썹·항목 제목이 각각 제목·본문 배율을 유지한 채 떨어져 나온다
+    const roles = migrated.typography.roles;
+    expect(roles.body.sizePt).toBe(12);
+    expect(roles.heading.sizePt).toBe(16);
+    expect(roles.label.sizePt).toBe(9); // 16 × 11/20 = 8.8 → 0.5pt 눈금
+    expect(roles.itemTitle.sizePt).toBe(11); // 12 × 13.5/15 = 10.8 → 0.5pt 눈금
+    expect(roles.heading.font).toBe("gowun-batang"); // 폰트 선택 보존
     const hero = migrated.sections[0];
     if (hero.type !== "hero") throw new Error("hero가 없습니다");
     expect(hero.layout.variant).toBe("photoFull"); // 레이아웃 통일
     expect(hero.content.effects.fadeBottom).toBe(false); // 기존 선택 승계
     expect(hero.content.effects.brightness).toBe(1); // 새 효과는 원본 그대로가 기본
-    expect(hero.style.bodyPt).toBe(10); // 섹션 override도 pt로 환산된 뒤 둘로 갈린다
-    expect(hero.style.headingPt).toBe(13.5);
+    // 섹션 override도 pt로 환산된 뒤 둘로 갈리고, 다시 네 역할로 퍼진다
+    expect(hero.style.text.body.sizePt).toBe(10);
+    expect(hero.style.text.heading.sizePt).toBe(13.5);
     const closing = migrated.sections.find((s) => s.type === "closing");
     if (closing?.type !== "closing") throw new Error("closing이 없습니다");
     expect(closing.content.photoAspect).toBe("4/5");
@@ -525,7 +526,7 @@ describe("video 섹션", () => {
       type: "video",
       visible: true,
       layout: { variant: "facade" },
-      style: { paddingY: "md", paddingX: 24, animation: "none" },
+      style: { paddingY: "md", paddingX: 24, animation: "none", text: EMPTY_SECTION_TEXT },
       content: { title: "우리의 영상", label: "VIDEO", url: "" },
     });
     expect(documentSchema.safeParse(doc).success).toBe(true);
