@@ -10,7 +10,7 @@
 
 **Phase 11 이후 변경**: 아직 서비스로 열지 않으므로 **공개 가입을 닫았다**(ADR-024) — 로그인 화면에서 회원가입 모드 제거, 계정은 Supabase 대시보드에서 직접 생성, 운영 `enable_signup = false`가 실제 경계(§3-2). admin role은 도입하지 않았다(소유권 모델로 충분, YAGNI). e2e 헬퍼는 가입 UI 대신 anon API로 계정을 만들고 로그인만 UI로 수행한다 — 전 검사 재실행 green(§4).
 
-**커스텀 도메인 라우팅 (ADR-029, 스키마 변경 없음)**: 도메인을 junghoon-eunjin.com으로 붙이면서 **`/` = 하객이 받는 청첩장**, **`/edit` = 대시보드**로 바꿨다. 루트가 어느 발행본을 가리킬지는 `NEXT_PUBLIC_INVITATION_SLUG`가 정하고, 미설정이면 루트는 즉시 에러(No Defaults). 발행은 예전대로 slug 단위로 남고 `/i/[slug]`도 유지 — 루트는 그중 하나를 가리키는 별칭이며 로더(`app/_shared/published.ts`)를 공유한다. 발행 패널이 발행 slug와 루트 slug를 비교해 어긋나면 경고한다. 루트 청첩장의 일정 파일은 `/wedding.ics`. 전 검사 green: 단위 258 / 통합 32 / e2e 74 / build.
+**커스텀 도메인 라우팅 (ADR-029, DB 마이그레이션 7개째)**: 도메인을 junghoon-eunjin.com으로 붙이면서 **`/` = 하객이 받는 청첩장**, **`/edit` = 대시보드**로 바꿨다. 발행의 기본은 도메인 그 자체다 — `publish_records.slug`를 nullable로 바꿔 **NULL = 루트**로 읽고, 공개 주소를 적어 넣은 발행본만 `/i/<slug>`로 열린다. 루트는 부분 unique 인덱스로 동시에 하나만 살아 있게 막는다(`status='live'` 조건 포함 — 발행 중단하면 놓아준다). RSVP는 `rsvpSlug: string|null`의 null이 '제출 불가'와 '루트'로 겹쳐서 `rsvpTarget`으로 분리했고, `submit_rsvp`는 `is not distinct from`으로 루트를 찾는다. 새 환경변수는 없다. 루트 청첩장의 일정 파일은 `/wedding.ics`. 전 검사 green: 단위 256 / 통합 32 / e2e 75 / build.
 
 **벤치마크 리뉴얼 4차 (ADR-028, 스키마 v8)**: ① 글자 크기를 제목(20px 기준)·본문(15px 기준)으로 분리 — 전역·섹션별 각각, 제목 글꼴을 쓰는 텍스트가 제목 배율을 따른다 ② 테마 색 override(theme.palette: 배경·글자·강조) + 섹션별 글자색 — 흐린 글자색·구분선은 color-mix로 자동 파생, updatePalette action은 AI allowlist 제외 ③ 맺음말을 메인과 대칭으로(SectionShell.flushBottom): 사진이 캔버스 맨 아래에 붙고 제목·본문·공유 버튼이 사진 위에 흰 글씨로 ④ 지도 버튼에 실제 앱 아이콘(public/map-apps) + 3등분 그리드·70px 높이 ⑤ 맺음말 눈썹 라벨(THANK YOU) 제거·상하 여백 0(사진이 위아래 끝까지) ⑥ 마음 전하실 곳 눈썹 라벨 GIFT→REGISTRY. 전 검사 green: 단위 246 / 통합 32 / e2e 73 / build.
 

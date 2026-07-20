@@ -40,14 +40,12 @@ npm run test:e2e
 - [ ] 환경 변수 (`.env.example` 참고):
   - `NEXT_PUBLIC_SUPABASE_URL` — Supabase 프로젝트 URL
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon(publishable) 키
-  - `NEXT_PUBLIC_INVITATION_SLUG` — 도메인 루트(`/`)가 보여줄 발행본의 공개 주소 (ADR-029).
-    편집기에서 이 slug로 발행해야 도메인에 뜬다. 값을 바꾸면 **재배포**해야 반영된다
-    (빌드 타임 인라인)
   - (선택) `NEXT_PUBLIC_KAKAO_JS_KEY` — 카카오톡 공유 버튼. 없으면 '링크 복사'만 나온다
   - (선택) `ANTHROPIC_API_KEY` + `AI_MODEL` — AI 도우미. 서버 전용, `NEXT_PUBLIC_` 금지
   - `AI_PROVIDER`는 운영에 설정하지 않는다(mock은 데모·테스트용)
 - [ ] 빌드 커맨드 `npm run build` / Node 20+
 - [ ] 커스텀 도메인 연결 → Supabase Auth Site URL·Redirect URL에 반영
+- [ ] 도메인 루트에 청첩장을 띄우려면 편집기에서 **공개 주소를 비운 채 발행**한다 (ADR-029)
 - [ ] 카카오 개발자 콘솔: JavaScript SDK 도메인 + 제품 링크 관리 > 웹 도메인에 운영 도메인 등록
 
 ### 1.4 배포 직후 스모크 테스트 (수동)
@@ -110,8 +108,9 @@ Postgres 마이그레이션은 자동 역적용되지 않는다. 원칙:
 
 - 공개 페이지(`/i/[slug]`)는 요청마다 SSR + DB 1회 조회다(캐시 없음) — 항상 최신이
   보장되는 대신 트래픽이 크면 ISR/태그 캐시 도입을 검토 (백로그).
-- 하객 읽기 경로는 `get_published_by_slug` RPC뿐이다 — `publish_records` 테이블
-  직접 SELECT는 anon에게 없다 (ADR-023). 새 공개 필드가 필요하면 RPC에 추가한다.
+- 하객 읽기 경로는 definer RPC 2개(`get_published_root`·`get_published_by_slug`)뿐이다 —
+  `publish_records` 테이블 직접 SELECT는 anon에게 없다 (ADR-023). 새 공개 필드가 필요하면
+  두 RPC가 공유하는 `published_payload`에 추가한다.
 - 로그에는 RSVP·AI 요청의 내용이 남지 않는다(이벤트·코드만). 로그 수집기를 붙일 때
   이 정책을 유지할 것 (ADR-021·022).
 - `npm audit`의 postcss moderate 경고는 next 16.2.10이 내부 번들한 개발 의존성으로,

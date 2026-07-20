@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: "invalid" }, { status: 400 });
   }
 
-  if (!limiter.allow(`${clientIp(request)}:${submission.slug}`, Date.now())) {
+  if (!limiter.allow(`${clientIp(request)}:${submission.slug ?? "(root)"}`, Date.now())) {
     return NextResponse.json({ status: "rate_limited" }, { status: 429 });
   }
 

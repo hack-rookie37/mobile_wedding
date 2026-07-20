@@ -290,7 +290,7 @@ interface AssetStore {
 ```
 
 - **발행 규칙**: 공개되는 것은 발행 시점 스냅샷뿐 — draft 수정은 republish 전까지 공개본 불변.
-- **게스트 읽기 경로는 RPC 1개** (Phase 11, ADR-023): `/i/[slug]`는 definer RPC
+- **게스트 읽기 경로는 definer RPC 2개뿐** (Phase 11, ADR-023 / ADR-029): 루트는 `get_published_root`, `/i/[slug]`는 definer RPC
   `get_published_by_slug`로 조회한다. anon은 `publish_records`를 직접 SELECT할 수 없다
   (grant 없음) — 발행 목록 열거·projection 우회·내부 메타(published_rev) 노출이 불가능하다.
   **숨긴 섹션 제거는 RPC(DB)가 1차로 수행**하고, 앱의 `buildPublicPayload`(문서 화이트리스트
@@ -366,13 +366,13 @@ interface AssetStore {
 
 | 경로 | 접근 | 역할 | 상태 |
 |------|------|------|------|
-| `/` | 공개 | 도메인 루트 청첩장 — `NEXT_PUBLIC_INVITATION_SLUG`가 가리키는 발행본 (ADR-029) | ✅ |
+| `/` | 공개 | 도메인 루트 청첩장 — 공개 주소(slug) 없이 발행한 것 (ADR-029) | ✅ |
 | `/wedding.ics` | 공개 | 루트 청첩장의 예식 일정 | ✅ |
 | `/edit` | 소유자 | 대시보드: 프로젝트 목록·생성·개명·복제·보관·삭제 | ✅ Phase 6 |
 | `/login` | 공개 | Supabase Auth 이메일+비밀번호 로그인 (A-01). 공개 가입 없음 — 계정은 Supabase 대시보드에서 생성 (ADR-024) | ✅ Phase 6 |
 | `/editor/[projectId]` | 소유자 | 편집기 (자동 저장·기록·발행) | ✅ |
 | `/preview/[projectId]` | 소유자 | draft 모바일 뷰 (A-19) | ✅ |
-| `/i/[slug]` | 공개 | 발행된 live 스냅샷 (인증 불필요, noindex, 공유 버튼). 루트가 이 중 하나를 가리킨다 | ✅ Phase 7 |
+| `/i/[slug]` | 공개 | 공개 주소를 따로 적어 발행한 live 스냅샷 (인증 불필요, noindex) | ✅ Phase 7 |
 | `/p/[token]` | 공개(토큰) | 비공개 미리보기 — 현재 draft, noindex | ✅ Phase 7 |
 | `/editor/[projectId]/rsvp` | 소유자 | RSVP 결과: 집계·검색·필터·상세·삭제·CSV (A-22) | ✅ Phase 9 |
 | `POST /api/rsvp` | 공개 | RSVP 제출 (검증·허니팟·rate limit → definer RPC) | ✅ Phase 9 |

@@ -478,9 +478,11 @@
 
 **Alternatives**: 제목·본문에 같은 기준선(15px)을 쓰고 제목 pt를 배율로만 해석 — "제목 15pt"가 19.6px을 뜻하게 되어 숫자가 거짓말을 하므로 기각. 색을 5개 다 노출 — 조합 사고가 나기 쉬워 기각(ink-soft·line 자동 파생). 맺음말 글자를 `absolute`로 얹기 — 긴 글이 사진 밖으로 넘쳐 기각(grid 겹침). 아이콘을 공식 브랜드 CDN에서 링크 — 렌더러가 외부 요청을 하게 되고 오프라인·CSP에서 깨져 기각.
 
-## ADR-029. 도메인 루트를 청첩장으로, 편집 도구를 /edit 아래로
+## ADR-029. 도메인 루트를 청첩장으로, 공개 주소는 선택값으로
 
-**Status**: Accepted (2026-07-20)
+**Status**: Accepted (2026-07-20). 같은 날 한 차례 개정 — 최초 안은 루트에 걸 발행본을
+`NEXT_PUBLIC_INVITATION_SLUG`로 지정했으나, 그러면 "기본이 slug, 도메인은 설정"이 되어
+의도와 반대였다. 환경변수를 없애고 slug 자체를 선택값으로 바꿨다.
 
 **Context**: 커스텀 도메인(junghoon-eunjin.com)을 붙이면서 하객이 받는 주소가
 `도메인/i/<slug>`가 되었다. 하객에게 건네는 주소에 슬러그가 붙어 있을 이유가 없고,
@@ -490,27 +492,31 @@
 
 1. **`/` = 발행된 청첩장** (공개), **`/edit` = 대시보드** (세션 필수). 편집기·소유자
    미리보기·토큰 미리보기 경로는 그대로 둔다.
-2. **루트가 어느 발행본을 가리킬지는 `NEXT_PUBLIC_INVITATION_SLUG`가 정한다.**
-   발행 자체는 예전처럼 slug 단위로 남는다 — 프로젝트를 여러 개 두고 각각 발행해
-   비교하는 흐름이 살아 있어야 하고, 게스트 읽기 RPC(`get_published_by_slug`)도
-   그대로 쓸 수 있다. slug는 하객 URL에 드러나는 값이라 `NEXT_PUBLIC_`이어도 숨길 게 없고,
-   편집기의 공유·발행 패널이 "지금 발행한 주소가 도메인에 걸린 그 주소인지"를
-   알려주려면 클라이언트에서도 읽혀야 한다.
-3. **미설정이면 루트는 즉시 에러**를 낸다 (No Defaults). 하객에게 빈 화면을 주는 것보다
-   배포 설정이 빠졌다는 사실이 드러나는 편이 낫다.
-4. `/i/[slug]`는 유지한다. 루트와 같은 로더(`app/_shared/published.ts`)를 쓰는 같은
-   화면이며, 루트는 그중 하나를 가리키는 별칭이다.
+2. **공개 주소(slug)는 선택값이다.** `publish_records.slug`를 nullable로 바꾸고
+   **NULL = 도메인 루트**로 읽는다. 발행 패널의 주소 칸을 비워 두면 도메인 그대로 열리고,
+   적어 넣으면 그 발행본만 `/i/<slug>`로 열린다. 기본 slug를 만들어 주지 않는다
+   (`suggestSlug` 삭제) — 기본값이 있으면 "비워 둔다"는 선택지가 사라진다.
+3. **루트는 동시에 하나뿐**: 부분 unique 인덱스 `publish_records_single_live_root`
+   (`where slug is null and status = 'live'`). `status='live'`를 조건에 넣는 게 핵심이다 —
+   발행 중단한 청첩장이 도메인을 계속 붙들고 있으면 다른 청첩장을 루트로 올릴 수 없다.
+   선점 시 `publish_project`가 `root_taken`을 돌려주고 패널이 안내한다.
+   (slug 쪽 unique 제약은 기존대로 status를 보지 않는다 — 건드리지 않았다.)
+4. **RSVP 대상 식별을 두 가지 null로 겹쳐 두지 않는다.** 렌더러의 `rsvpSlug: string | null`은
+   null을 "제출 불가"로 썼는데, 루트 청첩장은 slug가 없으므로 뜻이 충돌한다.
+   `rsvpTarget: RsvpTarget | null`로 나눴다 — 대상이 없으면(편집기·비공개 미리보기) 제출 불가,
+   대상의 `slug`가 null이면 루트다. DB의 `submit_rsvp`는 `slug = p_slug` 대신
+   `slug is not distinct from p_slug`로 찾는다 (NULL 비교는 NULL이라 등호로는 못 찾는다).
+5. 조회 RPC는 둘이다: `get_published_root()`와 기존 `get_published_by_slug(text)`.
+   숨긴 섹션 제거는 `published_payload(publish_records)` 하나로 모아 두 RPC가 공유한다 (ADR-023).
 
-**Consequences**: 발행 slug와 `NEXT_PUBLIC_INVITATION_SLUG`가 어긋나면 도메인에는
-이전 발행본이 계속 보인다 — 그래서 발행 패널이 두 값을 비교해 경고한다
-(`[data-root-slug-note]`). 환경변수는 빌드 타임에 인라인되므로 Vercel에서 값을 바꾸면
-재배포가 필요하다. 루트 슬러그는 고정값이라 e2e가 매번 새 프로젝트로 그 slug를 발행할 수
-없다(`unpublish`는 status만 'off'로 바꿀 뿐 slug를 놓아주지 않는다) — 그래서 e2e는
-루트가 **미로그인으로 뚫린다**는 사실만 검증하고, 발행본 렌더는 `/i/[slug]` 쪽 테스트가
-같은 컴포넌트로 덮는다.
+**Consequences**: 도메인에 올릴 청첩장을 바꾸려면 지금 올라가 있는 것의 발행을 먼저 중단해야
+한다 — 조용한 인계보다 명시적인 편이 낫다고 봤다. 루트가 동시에 하나뿐이라 e2e도 루트를
+쓰는 테스트는 하나(`e2e/root.spec.ts`)뿐이고, 끝나면서 발행을 중단해 다음 실행에 넘겨준다
+(`finally` 블록). `/i/<slug>`는 그대로 살아 있고 루트와 로더(`app/_shared/published.ts`)를
+공유한다. 배포에 새 환경변수는 없다.
 
-**Alternatives**: 루트를 `/i/<slug>`로 rewrite — 파일시스템 라우트가 이기므로
-`beforeFiles`가 필요하고, 동작이 설정 파일에 숨어 추적이 어려워 기각. 발행본이 하나뿐일
-테니 "live 레코드 하나"를 자동으로 고르기 — anon이 publish_records를 열거할 수 없고
-(ADR-023) 그 예외를 뚫자고 definer RPC를 새로 파는 건 과하다. 발행 slug를 고정 상수로
-박기 — 하드코딩 금지, 그리고 다른 프로젝트를 발행할 때 slug 충돌로 막힌다.
+**Alternatives**: 루트 slug를 환경변수로 지정 — 발행 slug와 어긋나면 도메인에 옛 발행본이
+계속 보이고, 값을 바꿀 때마다 재배포가 필요하며, 무엇보다 slug가 기본이고 도메인이 옵션인
+모양이 되어 기각(최초 안, 하루 만에 철회). `is_root` 불리언 + slug 자동 생성 — RSVP·렌더러를
+안 건드려도 되지만 "항상 slug가 있는데 숨긴다"는 거짓말이 남아 기각. 루트를 `/i/<slug>`로
+rewrite — 파일시스템 라우트가 이겨 `beforeFiles`가 필요하고 동작이 설정에 숨어 기각.

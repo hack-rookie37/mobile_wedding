@@ -132,9 +132,10 @@ export class SupabasePersistence implements ProjectPersistence {
     };
   }
 
-  // 발행/재발행: RPC가 draft 스냅샷 + 발행 revision 참조 + slug 중복 검사를 원자적으로 수행
-  async publish(projectId: string, slug: string): Promise<PublishOutcome> {
-    const formatError = slugError(slug);
+  // 발행/재발행: RPC가 draft 스냅샷 + 발행 revision 참조 + 주소 중복 검사를 원자적으로 수행.
+  // slug가 null이면 도메인 루트에 올린다 (ADR-029).
+  async publish(projectId: string, slug: string | null): Promise<PublishOutcome> {
+    const formatError = slug === null ? null : slugError(slug);
     if (formatError !== null) {
       throw new PersistenceError(`발행 실패: ${formatError}`); // 형식 오류는 네트워크 전에 거부
     }
@@ -145,8 +146,9 @@ export class SupabasePersistence implements ProjectPersistence {
       p_assets: assets,
     });
     const result = must(data, error, "발행") as
-      | { status: "published"; slug: string; publishedRev: number }
+      | { status: "published"; slug: string | null; publishedRev: number }
       | { status: "slug_taken" }
+      | { status: "root_taken" }
       | { status: "not_found" };
     if (result.status === "not_found") {
       throw new PersistenceError("발행 실패: 프로젝트를 찾을 수 없습니다");

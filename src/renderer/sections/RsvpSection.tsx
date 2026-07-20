@@ -14,10 +14,10 @@ import { RSVP_LIMITS, type RsvpMeal } from "@/invitation/rsvp/submission";
 import type { ContactSide, RsvpSection as RsvpSectionData } from "@/invitation/schema/document";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
-import { useRenderer } from "../RendererContext";
+import { rsvpTargetKey, useRenderer, type RsvpTarget } from "../RendererContext";
 
 // 참석 의사 전달 (RSVP) — 게스트 폼 (PRODUCT_SPEC §8).
-// 제출은 published 모드 + 공개 slug가 있을 때만 가능하다. 응답은 /api/rsvp를 거쳐
+// 제출은 published 모드 + 제출 대상이 있을 때만 가능하다. 응답은 /api/rsvp를 거쳐
 // invitation 문서와 분리된 저장소로 가며, 이 컴포넌트는 응답 데이터를 절대 알지 못한다.
 
 const emptySubscribe = () => () => {};
@@ -114,17 +114,17 @@ function errorMessageOf(status: string): string {
 
 function RsvpForm({
   section,
-  slug,
+  target,
   storedToken,
   onDone,
 }: {
   section: RsvpSectionData;
-  slug: string | null;
+  target: RsvpTarget | null;
   storedToken: string | null;
   onDone: (result: "created" | "updated") => void;
 }) {
   const { mode } = useRenderer();
-  const submittable = mode === "published" && slug !== null;
+  const submittable = mode === "published" && target !== null;
   const { collect } = section.content;
 
   const [phase, setPhase] = useState<SubmitPhase>({ kind: "form" });
@@ -142,7 +142,7 @@ function RsvpForm({
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!submittable || slug === null || attending === null) return;
+    if (!submittable || target === null || attending === null) return;
     const website = new FormData(event.currentTarget).get("website");
     const token = clientToken;
     setPhase({ kind: "submitting" });
@@ -151,7 +151,7 @@ function RsvpForm({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          slug,
+          slug: target.slug,
           clientToken: token,
           guestName,
           side: collect.side ? side : null,
@@ -169,7 +169,7 @@ function RsvpForm({
         result?: "created" | "updated";
       };
       if (response.ok && body.status === "ok") {
-        window.localStorage.setItem(`rsvp-token:${slug}`, token);
+        window.localStorage.setItem(`rsvp-token:${rsvpTargetKey(target)}`, token);
         onDone(body.result ?? "created");
         return;
       }
@@ -416,7 +416,7 @@ function NoticePanel({
 }
 
 export function RsvpSection({ section, index }: { section: RsvpSectionData; index: number }) {
-  const { mode, rsvpSlug } = useRenderer();
+  const { mode, rsvpTarget } = useRenderer();
   const { content } = section;
   const sheetVariant = section.layout.variant === "sheet";
 
@@ -430,7 +430,10 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
   // 같은 브라우저의 이전 제출 여부 (localStorage 소프트 가드) — 토큰은 재제출 시 재사용된다
   const storedToken = useSyncExternalStore(
     emptySubscribe,
-    () => (rsvpSlug !== null ? window.localStorage.getItem(`rsvp-token:${rsvpSlug}`) : null),
+    () =>
+      rsvpTarget !== null
+        ? window.localStorage.getItem(`rsvp-token:${rsvpTargetKey(rsvpTarget)}`)
+        : null,
     () => null,
   );
 
@@ -457,7 +460,7 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
   const form = (
     <RsvpForm
       section={section}
-      slug={rsvpSlug}
+      target={rsvpTarget}
       storedToken={storedToken}
       onDone={(result) => {
         setDone(result);

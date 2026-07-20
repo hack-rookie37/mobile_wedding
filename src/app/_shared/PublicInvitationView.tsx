@@ -11,6 +11,7 @@ import {
 import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import type { InvitationDocument } from "@/invitation/schema/document";
 import { InvitationRenderer } from "@/renderer/InvitationRenderer";
+import type { RsvpTarget } from "@/renderer/RendererContext";
 
 // 공개(/i/[slug])·비공개 미리보기(/p/[token])가 공유하는 게스트 화면.
 // 편집기 미리보기와 동일한 InvitationRenderer를 사용한다 (단일 renderer 원칙, ADR-004).
@@ -20,14 +21,14 @@ export function PublicInvitationView({
   manifest,
   previewBadge = false,
   shareTitle,
-  rsvpSlug,
+  rsvpTarget,
   calendarIcsUrl,
 }: {
   doc: InvitationDocument;
   manifest: PublicAssetEntry[];
   previewBadge?: boolean;
   shareTitle?: string; // 지정 시 공유 버튼 표시 (Web Share API + 링크 복사 fallback)
-  rsvpSlug?: string; // 발행된 공개 페이지만 전달 — 비공개 미리보기의 RSVP 폼은 제출 불가
+  rsvpTarget?: RsvpTarget; // 발행된 공개 페이지만 전달 — 비공개 미리보기의 RSVP 폼은 제출 불가
   calendarIcsUrl?: string; // 예식 일정(.ics) 주소 — 각 화면이 자기 경로로 만들어 넘긴다
 }) {
   const resolveAsset = useMemo(() => manifestResolver(manifest, resolveBuiltinAsset), [manifest]);
@@ -49,7 +50,7 @@ export function PublicInvitationView({
           doc={doc}
           mode="published"
           resolveAsset={resolveAsset}
-          rsvpSlug={rsvpSlug}
+          rsvpTarget={rsvpTarget}
           musicUrl={musicUrl}
           resolveFontUrl={resolveFontUrl}
           kakaoJsKey={kakaoJsKeyFromEnv()}

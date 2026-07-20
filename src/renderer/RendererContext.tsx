@@ -6,15 +6,26 @@ import type { ThemeDefinition } from "@/invitation/schema/themes";
 
 export type RendererMode = "published" | "editor-edit";
 
+// 발행된 청첩장을 가리키는 값. slug가 null이면 도메인 루트에 올라간 청첩장이다 (ADR-029) —
+// "제출할 대상이 없다"(RsvpTarget 자체가 null)와 "대상에 공개 주소가 없다"는 다른 얘기라
+// 두 null을 한 필드에 겹쳐 두지 않는다.
+export interface RsvpTarget {
+  slug: string | null;
+}
+
+// localStorage 키처럼 문자열이 필요한 자리에서 쓰는 안정된 식별자
+export function rsvpTargetKey(target: RsvpTarget): string {
+  return target.slug ?? "(root)";
+}
+
 export interface RendererContextValue {
   mode: RendererMode;
   resolveAsset: ResolveAsset; // 알 수 없는 assetId는 null — PhotoFrame이 placeholder 처리
   selectedSectionId: string | null;
   onSectionSelect: ((sectionId: string) => void) | null;
   theme: ThemeDefinition; // 해석된 테마 정의 (토큰 + variant) — ADR-014
-  // 발행된 공개 페이지의 slug — RSVP 제출 대상 식별자.
-  // null이면(편집기·비공개 미리보기) RSVP 폼은 제출 불가 상태로 렌더된다.
-  rsvpSlug: string | null;
+  // RSVP 제출 대상. null이면(편집기·비공개 미리보기) 폼은 제출 불가 상태로 렌더된다.
+  rsvpTarget: RsvpTarget | null;
   // 편집기에서 진입 애니메이션을 고른 순간 그 섹션을 다시 재생시키는 신호 (토큰이 바뀔 때마다)
   motionReplay: { sectionId: string; token: number } | null;
   // 카카오 JS 앱 키 — 호스트가 넘겨줄 때만 카카오톡 공유 버튼이 나타난다 (없으면 링크 복사만)

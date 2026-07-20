@@ -13,7 +13,7 @@ import {
 } from "@/invitation/schema/themes";
 import { CustomFontFaces, type ResolveFontUrl } from "./CustomFontFaces";
 import { MusicToggle } from "./MusicToggle";
-import { RendererProvider, type RendererMode } from "./RendererContext";
+import { RendererProvider, type RendererMode, type RsvpTarget } from "./RendererContext";
 import { CalendarSection } from "./sections/CalendarSection";
 import { ClosingSection } from "./sections/ClosingSection";
 import { ContactsSection } from "./sections/ContactsSection";
@@ -74,7 +74,7 @@ export interface InvitationRendererProps {
   selectedSectionId?: string | null;
   onSectionSelect?: (sectionId: string) => void;
   // 발행된 공개 페이지(/i/[slug])만 전달한다 — 그 외 화면의 RSVP 폼은 제출 불가 상태
-  rsvpSlug?: string;
+  rsvpTarget?: RsvpTarget;
   // 배경음악 파일 URL — 호스트(공개 페이지·미리보기·편집기)가 doc.music.assetId를 해석해 전달
   musicUrl?: string | null;
   // 업로드 폰트 파일 URL 해석기 — 문서가 참조하는 id는 렌더러가 스스로 찾는다
@@ -96,7 +96,7 @@ export function InvitationRenderer({
   resolveAsset,
   selectedSectionId = null,
   onSectionSelect,
-  rsvpSlug,
+  rsvpTarget,
   musicUrl = null,
   resolveFontUrl,
   motionReplay = null,
@@ -143,7 +143,7 @@ export function InvitationRenderer({
         selectedSectionId,
         onSectionSelect: onSectionSelect ?? null,
         theme,
-        rsvpSlug: rsvpSlug ?? null,
+        rsvpTarget: rsvpTarget ?? null,
         motionReplay,
         kakaoJsKey,
         shareImageUrl,

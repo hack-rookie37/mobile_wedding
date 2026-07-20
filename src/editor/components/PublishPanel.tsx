@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { publicUrlOf, rootSlugFromEnv } from "@/invitation/lib/site";
-import { slugError, suggestSlug } from "@/invitation/lib/slug";
+import { publicUrlOf } from "@/invitation/lib/site";
+import { slugError } from "@/invitation/lib/slug";
 import type { PreviewLink, ProjectPersistence, PublishState } from "@/invitation/persistence/port";
 
 // 공유·발행 패널 (ADR-019)
@@ -86,7 +86,7 @@ export function PublishPanel({
     ]);
     setPreviewLink(link);
     setPublishState(state);
-    setSlug((current) => (current !== "" ? current : (state?.slug ?? suggestSlug())));
+    setSlug((current) => (current !== "" ? current : (state?.slug ?? "")));
     setLoaded(true);
   }, [persistence, projectId]);
 
@@ -105,10 +105,11 @@ export function PublishPanel({
   };
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const rootSlug = rootSlugFromEnv();
   const previewUrl = previewLink !== null ? `${origin}/p/${previewLink.token}` : null;
-  const publicUrl = publishState !== null ? publicUrlOf(origin, publishState.slug, rootSlug) : null;
-  const slugMessage = slug === "" ? null : slugError(slug);
+  const publicUrl = publishState !== null ? publicUrlOf(origin, publishState.slug) : null;
+  // 빈 칸은 오류가 아니다 — 도메인 루트에 올리겠다는 뜻이다 (ADR-029)
+  const targetSlug = slug === "" ? null : slug;
+  const slugMessage = targetSlug === null ? null : slugError(targetSlug);
   const isLive = publishState?.status === "live";
   const needsRepublish = isLive && publishState !== null && currentRev > publishState.publishedRev;
 
@@ -228,21 +229,24 @@ export function PublishPanel({
 
             <div>
               <label htmlFor="publish-slug" className="mb-1.5 block text-[12px] text-tool-ink-soft">
-                공개 주소
+                공개 주소 <span className="text-tool-ink-faint">(선택)</span>
               </label>
-              <div className="flex items-center gap-1.5">
-                <span className="shrink-0 text-[12px] text-tool-ink-faint">{origin}/i/</span>
-                <input
-                  id="publish-slug"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value.trim())}
-                  className="h-8 min-w-0 flex-1 rounded-md border border-tool-border px-2.5 text-[13px] text-tool-ink focus:border-tool-accent focus:outline-none"
-                />
-              </div>
+              <input
+                id="publish-slug"
+                value={slug}
+                onChange={(e) => setSlug(e.target.value.trim())}
+                placeholder="비워 두면 도메인 주소로 발행됩니다"
+                className="h-8 w-full rounded-md border border-tool-border px-2.5 text-[13px] text-tool-ink placeholder:text-tool-ink-faint focus:border-tool-accent focus:outline-none"
+              />
               {slugMessage !== null && (
                 <p className="mt-1 text-[11px] text-tool-danger">{slugMessage}</p>
               )}
-              <RootSlugNote origin={origin} slug={slug} rootSlug={rootSlug} />
+              <p data-publish-target className="mt-1.5 text-[11px] text-tool-ink-soft">
+                하객이 받는 주소:{" "}
+                <strong className="font-semibold text-tool-ink">
+                  {publicUrlOf(origin, slugMessage === null ? targetSlug : null)}
+                </strong>
+              </p>
             </div>
 
             {publishState !== null && (
@@ -267,12 +271,18 @@ export function PublishPanel({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                disabled={busy || slugMessage !== null || slug === ""}
+                disabled={busy || slugMessage !== null}
                 onClick={() =>
                   run(async () => {
-                    const outcome = await persistence.publish(projectId, slug);
+                    const outcome = await persistence.publish(projectId, targetSlug);
                     if (outcome.status === "slug_taken") {
                       setError("이미 사용 중인 주소입니다 — 다른 주소를 입력해 주세요.");
+                      return;
+                    }
+                    if (outcome.status === "root_taken") {
+                      setError(
+                        "다른 청첩장이 이미 도메인 주소로 발행되어 있습니다 — 그 청첩장의 발행을 먼저 중단하거나, 여기에 공개 주소를 적어 주세요.",
+                      );
                       return;
                     }
                     await refresh();
@@ -315,34 +325,6 @@ export function PublishPanel({
         </div>
       )}
     </dialog>
-  );
-}
-
-// 이 주소가 도메인 루트에 걸린 그 주소인지 알려준다. 다른 주소로 발행해두고
-// "왜 도메인에 안 뜨지"로 헤매는 게 이 화면에서 제일 하기 쉬운 실수다.
-function RootSlugNote({
-  origin,
-  slug,
-  rootSlug,
-}: {
-  origin: string;
-  slug: string;
-  rootSlug: string | null;
-}) {
-  if (rootSlug === null || slug === "") return null;
-  if (slug === rootSlug) {
-    return (
-      <p data-root-slug-note className="mt-1.5 text-[11px] text-tool-ink-soft">
-        도메인 대표 주소입니다 — 하객에게는{" "}
-        <strong className="font-semibold text-tool-ink">{origin}</strong> 로 열립니다.
-      </p>
-    );
-  }
-  return (
-    <p data-root-slug-note className="mt-1.5 text-[11px] text-[#9a6b1f]">
-      {origin} 는 <strong className="font-semibold">{rootSlug}</strong> 를 보여줍니다. 이 청첩장을
-      도메인 대표로 걸려면 주소를 <strong className="font-semibold">{rootSlug}</strong> 로 맞추세요.
-    </p>
   );
 }
 

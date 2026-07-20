@@ -30,7 +30,7 @@ export default async function PublicInvitationPage({
       doc={payload.doc}
       manifest={payload.assets}
       shareTitle={publicPageMeta(payload).title}
-      rsvpSlug={slug}
+      rsvpTarget={{ slug }}
       calendarIcsUrl={`/i/${encodeURIComponent(slug)}/wedding.ics`}
     />
   );

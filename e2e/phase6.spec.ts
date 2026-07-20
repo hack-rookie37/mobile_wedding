@@ -197,6 +197,8 @@ test("발행: /i/[slug]는 인증 없이 접근되고 draft 경로는 계속 보
 
   await page.getByRole("button", { name: "공유·발행" }).click();
   const panel = page.getByRole("dialog", { name: "공유·발행" });
+  // 공개 주소를 적으면 /i/<slug>로 간다. 비웠을 때의 도메인 발행은 root.spec.ts가 본다
+  await panel.getByLabel(/공개 주소/).fill(`e2e6-${Date.now().toString(36)}`);
   await panel.getByRole("button", { name: "발행하기" }).click();
   const publicLink = panel.getByRole("link", { name: "발행된 페이지 열기" });
   await expect(publicLink).toBeVisible({ timeout: 10000 });

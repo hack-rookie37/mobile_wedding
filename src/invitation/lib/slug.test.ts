@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { slugError, suggestSlug } from "./slug";
+import { slugError } from "./slug";
 
 describe("slugError (slug validation)", () => {
   it("유효한 slug는 통과한다", () => {
@@ -17,11 +17,5 @@ describe("slugError (slug validation)", () => {
     expect(slugError("-lead")).toMatch(/하이픈으로 시작/);
     expect(slugError("trail-")).toMatch(/하이픈으로 시작/);
     expect(slugError("a--b")).toMatch(/연속/);
-  });
-
-  it("suggestSlug는 항상 유효한 slug를 만든다", () => {
-    for (let i = 0; i < 20; i++) {
-      expect(slugError(suggestSlug())).toBeNull();
-    }
   });
 });

@@ -23,7 +23,8 @@ const CLIENT_TOKEN_PATTERN = /^[0-9a-zA-Z_-]{16,64}$/;
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
 
 export const rsvpSubmissionSchema = z.object({
-  slug: z.string().regex(SLUG_PATTERN, "잘못된 청첩장 주소입니다"),
+  // null = 도메인 루트에 발행된 청첩장 (공개 주소를 따로 두지 않았다, ADR-029)
+  slug: z.string().regex(SLUG_PATTERN, "잘못된 청첩장 주소입니다").nullable(),
   clientToken: z.string().regex(CLIENT_TOKEN_PATTERN, "잘못된 제출 토큰입니다"),
   guestName: z
     .string()

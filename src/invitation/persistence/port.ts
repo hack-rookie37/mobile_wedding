@@ -31,15 +31,18 @@ export interface RestoreOutcome {
 
 // ── 발행 수명주기 (ADR-019): draft → (private preview) → published ↔ unpublished
 
+// slug는 선택값이다 (ADR-029): null이면 도메인 루트(/), 값이 있으면 /i/<slug>.
 export interface PublishState {
-  slug: string;
+  slug: string | null;
   status: "live" | "off"; // off = unpublished (스냅샷은 보존)
   publishedAt: string; // 마지막 발행 시간 (ISO)
   publishedRev: number; // 발행된 revision 번호 (doc_rev 기준)
 }
 
 export type PublishOutcome =
-  { status: "published"; slug: string; publishedRev: number } | { status: "slug_taken" }; // slug 중복 — 사용자에게 다른 주소를 요청
+  | { status: "published"; slug: string | null; publishedRev: number }
+  | { status: "slug_taken" } // slug 중복 — 사용자에게 다른 주소를 요청
+  | { status: "root_taken" }; // 다른 청첩장이 이미 도메인 루트에 올라가 있다
 
 export interface PreviewLink {
   token: string; // 추측하기 어려운 토큰 (재생성 시 이전 토큰은 즉시 무효)
@@ -55,7 +58,7 @@ export interface ProjectPersistence {
   restoreRevision(projectId: string, revisionId: string): Promise<RestoreOutcome>;
   // 발행: 그 시점의 draft를 스냅샷 — 이후 draft 수정은 republish 전까지 공개본에 반영되지 않는다
   getPublishState(projectId: string): Promise<PublishState | null>;
-  publish(projectId: string, slug: string): Promise<PublishOutcome>;
+  publish(projectId: string, slug: string | null): Promise<PublishOutcome>;
   unpublish(projectId: string): Promise<void>;
   // 비공개 미리보기 링크 (프로젝트당 1개 — create가 곧 재생성)
   getPreviewLink(projectId: string): Promise<PreviewLink | null>;

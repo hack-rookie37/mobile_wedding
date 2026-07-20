@@ -27,3 +27,6 @@ next-env.d.ts
 
 # typescript
 *.tsbuildinfo
+
+# 로컬 개발 계정 생성 스크립트 (db reset 때마다 필요 — 각자 로컬에서만)
+/dev-user.sh
