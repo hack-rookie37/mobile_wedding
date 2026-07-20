@@ -1,4 +1,4 @@
-import type { Section } from "./document";
+import { DEFAULT_GALLERY_GAP_PX, type Section } from "./document";
 
 // addSection이 사용하는 타입별 기본 섹션.
 // hero는 항상 정확히 1개 존재해야 하므로(A-05) 추가 대상이 아니다 —
@@ -65,7 +65,13 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
         ...base,
         type,
         layout: { variant: "grid3" },
-        content: { title: "우리의 순간들", photos: [], photoAspect: "3/4" },
+        content: {
+          title: "우리의 순간들",
+          photos: [],
+          photoAspect: "3/4",
+          photoCorner: "rounded",
+          photoGapPx: DEFAULT_GALLERY_GAP_PX,
+        },
       };
     case "video":
       return {

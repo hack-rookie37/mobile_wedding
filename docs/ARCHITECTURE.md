@@ -64,9 +64,9 @@ src/
 ## 3. 문서 모델 (ADR-002)
 
 ```ts
-// invitation/schema — 개념 스케치, 현재 v7 (실제는 Zod 스키마가 단일 진실)
+// invitation/schema — 개념 스케치, 현재 v9 (실제는 Zod 스키마가 단일 진실)
 interface InvitationDocument {
-  schemaVersion: 7;
+  schemaVersion: 9;
   wedding: {
     groom: Person;               // { name, familyRole?("아들"…), father?, mother? }
     bride: Person;               //   Parent = { name, deceased: boolean }
@@ -78,7 +78,8 @@ interface InvitationDocument {
   typography: {                  // 전역 폰트·크기 (ADR-028: headingPt·bodyPt), 섹션별 override는 style
     headingFont: FontId;         // "theme" | 내장 id | "custom:<assetId>"
     bodyFont: FontId;
-    basePt: number;              // 본문 기준 pt — 렌더러가 --canvas-fs 배율로 환산
+    headingPt: number;           // 제목·본문 각각의 pt (ADR-028) — 렌더러가 --canvas-fs 배율로 환산
+    bodyPt: number;
   };
   sections: Section[];           // 순서 = 배열 순서
 }
@@ -104,6 +105,8 @@ interface Section {
 //  rsvp (Phase 9): { title, body, deadline(nullable), collect: {side, companions, meal, phone, message} }
 //                 — 폼 구성만 저장. 게스트 응답은 문서가 아니라 rsvp_responses 테이블에 있다 (§9, ADR-021)
 //  venue 추가:    showMapButtons — 네이버·카카오·티맵 열기 (URL·딥링크만, 지도 API 없음 — invitation/lib/mapLinks.ts)
+//  gallery:       { title, photos[], photoAspect, photoCorner(sharp|rounded), photoGapPx(0~24) }
+//                 — 모서리·간격은 v9에서 테마가 아니라 문서가 정한다 (ADR-031, 모든 variant 공통)
 
 // 사진 참조 (ADR-016) — 문서에는 assetId + 표시 metadata만. 원본·base64 금지.
 type GalleryPhoto = { assetId: string; alt?: string; caption?: string; frame?: PhotoFrame };

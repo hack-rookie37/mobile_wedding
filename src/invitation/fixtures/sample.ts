@@ -14,7 +14,7 @@ const style = (
 // 실제 한국 청첩장 관례를 따른 샘플 문서 (연락처·계좌만 가상)
 export function createSampleDocument(): InvitationDocument {
   return {
-    schemaVersion: 8,
+    schemaVersion: 9,
     wedding: {
       groom: {
         name: "이정훈",
@@ -104,6 +104,8 @@ export function createSampleDocument(): InvitationDocument {
         content: {
           title: "우리의 순간들",
           photoAspect: "3/4",
+          photoCorner: "rounded",
+          photoGapPx: 6,
           photos: [
             { assetId: "gallery-01", alt: "한강 산책 스냅", caption: "한강 산책" },
             { assetId: "gallery-02", alt: "카페에서", caption: "자주 가던 카페" },

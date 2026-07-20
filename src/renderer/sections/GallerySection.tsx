@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import type { GallerySection as GallerySectionData } from "@/invitation/schema/document";
 import { PHOTO_ASPECT_CSS, PhotoFrame } from "../primitives/PhotoFrame";
 import { SectionHeader } from "../primitives/SectionHeader";
@@ -11,6 +11,10 @@ import { GalleryLightbox } from "./GalleryLightbox";
 
 // film 테마의 폴라로이드 기울기 — 규칙적인 순환이라 반응형 그리드 안에서 안전하다
 const FILM_TILTS = ["rotate-[1.4deg]", "-rotate-[1.6deg]", "rotate-[0.7deg]", "-rotate-[0.9deg]"];
+
+// '둥글게'를 골랐을 때의 모서리 반경. 테마의 radiusPhoto를 쓰지 않는 이유는 모노크롬 테마가
+// 0px이어서 골라도 아무 일이 없기 때문이다 — 갤러리는 모서리를 직접 정하므로 자기 값을 쓴다.
+const ROUNDED_RADIUS = "10px";
 
 // srcset 선택용 표시 폭 힌트 — canvas 최대 폭 430px 기준 고정값 (renderer에서 vw 금지)
 const SIZES = {
@@ -69,19 +73,16 @@ export function GallerySection({ section, index }: { section: GallerySectionData
   const containerClass = clsx(
     kind === "single" && "flex justify-center",
     scroller && "flex snap-x snap-mandatory overflow-x-auto pb-2",
-    kind === "strip" && "gap-0.5",
-    kind === "slider" && (flavor === "film" ? "gap-5" : "gap-3"),
     isGrid && "grid grid-cols-2",
     kind === "grid3" && "grid-cols-3",
-    isGrid &&
-      (flavor === "mono"
-        ? "gap-px"
-        : flavor === "film"
-          ? "gap-4"
-          : kind === "grid3"
-            ? "gap-1.5"
-            : "gap-2"),
   );
+
+  // 간격과 모서리는 문서가 정한다. 모서리는 PhotoFrame이 읽는 테마 변수를 이 갤러리
+  // 안에서만 덮어써서 넘긴다 — PhotoFrame에 반경 prop을 새로 뚫지 않아도 된다.
+  const containerStyle = {
+    gap: `${content.photoGapPx}px`,
+    "--canvas-radius-photo": content.photoCorner === "rounded" ? ROUNDED_RADIUS : "0px",
+  } as CSSProperties;
 
   const items = photos.map((photo, i) => {
     const caption = photo.caption ?? "";
@@ -90,7 +91,7 @@ export function GallerySection({ section, index }: { section: GallerySectionData
       <PhotoFrame
         asset={resolveAsset(photo.assetId)}
         alt={photo.alt ?? ""}
-        shape={flavor === "mono" || kind === "strip" ? "rect" : "soft"}
+        shape="soft" // 실제 반경은 위에서 덮어쓴 --canvas-radius-photo가 정한다
         treatment={treatment}
         aspectRatio={galleryItemAspect(kind, i, content.photoAspect)}
         sizes={itemSizes(kind, i)}
@@ -139,10 +140,7 @@ export function GallerySection({ section, index }: { section: GallerySectionData
   });
 
   const body = (
-    <div
-      className={containerClass}
-      style={isGrid && flavor === "mono" ? { backgroundColor: "var(--canvas-line)" } : undefined}
-    >
+    <div data-gallery-photos className={containerClass} style={containerStyle}>
       {items}
     </div>
   );

@@ -20,7 +20,7 @@ import type {
   PhotoFrame,
 } from "@/invitation/schema/document";
 import { galleryItemAspect } from "@/renderer/sections/GallerySection";
-import { FieldLabel, SegmentedField, TextField } from "@/ui/fields";
+import { FieldLabel, TextField } from "@/ui/fields";
 import { DragHandleIcon } from "@/ui/icons";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor, useEditorStoreHandle } from "../../EditorStoreContext";
@@ -82,20 +82,6 @@ export function GalleryForm({ section }: { section: GallerySectionData }) {
         value={section.content.title}
         onChange={(title) => patchContent({ title })}
       />
-
-      {section.layout.variant === "strip" && (
-        <SegmentedField
-          label="사진 세로 길이"
-          value={section.content.photoAspect}
-          options={[
-            { value: "1/1", label: "1:1" },
-            { value: "4/5", label: "4:5" },
-            { value: "3/4", label: "3:4" },
-            { value: "9/16", label: "9:16" },
-          ]}
-          onChange={(photoAspect) => patchContent({ photoAspect })}
-        />
-      )}
 
       <div>
         <FieldLabel>

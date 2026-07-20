@@ -283,6 +283,44 @@ describe("migrateDocument", () => {
     expect(migrateDocument(v7Of(true))).toEqual(on);
   });
 
+  it("v8 → v9: 갤러리 모서리·간격이 그때까지 보이던 값 그대로 문서에 심긴다", () => {
+    const base = createSampleDocument();
+    // v8 갤러리에는 모서리·간격 필드가 없었다 — 테마와 레이아웃이 정했다
+    const v8Of = (variant: string) => ({
+      ...base,
+      schemaVersion: 8,
+      sections: base.sections.map((s) =>
+        s.type === "gallery"
+          ? {
+              ...s,
+              layout: { variant },
+              content: Object.fromEntries(
+                Object.entries(s.content).filter(
+                  ([k]) => k !== "photoCorner" && k !== "photoGapPx",
+                ),
+              ),
+            }
+          : s,
+      ),
+    });
+    const galleryOf = (doc: ReturnType<typeof migrateDocument>) => {
+      const gallery = doc.sections.find((s) => s.type === "gallery");
+      if (gallery?.type !== "gallery") throw new Error("gallery가 없습니다");
+      return gallery;
+    };
+
+    // 3열 격자는 6px 간격에 둥근 모서리였다
+    const grid3 = galleryOf(migrateDocument(v8Of("grid3")));
+    expect(grid3.content.photoCorner).toBe("rounded");
+    expect(grid3.content.photoGapPx).toBe(6);
+    expect(grid3.content.photos.length).toBeGreaterThan(0); // 콘텐츠 보존
+
+    // 대형 스트립만 각진 모서리에 2px 간격이었다
+    const strip = galleryOf(migrateDocument(v8Of("strip")));
+    expect(strip.content.photoCorner).toBe("sharp");
+    expect(strip.content.photoGapPx).toBe(2);
+  });
+
   it("마이그레이션은 이미 현재 모양인 값을 기본값으로 되돌리지 않는다", () => {
     // 옛 버전 번호가 찍혔지만 내용은 이미 최신 모양인 문서 — 두 번 태워도 결과가 같아야 한다.
     // 덮어쓰면 사용자가 맞춰 둔 사진 밝기·페이드가 조용히 초기화된다.

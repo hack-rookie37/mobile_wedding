@@ -161,11 +161,22 @@ export const galleryPhotoSchema = z.object({
   frame: photoFrameSchema.optional(),
 });
 
+// 사진 모서리 모양. v9 전까지는 테마의 결(mono만 각짐)과 레이아웃(strip만 각짐)이
+// 정하던 값이라 사용자가 손댈 수 없었다 — 갤러리 섹션의 선택지로 뺐다.
+export const photoCornerSchema = z.enum(["sharp", "rounded"]);
+
+// 사진 사이 간격(px). 0이면 사진끼리 맞붙는다.
+export const GALLERY_GAP_MIN = 0;
+export const GALLERY_GAP_MAX = 24;
+export const DEFAULT_GALLERY_GAP_PX = 6;
+
 export const galleryContentSchema = z.object({
   title: z.string(),
   photos: z.array(galleryPhotoSchema).max(30, "갤러리 사진은 최대 30장입니다"),
   // 한 장씩 크게 보여주는 레이아웃(strip·slider)의 세로 비율 — 격자형은 고정 비율을 쓴다
   photoAspect: photoAspectSchema,
+  photoCorner: photoCornerSchema,
+  photoGapPx: z.number().int().min(GALLERY_GAP_MIN).max(GALLERY_GAP_MAX),
 });
 
 export const gallerySectionSchema = sectionBase.extend({
@@ -420,7 +431,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(8),
+    schemaVersion: z.literal(9),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,

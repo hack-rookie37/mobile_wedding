@@ -1,6 +1,6 @@
-import { documentSchema, type InvitationDocument } from "./document";
+import { DEFAULT_GALLERY_GAP_PX, documentSchema, type InvitationDocument } from "./document";
 
-export const CURRENT_SCHEMA_VERSION = 8;
+export const CURRENT_SCHEMA_VERSION = 9;
 
 // v6의 글자 크기 3단계 → v7의 pt 값. 기존 배율(0.93·1·1.08)에 가장 가까운 정수 pt다.
 const V6_SCALE_TO_PT: Record<string, number> = { sm: 10, md: 11, lg: 12 };
@@ -206,6 +206,47 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
       }),
     };
   },
+  // v8 → v9: 갤러리 사진의 모서리·간격을 섹션 옵션으로 승격 (요청된 표시 개선)
+  //  * 지금까지는 테마의 결과 레이아웃이 함께 정해서 사용자가 손댈 수 없었다.
+  //  * 기존 값을 문서에 심어 준다 — 기본 테마(웜 에디토리얼)를 쓰던 문서는 그대로 보인다.
+  //    필름·모노크롬 테마를 쓰던 문서는 간격이 에디토리얼 기준으로 맞춰진다.
+  8: (raw) => {
+    const doc = raw as {
+      sections?: Array<{
+        type?: unknown;
+        layout?: { variant?: unknown };
+        content?: { photoCorner?: unknown; photoGapPx?: unknown };
+      }>;
+    };
+    return {
+      ...(raw as object),
+      schemaVersion: 9,
+      sections: (doc.sections ?? []).map((section) => {
+        if (section.type !== "gallery") return section;
+        const variant = String(section.layout?.variant);
+        return {
+          ...section,
+          content: {
+            ...section.content,
+            // 대형 스트립만 각진 모서리였다
+            photoCorner:
+              section.content?.photoCorner ?? (variant === "strip" ? "sharp" : "rounded"),
+            photoGapPx:
+              section.content?.photoGapPx ?? V8_GALLERY_GAP[variant] ?? DEFAULT_GALLERY_GAP_PX,
+          },
+        };
+      }),
+    };
+  },
+};
+
+// v8까지 레이아웃별로 굳어 있던 간격(px) — 웜 에디토리얼 기준이다
+const V8_GALLERY_GAP: Record<string, number> = {
+  strip: 2,
+  slider: 12,
+  grid2: 8,
+  grid3: 6,
+  collage: 8,
 };
 
 // 맺음말에 붙어 있던 공유 버튼을 이어받는 새 섹션.

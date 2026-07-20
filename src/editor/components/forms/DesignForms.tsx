@@ -1,12 +1,14 @@
 "use client";
 
-import type {
-  ClosingSection,
-  FontId,
-  GallerySection,
-  HeroSection,
-  PhotoEffects,
-  Section,
+import {
+  GALLERY_GAP_MAX,
+  GALLERY_GAP_MIN,
+  type ClosingSection,
+  type FontId,
+  type GallerySection,
+  type HeroSection,
+  type PhotoEffects,
+  type Section,
 } from "@/invitation/schema/document";
 import { PT_MAX, PT_MIN } from "@/invitation/schema/themes";
 import { FieldLabel, NumberField, SegmentedField, ToggleField } from "@/ui/fields";
@@ -87,21 +89,45 @@ function PhotoEffectsFields({ section }: { section: HeroSection | ClosingSection
   );
 }
 
-// strip·slider는 사진 한 장을 크게 보여주므로 세로 비율을 고를 수 있다 (격자형은 고정)
-function GalleryAspectField({ section }: { section: GallerySection }) {
+// 갤러리 사진의 생김새 — 세로 비율·모서리·간격.
+// 세로 비율은 사진 한 장을 크게 보여주는 strip·slider에서만 고를 수 있다 (격자형은 타일이
+// 맞아야 해서 고정). 모서리와 간격은 모든 레이아웃에 적용된다.
+function GalleryPhotoFields({ section }: { section: GallerySection }) {
   const patch = usePatchContent(section.id);
-  const freeAspect = section.layout.variant === "strip" || section.layout.variant === "slider";
+  const { variant } = section.layout;
+  const freeAspect = variant === "strip" || variant === "slider";
 
-  if (!freeAspect) {
-    return <InfoNote>사진 세로 길이는 대형 스트립·슬라이더에서만 고를 수 있습니다.</InfoNote>;
-  }
   return (
-    <SegmentedField
-      label="사진 세로 길이"
-      value={section.content.photoAspect}
-      options={[...PHOTO_ASPECT_OPTIONS]}
-      onChange={(photoAspect) => patch({ photoAspect })}
-    />
+    <>
+      {freeAspect ? (
+        <SegmentedField
+          label="사진 세로 길이"
+          value={section.content.photoAspect}
+          options={[...PHOTO_ASPECT_OPTIONS]}
+          onChange={(photoAspect) => patch({ photoAspect })}
+        />
+      ) : (
+        <InfoNote>사진 세로 길이는 대형 스트립·슬라이더에서만 고를 수 있습니다.</InfoNote>
+      )}
+      <SegmentedField
+        label="사진 모서리"
+        value={section.content.photoCorner}
+        options={[
+          { value: "sharp", label: "각지게" },
+          { value: "rounded", label: "둥글게" },
+        ]}
+        onChange={(photoCorner) => patch({ photoCorner })}
+      />
+      <NumberField
+        label="사진 간격"
+        value={section.content.photoGapPx}
+        min={GALLERY_GAP_MIN}
+        max={GALLERY_GAP_MAX}
+        step={1}
+        unit="px"
+        onChange={(photoGapPx) => patch({ photoGapPx })}
+      />
+    </>
   );
 }
 
@@ -127,7 +153,7 @@ export function LayoutForm({ section }: { section: Section }) {
           dispatch({ type: "setSectionVariant", sectionId: section.id, variant })
         }
       />
-      {section.type === "gallery" && <GalleryAspectField section={section} />}
+      {section.type === "gallery" && <GalleryPhotoFields section={section} />}
       {section.type === "closing" && section.layout.variant === "photo" && (
         <PhotoEffectsFields section={section} />
       )}
