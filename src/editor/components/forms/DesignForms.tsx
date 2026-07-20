@@ -9,10 +9,11 @@ import type {
   Section,
 } from "@/invitation/schema/document";
 import { PT_MAX, PT_MIN } from "@/invitation/schema/themes";
-import { FieldLabel, NumberField, SegmentedField, SelectField, ToggleField } from "@/ui/fields";
+import { FieldLabel, NumberField, SegmentedField, ToggleField } from "@/ui/fields";
 import { useEditor } from "../../EditorStoreContext";
 import { SECTION_VARIANT_OPTIONS } from "../../sectionMeta";
 import { useFontOptions } from "./FontFields";
+import { FontPicker } from "./FontPicker";
 
 function InfoNote({ children }: { children: string }) {
   return (
@@ -239,7 +240,7 @@ export function StyleForm({ section }: { section: Section }) {
           고르면 미리보기에서 그 자리에서 한 번 재생됩니다.
         </p>
       </div>
-      <SelectField
+      <FontPicker
         label="글꼴 (이 섹션만)"
         value={section.style.fontFamily ?? "inherit"}
         options={fontOptions}

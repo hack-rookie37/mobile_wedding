@@ -11,6 +11,7 @@ import { createAutosaveController, type AutosaveController } from "../autosave";
 import { EditorStoreProvider, useEditorStoreHandle } from "../EditorStoreContext";
 import { createEditorStore, type EditorStore } from "../store";
 import { AiAssistantDialog } from "./ai/AiAssistantDialog";
+import { EditorFontFaces } from "./forms/FontFields";
 import { InspectorPanel } from "./InspectorPanel";
 import { PreviewCanvas } from "./PreviewCanvas";
 import { PublishPanel } from "./PublishPanel";
@@ -228,6 +229,7 @@ export function EditorShell({
       return (
         <EditorStoreProvider value={state.value.store}>
           <AssetLibraryProvider store={assetStore}>
+            <EditorFontFaces />
             <EditorChrome
               projectId={projectId}
               title={state.value.title}

@@ -9,10 +9,11 @@ import {
   validateAudioFile,
 } from "@/invitation/assets/uploadPolicy";
 import { PT_MAX, PT_MIN, THEME_ORDER, THEMES } from "@/invitation/schema/themes";
-import { FieldLabel, NumberField, SelectField } from "@/ui/fields";
+import { FieldLabel, NumberField } from "@/ui/fields";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor } from "../../EditorStoreContext";
 import { CustomFontUpload, useFontOptions } from "./FontFields";
+import { FontPicker } from "./FontPicker";
 
 // 배경음악 — 파일 업로드(오디오) 후 setMusic action으로 문서에 참조를 기록한다.
 // 게스트 화면에는 우상단 음악 켜기/끄기 버튼이 뜬다 (자동재생 없음).
@@ -109,13 +110,13 @@ function TypographyFields() {
   return (
     <div className="mt-6 space-y-4">
       <FieldLabel>폰트</FieldLabel>
-      <SelectField
+      <FontPicker
         label="제목·이름 폰트"
         value={typography.headingFont}
         options={fontOptions}
         onChange={(headingFont) => patch({ headingFont })}
       />
-      <SelectField
+      <FontPicker
         label="본문 폰트"
         value={typography.bodyFont}
         options={fontOptions}

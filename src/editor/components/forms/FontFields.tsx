@@ -7,25 +7,56 @@ import {
   formatBytes,
   validateFontFile,
 } from "@/invitation/assets/uploadPolicy";
+import { assetUrlOf } from "@/invitation/assets/assetUrls";
 import { customFontAssetIds } from "@/invitation/lib/assetRefs";
-import { CUSTOM_FONT_PREFIX, FONT_CHOICES } from "@/invitation/schema/themes";
+import type { FontId } from "@/invitation/schema/document";
+import { CUSTOM_FONT_PREFIX, FONT_CHOICES, fontCssOf } from "@/invitation/schema/themes";
+import { CustomFontFaces } from "@/renderer/CustomFontFaces";
 import { FieldLabel } from "@/ui/fields";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor } from "../../EditorStoreContext";
 
 // 폰트 선택지 = 내장 폰트 + 업로드한 폰트. 업로드 폰트의 이름은 asset의 파일명에서 온다
 // (문서에는 "custom:<assetId>" 참조만 저장한다 — 이름을 중복 저장하지 않는다).
-export function useFontOptions(themeLabel: string, themeValue: string) {
+// css는 그 줄을 실제 서체로 그리기 위한 스택이다 — '테마 기본'·'전체 설정 따름'은
+// 구체적인 서체가 아니라 따라가는 규칙이므로 null이고, 견본을 보여주지 않는다.
+export interface FontOption {
+  value: string;
+  label: string;
+  css: string | null;
+}
+
+export function useFontOptions(themeLabel: string, themeValue: string): FontOption[] {
   const { assets } = useAssetLibrary();
   const customFonts = assets.filter((asset) => asset.record.kind === "font");
   return [
-    { value: themeValue, label: themeLabel },
-    ...Object.entries(FONT_CHOICES).map(([value, font]) => ({ value, label: font.label })),
-    ...customFonts.map((asset) => ({
-      value: `${CUSTOM_FONT_PREFIX}${asset.record.id}`,
-      label: asset.record.filename,
+    { value: themeValue, label: themeLabel, css: null },
+    ...Object.entries(FONT_CHOICES).map(([value, font]) => ({
+      value,
+      label: font.label,
+      css: fontCssOf(value as FontId),
     })),
+    ...customFonts.map((asset) => {
+      const value = `${CUSTOM_FONT_PREFIX}${asset.record.id}`;
+      return { value, label: asset.record.filename, css: fontCssOf(value as FontId) };
+    }),
   ];
+}
+
+// 편집기 UI에서 업로드 폰트를 그리려면 @font-face가 문서에 있어야 한다. 캔버스 쪽
+// CustomFontFaces는 '문서가 쓰는 폰트'만 선언하므로, 아직 고르지 않은 폰트는 견본이
+// 기본 서체로 보인다 — 보관함의 폰트 전부를 선언해 선택 목록에서 미리 볼 수 있게 한다.
+export function EditorFontFaces() {
+  const { assets } = useAssetLibrary();
+  const fontIds = assets
+    .filter((asset) => asset.record.kind === "font")
+    .map((asset) => asset.record.id);
+  return (
+    <CustomFontFaces
+      assetIds={fontIds}
+      resolveFontUrl={(assetId) => assetUrlOf(assets, assetId, "font")}
+    />
+  );
 }
 
 // 폰트 파일 업로드 — 업로드만 하고 적용은 위쪽 선택 메뉴에서 한다.
