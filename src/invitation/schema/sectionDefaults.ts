@@ -110,7 +110,7 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
       return {
         ...base,
         type,
-        layout: { variant: "default" },
+        layout: { variant: "sheet" },
         content: {
           title: "참석 의사 전달",
           body: "한 분 한 분 소중히 모실 수 있도록\n참석 의사를 미리 전해 주시면 감사하겠습니다.",

@@ -82,6 +82,10 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
         if (section.type === "venue") {
           return { ...section, content: { ...section.content, mapImageAssetId: null } };
         }
+        if (section.type === "rsvp") {
+          // variant 이름 변경: default → sheet (요청된 표시 개선 — inline으로 되돌릴 수 있다)
+          return { ...section, layout: { variant: "sheet" } };
+        }
         return section;
       }),
     };

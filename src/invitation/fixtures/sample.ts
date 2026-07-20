@@ -181,7 +181,7 @@ export function createSampleDocument(): InvitationDocument {
         id: nanoid(),
         type: "rsvp",
         visible: true,
-        layout: { variant: "default" },
+        layout: { variant: "sheet" },
         style: style("md", "rise"),
         content: {
           title: "참석 의사 전달",

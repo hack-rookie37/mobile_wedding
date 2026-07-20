@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { formatWeddingDate } from "@/invitation/lib/format";
 import { RSVP_MEAL_LABELS, RSVP_SIDE_LABELS } from "@/invitation/rsvp/responses";
 import { RSVP_LIMITS, type RsvpMeal } from "@/invitation/rsvp/submission";
@@ -331,6 +338,47 @@ function RsvpForm({
   );
 }
 
+// 아래에서 올라오는 작성 시트 — 네이티브 <dialog>.showModal (GalleryLightbox와 같은 근거:
+// top layer·포커스 트랩·Esc·포커스 복귀를 브라우저가 보장). dialog는 DOM상 renderer root의
+// 자식이므로 --canvas-* 변수를 그대로 상속한다. 높이 상한은 뷰포트 기준(top layer 예외 — dvh).
+function RsvpSheet({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+  }, []);
+
+  return (
+    <dialog
+      ref={dialogRef}
+      data-rsvp-sheet
+      aria-label="참석 여부 전달"
+      onClose={onClose}
+      onClick={(e) => {
+        if (e.target === dialogRef.current) dialogRef.current.close(); // 배경 클릭 닫기
+      }}
+      className="m-auto mb-0 w-full max-w-[430px] rounded-t-2xl bg-(--canvas-paper) p-0 outline-none backdrop:bg-black/50"
+    >
+      <div className="max-h-[85dvh] overflow-y-auto px-6 pt-3 pb-9">
+        <div aria-hidden className="mx-auto h-1 w-10 rounded-full bg-(--canvas-line)" />
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-[15px] font-semibold text-(--canvas-ink)">참석 여부 전달</p>
+          <button
+            type="button"
+            aria-label="닫기"
+            onClick={() => dialogRef.current?.close()}
+            className="flex size-8 items-center justify-center rounded-full text-[15px] text-(--canvas-ink-soft) hover:text-(--canvas-ink)"
+          >
+            ✕
+          </button>
+        </div>
+        {children}
+      </div>
+    </dialog>
+  );
+}
+
 function NoticePanel({
   dataAttr,
   title,
@@ -362,6 +410,7 @@ function NoticePanel({
 export function RsvpSection({ section, index }: { section: RsvpSectionData; index: number }) {
   const { mode, rsvpSlug } = useRenderer();
   const { content } = section;
+  const sheetVariant = section.layout.variant === "sheet";
 
   // '오늘'에 의존하는 값은 client-only로 계산한다 (SSR hydration 안전 — Phase 8 D-day와 동일 패턴)
   const deadlinePassed = useSyncExternalStore(
@@ -379,6 +428,7 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
 
   const [done, setDone] = useState<"created" | "updated" | null>(null);
   const [reopened, setReopened] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const editAgainButton = (
     <button
@@ -387,12 +437,25 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
       onClick={() => {
         setDone(null);
         setReopened(true);
+        if (sheetVariant) setSheetOpen(true);
       }}
       className="mt-2 flex h-10 items-center rounded-full px-5 text-[13px] font-medium text-(--canvas-ink)"
       style={{ border: "1px solid var(--canvas-line)" }}
     >
       응답 수정하기
     </button>
+  );
+
+  const form = (
+    <RsvpForm
+      section={section}
+      slug={rsvpSlug}
+      storedToken={storedToken}
+      onDone={(result) => {
+        setDone(result);
+        setSheetOpen(false);
+      }}
+    />
   );
 
   let body: ReactNode;
@@ -422,9 +485,36 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
         action={editAgainButton}
       />
     );
+  } else if (!sheetVariant) {
+    body = form;
   } else {
+    // sheet variant: 섹션에는 열기 버튼만 — 폼은 아래에서 올라오는 시트에서 작성한다.
+    // 편집 모드에서는 시트를 열 수 없으므로(캔버스 클릭 = 섹션 선택) 내용 미리보기를 함께 그린다.
     body = (
-      <RsvpForm section={section} slug={rsvpSlug} storedToken={storedToken} onDone={setDone} />
+      <>
+        <button
+          type="button"
+          data-rsvp-open
+          disabled={mode !== "published"}
+          onClick={() => setSheetOpen(true)}
+          className="mt-8 h-12 w-full rounded-full text-[14px] font-medium transition-opacity disabled:opacity-45"
+          style={{ backgroundColor: "var(--canvas-ink)", color: "var(--canvas-paper)" }}
+        >
+          참석 여부 전달하기
+        </button>
+        {mode === "editor-edit" && (
+          <div
+            className="mt-4 rounded-xl border border-dashed px-4 pb-4"
+            style={{ borderColor: "var(--canvas-line)" }}
+          >
+            <p className="pt-3 text-center text-[11px] tracking-[0.06em] text-(--canvas-ink-soft) opacity-70">
+              게스트가 버튼을 누르면 아래 내용이 시트로 올라옵니다
+            </p>
+            {form}
+          </div>
+        )}
+        {sheetOpen && <RsvpSheet onClose={() => setSheetOpen(false)}>{form}</RsvpSheet>}
+      </>
     );
   }
 

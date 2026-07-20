@@ -56,7 +56,10 @@ export const SECTION_VARIANT_OPTIONS: Record<SectionType, { value: string; label
     { value: "accordion", label: "접이식" },
     { value: "open", label: "펼침" },
   ],
-  rsvp: [],
+  rsvp: [
+    { value: "sheet", label: "바텀시트" },
+    { value: "inline", label: "인라인 폼" },
+  ],
   closing: [
     { value: "simple", label: "텍스트" },
     { value: "photo", label: "사진과 함께" },

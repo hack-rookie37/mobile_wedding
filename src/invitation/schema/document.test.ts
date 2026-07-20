@@ -162,9 +162,10 @@ describe("migrateDocument", () => {
     const v5 = {
       ...base,
       schemaVersion: 5,
-      // v5 문서에는 v6 신규 필드가 없었다
+      // v5 문서에는 v6 신규 필드가 없었고, rsvp variant는 "default"뿐이었다
       sections: base.sections.map((s) => ({
         ...s,
+        ...(s.type === "rsvp" ? { layout: { variant: "default" } } : {}),
         content: Object.fromEntries(
           Object.entries(s.content).filter(([k]) => !V6_FIELDS.includes(k)),
         ),
@@ -189,6 +190,9 @@ describe("migrateDocument", () => {
     if (venue?.type !== "venue") throw new Error("venue가 없습니다");
     expect(venue.content.mapImageAssetId).toBeNull();
     expect(venue.content.showMapButtons).toBe(true); // 콘텐츠 보존
+    const rsvp = migrated.sections.find((s) => s.type === "rsvp");
+    if (rsvp?.type !== "rsvp") throw new Error("rsvp가 없습니다");
+    expect(rsvp.layout.variant).toBe("sheet"); // default → sheet 개명
   });
 
   it("v3 → v4: venue에 showMapButtons가 추가된다 (기존 note 보존)", () => {

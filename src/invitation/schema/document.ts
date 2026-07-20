@@ -271,7 +271,9 @@ export const rsvpContentSchema = z.object({
 
 export const rsvpSectionSchema = sectionBase.extend({
   type: z.literal("rsvp"),
-  layout: z.object({ variant: z.enum(["default"]) }),
+  // sheet: 안내 + '참석 여부 전달하기' 버튼 → 아래에서 올라오는 시트에서 작성 (벤치마크 스타일)
+  // inline: 폼을 섹션 안에 바로 펼침
+  layout: z.object({ variant: z.enum(["sheet", "inline"]) }),
   content: rsvpContentSchema,
 });
 
