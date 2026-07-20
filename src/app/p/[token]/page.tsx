@@ -38,5 +38,12 @@ export default async function PreviewByTokenPage({
   const manifest = manifestFromPreviewAssets(supabase, raw.assets);
   const payload = buildPublicPayload(raw.doc, manifest);
 
-  return <PublicInvitationView doc={payload.doc} manifest={payload.assets} previewBadge />;
+  return (
+    <PublicInvitationView
+      doc={payload.doc}
+      manifest={payload.assets}
+      previewBadge
+      calendarIcsUrl={`/p/${encodeURIComponent(token)}/wedding.ics`}
+    />
+  );
 }

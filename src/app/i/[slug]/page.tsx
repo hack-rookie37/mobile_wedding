@@ -75,6 +75,7 @@ export default async function PublicInvitationPage({
       manifest={payload.assets}
       shareTitle={publicPageMeta(payload).title}
       rsvpSlug={slug}
+      calendarIcsUrl={`/i/${encodeURIComponent(slug)}/wedding.ics`}
     />
   );
 }

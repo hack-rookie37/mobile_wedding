@@ -21,12 +21,14 @@ export function PublicInvitationView({
   previewBadge = false,
   shareTitle,
   rsvpSlug,
+  calendarIcsUrl,
 }: {
   doc: InvitationDocument;
   manifest: PublicAssetEntry[];
   previewBadge?: boolean;
   shareTitle?: string; // 지정 시 공유 버튼 표시 (Web Share API + 링크 복사 fallback)
   rsvpSlug?: string; // 발행된 공개 페이지만 전달 — 비공개 미리보기의 RSVP 폼은 제출 불가
+  calendarIcsUrl?: string; // 예식 일정(.ics) 주소 — 각 화면이 자기 경로로 만들어 넘긴다
 }) {
   const resolveAsset = useMemo(() => manifestResolver(manifest, resolveBuiltinAsset), [manifest]);
   const musicUrl = useMemo(() => musicUrlOf({ doc, assets: manifest }), [doc, manifest]);
@@ -51,6 +53,7 @@ export function PublicInvitationView({
           musicUrl={musicUrl}
           resolveFontUrl={resolveFontUrl}
           kakaoJsKey={kakaoJsKeyFromEnv()}
+          calendarIcsUrl={calendarIcsUrl ?? null}
         />
         {shareTitle !== undefined && <ShareBar title={shareTitle} />}
       </div>

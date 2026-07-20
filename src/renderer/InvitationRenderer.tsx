@@ -83,6 +83,8 @@ export interface InvitationRendererProps {
   motionReplay?: { sectionId: string; token: number } | null;
   // 카카오 JS 앱 키 — 공개 페이지만 넘긴다. 없으면 공유 영역에 링크 복사만 나온다.
   kakaoJsKey?: string | null;
+  // 예식 일정(.ics) 주소 — 게스트 화면만 넘긴다 (편집기는 저장할 대상이 없다)
+  calendarIcsUrl?: string | null;
 }
 
 // 편집기 미리보기와 공개 페이지가 공유하는 유일한 renderer (ADR-004).
@@ -99,6 +101,7 @@ export function InvitationRenderer({
   resolveFontUrl,
   motionReplay = null,
   kakaoJsKey = null,
+  calendarIcsUrl = null,
 }: InvitationRendererProps) {
   const theme = THEMES[doc.theme.id];
   const t = theme.tokens;
@@ -144,6 +147,7 @@ export function InvitationRenderer({
         motionReplay,
         kakaoJsKey,
         shareImageUrl,
+        calendarIcsUrl,
       }}
     >
       <div

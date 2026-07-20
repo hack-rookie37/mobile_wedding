@@ -14,7 +14,7 @@ import { useDeferredLoad } from "@/ui/useDeferredLoad";
 
 // 소유자용 draft 미리보기 (세션 필수 — middleware가 보호).
 // 게스트에게 공유하는 공개 페이지는 발행 후 /i/[slug]다 (ADR-012).
-function PreviewBody({ doc }: { doc: InvitationDocument }) {
+function PreviewBody({ doc, projectId }: { doc: InvitationDocument; projectId: string }) {
   const { resolveAsset, assets } = useAssetLibrary();
   const musicUrl =
     doc.music.assetId !== null
@@ -27,6 +27,7 @@ function PreviewBody({ doc }: { doc: InvitationDocument }) {
       resolveAsset={resolveAsset}
       musicUrl={musicUrl}
       kakaoJsKey={kakaoJsKeyFromEnv()}
+      calendarIcsUrl={`/preview/${projectId}/wedding.ics`}
     />
   );
 }
@@ -71,7 +72,7 @@ export default function PreviewPage({ params }: { params: Promise<{ projectId: s
     <main className="flex min-h-dvh justify-center bg-canvas-backdrop">
       <div className="w-full max-w-[430px] shadow-[0_0_28px_rgba(0,0,0,0.07)]">
         <AssetLibraryProvider store={deps.assetStore}>
-          <PreviewBody doc={state.value.doc} />
+          <PreviewBody doc={state.value.doc} projectId={projectId} />
         </AssetLibraryProvider>
       </div>
     </main>

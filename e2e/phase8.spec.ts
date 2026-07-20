@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { signUpFresh } from "./helpers/auth";
 
@@ -204,11 +203,16 @@ test("공개 페이지: 복사·전화/문자·지도 링크·일정 저장·D-d
   await expect(async () => {
     expect(await countdown.innerText()).not.toBe(beforeTick);
   }).toPass({ timeout: 3_000 });
-  const downloadPromise = guest.waitForEvent("download");
-  await guest.getByRole("button", { name: /일정 저장/ }).click();
-  const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("wedding.ics");
-  const ics = await readFile((await download.path())!, "utf-8");
+  // 일정 저장은 링크다 — 브라우저마다 다른 다운로드 동작이 아니라 서버 응답 자체를 검증한다.
+  // 모바일에서 캘린더가 열리느냐는 결국 이 Content-Type에 달려 있다.
+  const icsLink = guest.getByRole("link", { name: /일정 저장/ });
+  await expect(icsLink).toHaveAttribute("href", `/i/${slug}/wedding.ics`);
+  const icsRes = await guest.request.get(`/i/${slug}/wedding.ics`);
+  expect(icsRes.status()).toBe(200);
+  expect(icsRes.headers()["content-type"]).toContain("text/calendar");
+  // attachment면 iOS가 파일 저장으로 처리해 캘린더가 열리지 않는다
+  expect(icsRes.headers()["content-disposition"]).toContain("inline");
+  const ics = await icsRes.text();
   expect(ics).toContain("BEGIN:VEVENT");
   expect(ics).toContain("DTSTART:20260919T032000Z"); // 서울 12:20 → UTC 03:20
   expect(ics).toContain("SUMMARY:이정훈 ♥ 양은진 결혼식");

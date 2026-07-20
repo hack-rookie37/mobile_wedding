@@ -21,6 +21,8 @@ export interface RendererContextValue {
   kakaoJsKey: string | null;
   // 공유 카드에 실을 대표 사진 (메인 사진) — 없으면 카카오는 이미지 없는 카드로 보낸다
   shareImageUrl: string | null;
+  // 예식 일정(.ics)을 내려주는 주소 — 게스트 화면만 갖는다 (편집기는 null → 버튼 비활성)
+  calendarIcsUrl: string | null;
 }
 
 const RendererContext = createContext<RendererContextValue | null>(null);

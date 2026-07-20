@@ -61,6 +61,30 @@ test("첫 vertical slice 여정과 스크린샷", async ({ page }) => {
   await expect(page.getByText("공군호텔", { exact: true })).toBeVisible();
   await page.screenshot({ path: "screenshots/public-390x844.png" });
   await page.screenshot({ path: "screenshots/public-390-full.png", fullPage: true });
+
+  // 일정 저장: 소유자 미리보기에서도 실제로 내려받힌다 (게스트 화면과 같은 동작이어야 한다).
+  // 모바일에서 캘린더가 열리느냐는 Content-Type에 달려 있으므로 헤더까지 본다.
+  const icsPath = `/preview/${projectId}/wedding.ics`;
+  await expect(page.getByRole("link", { name: /일정 저장/ })).toHaveAttribute("href", icsPath);
+  const ics = await page.request.get(icsPath);
+  expect(ics.status()).toBe(200);
+  expect(ics.headers()["content-type"]).toContain("text/calendar");
+  expect(await ics.text()).toContain("BEGIN:VEVENT");
+});
+
+test("남의 초안 .ics는 내려받을 수 없다", async ({ page, browser }) => {
+  await signUpFresh(page);
+  await page.getByRole("button", { name: "샘플 청첩장 만들기" }).click();
+  await page.waitForURL(/\/editor\//);
+  const projectId = page.url().split("/editor/")[1];
+
+  // 다른 사용자 — RLS가 조회 자체를 막으므로 '없음'과 구분되지 않는 404가 나와야 한다
+  const other = await browser.newContext();
+  const otherPage = await other.newPage();
+  await signUpFresh(otherPage);
+  const res = await otherPage.request.get(`/preview/${projectId}/wedding.ics`);
+  expect(res.status()).toBe(404);
+  await other.close();
 });
 
 test("존재하지 않는 프로젝트는 명시적 안내를 보여준다", async ({ page }) => {

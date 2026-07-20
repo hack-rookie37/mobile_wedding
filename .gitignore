@@ -22,6 +22,8 @@ next-env.d.ts
 .DS_Store
 *.pem
 .env*.local
+# 백업본(.env.local.bak 등) — 접미사가 붙으면 위 패턴에 안 걸린다
+.env*.local.*
 
 # typescript
 *.tsbuildinfo
