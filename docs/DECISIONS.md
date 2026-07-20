@@ -397,3 +397,23 @@
 **Consequences**: 계정 추가 경로는 Supabase 대시보드뿐이다 — 운영자가 자기 계정을 잃으면 대시보드로 복구해야 한다. 로컬과 운영의 Auth 설정이 의도적으로 다르므로(로컬 가입 허용), 운영 설정은 코드로 보장되지 않고 체크리스트·`config.toml` 주석으로만 강제된다 — 배포 후 실제 거부를 확인하는 스모크 테스트를 체크리스트에 넣어 보완했다.
 
 **Alternatives**: 로컬도 `enable_signup = false` — 테스트가 계정을 만들 수 없고, 유일한 우회가 service role 키라 ADR-006과 충돌해 기각. 전 e2e를 고정 계정 1개로 공유 — 사용자 격리가 사라져 RLS 교차 접근 테스트가 무의미해지므로 기각. 가입은 열어 두고 이메일 allowlist로 서버 검증 — 지금 없는 문제를 위한 코드라 기각(YAGNI).
+
+## ADR-025. 벤치마크 리뉴얼 1차: 스키마 v6 (전면 히어로·카운트다운·대형 갤러리·약도·바텀시트 RSVP·BGM·폰트)
+
+**Status**: 확정 (2026-07-20)
+
+**Context**: 벤치마크 청첩장(sunghyunyeeun.com)을 기준으로 표현력을 확장했다. 사진이 크게 보이는 것(가로 꽉, 세로 조절), 실시간 D-day, 약도·지도 앱 버튼, 아래에서 올라오는 RSVP, 배경음악, 폰트 선택이 요구사항.
+
+**Decision** (전부 스키마 v5→v6 한 번에 — v6는 미배포 상태에서 확장):
+
+1. **풀블리드 기반**: SectionShell에 bleed(좌우 패딩 해제)·flushTop 옵션. hero photoFull(전면+하단 페이드)·gallery strip(88% 가로 스냅)·달력 가로 확장이 공유. photoAspect(1:1~9:16)는 hero·gallery 공용 enum.
+2. **실시간 카운트다운**: calendar.ddayStyle(badge|countdown). 초 단위 타이머는 useSyncExternalStore + 서버 스냅샷 null (hydration 안전 패턴 유지).
+3. **오시는 길**: venue.mapImageAssetId(약도, 원본 비율·crop 없음, venueMap asset slot) + 지도 검색어를 주소→예식장 이름 우선으로 + 브랜드색 점 버튼(로고 이미지 미포함 — 상표 리소스).
+4. **RSVP 바텀시트**: variant default→sheet|inline 개명. sheet는 네이티브 dialog(085dvh), 제출·소프트 가드 로직 불변. 편집 모드는 점선 미리보기 병행.
+5. **asset kind 도입(BGM)**: project_assets.kind(image|audio), 치수는 kind 조건부(null-safe CHECK — CHECK의 NULL 통과 함정 주의), 버킷 mime에 mp3·m4a. 문서 최상위 music.assetId + setMusic action. 구버전 manifest/로컬 행은 이미지로 보정. 자동재생 없음 — 게스트가 켠다. 이 일반화가 커스텀 폰트 업로드의 기반.
+6. **폰트**: 문서 최상위 typography(headingFont·bodyFont·scale) + 섹션 style.fontFamily/fontScale override. 구현은 CSS 변수 cascade(--canvas-font-*, --canvas-fs) — 렌더러 텍스트 108곳을 calc(Npx*var(--canvas-fs))로 변환. updateTypography action.
+7. **AI 경계**: setMusic·updateTypography는 allowlist 제외(기본 폐쇄). content 신규 필드는 기존 규칙대로 자동 허용.
+
+**Consequences**: 기존 문서·발행 스냅샷은 마이그레이션으로 무손실 승격(카운트다운·바텀시트는 의도적 표시 개선 — 편집기에서 되돌릴 수 있다). 커스텀 폰트 업로드는 asset kind에 font만 추가하면 된다(후속).
+
+**Alternatives**: BGM을 별도 저장 경로로 우회 — 발행 보호·복제 리맵·manifest가 갈라져 기각. 글자 크기를 zoom/transform으로 — 레이아웃 전체가 확대돼 기각. 버전을 슬라이스마다 v7·v8로 — v6 미배포 상태라 불필요한 버전 파편화로 기각.
