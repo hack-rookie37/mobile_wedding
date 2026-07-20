@@ -262,6 +262,17 @@ test("커스텀 폰트: 업로드하면 선택지에 뜨고 @font-face가 주입
 
   // 사용 중인 폰트는 지울 수 없다
   await expect(inspector(page).getByRole("button", { name: "사용 중" })).toBeDisabled();
+
+  // 소유자 미리보기(/preview/[projectId])에도 같은 @font-face가 실린다.
+  // 이 화면만 폰트 배선이 빠져 커스텀 폰트가 기본 폰트로 보이던 적이 있다.
+  const projectId = new URL(page.url()).pathname.split("/").pop()!;
+  await page.goto(`/preview/${projectId}`);
+  await expect(canvas(page)).toBeVisible();
+  const previewFontFace = await canvas(page).evaluate(
+    (el) => el.querySelector("style")?.textContent ?? "",
+  );
+  expect(previewFontFace).toContain("@font-face");
+  expect(previewFontFace).toMatch(/font-family:"cf-[\w-]+"/);
 });
 
 test("커스텀 폰트: 한 번에 여러 개를 올리고, 하나가 잘못돼도 나머지는 올라간다", async ({

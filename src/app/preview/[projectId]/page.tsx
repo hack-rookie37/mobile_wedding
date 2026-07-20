@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use, useCallback, useState } from "react";
 import { AssetLibraryProvider, useAssetLibrary } from "@/editor/assets/AssetLibraryContext";
 import { BUILTIN_ASSETS } from "@/editor/assets/builtinAssets";
+import { assetUrlOf } from "@/invitation/assets/assetUrls";
 import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import type { InvitationDocument } from "@/invitation/schema/document";
 import { InvitationRenderer } from "@/renderer/InvitationRenderer";
@@ -16,16 +17,14 @@ import { useDeferredLoad } from "@/ui/useDeferredLoad";
 // 게스트에게 공유하는 공개 페이지는 발행 후 /i/[slug]다 (ADR-012).
 function PreviewBody({ doc, projectId }: { doc: InvitationDocument; projectId: string }) {
   const { resolveAsset, assets } = useAssetLibrary();
-  const musicUrl =
-    doc.music.assetId !== null
-      ? (assets.find((a) => a.record.id === doc.music.assetId)?.fullUrl ?? null)
-      : null;
+  const musicUrl = assetUrlOf(assets, doc.music.assetId, "audio");
   return (
     <InvitationRenderer
       doc={doc}
       mode="published"
       resolveAsset={resolveAsset}
       musicUrl={musicUrl}
+      resolveFontUrl={(assetId) => assetUrlOf(assets, assetId, "font")}
       kakaoJsKey={kakaoJsKeyFromEnv()}
       calendarIcsUrl={`/preview/${projectId}/wedding.ics`}
     />

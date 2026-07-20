@@ -3,23 +3,17 @@
 import { useEffect, useRef } from "react";
 import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import { InvitationRenderer } from "@/renderer/InvitationRenderer";
+import { assetUrlOf } from "@/invitation/assets/assetUrls";
 import { useAssetLibrary } from "../assets/AssetLibraryContext";
 import { useEditor, useEditorStoreHandle } from "../EditorStoreContext";
 
 export function PreviewCanvas() {
   const { resolveAsset, assets } = useAssetLibrary();
   const doc = useEditor((s) => s.doc);
-  const musicAssetId = doc.music.assetId;
-  const musicUrl =
-    musicAssetId !== null
-      ? (assets.find((a) => a.record.id === musicAssetId)?.fullUrl ?? null)
-      : null;
+  const musicUrl = assetUrlOf(assets, doc.music.assetId, "audio");
   const motionReplay = useEditor((s) => s.motionReplay);
   // 업로드 폰트 파일 URL — 렌더러가 @font-face를 직접 선언한다
-  const resolveFontUrl = (assetId: string) => {
-    const asset = assets.find((a) => a.record.id === assetId);
-    return asset !== undefined && asset.record.kind === "font" ? asset.fullUrl : null;
-  };
+  const resolveFontUrl = (assetId: string) => assetUrlOf(assets, assetId, "font");
   const selected = useEditor((s) => s.selected);
   const width = useEditor((s) => s.previewWidth);
   const mode = useEditor((s) => s.previewMode);
