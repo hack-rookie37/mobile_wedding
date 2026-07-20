@@ -56,7 +56,7 @@ export function TopBar({
   return (
     <header className="flex h-[52px] shrink-0 items-center gap-3 border-b border-tool-border bg-tool-surface px-4">
       <Link
-        href="/"
+        href="/edit"
         className="text-[13px] text-tool-ink-soft transition-colors hover:text-tool-ink"
       >
         ← 내 청첩장

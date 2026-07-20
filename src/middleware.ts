@@ -2,9 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 // 보호 경로(대시보드·편집기·소유자 미리보기)는 세션 필수 — 없으면 /login.
-// 공개 경로: /login, 발행된 청첩장(/i/*), 토큰 미리보기(/p/* — 토큰 검증은 RPC가 수행),
+// 공개 경로: 도메인 루트 청첩장(/ 과 /wedding.ics — 하객이 받는 주소다), /login,
+// 발행된 청첩장(/i/*), 토큰 미리보기(/p/* — 토큰 검증은 RPC가 수행),
 // 게스트 RSVP 제출(/api/rsvp — 검증·제한은 route와 DB RPC가 수행), 테마 검증용 dev 라우트.
+// 루트는 반드시 /^\/$/ 로 고정한다 — /^\// 로 쓰면 모든 경로가 공개가 된다.
 const PUBLIC_PATTERNS = [
+  /^\/$/,
+  /^\/wedding\.ics$/,
   /^\/login$/,
   /^\/i\//,
   /^\/p\//,
@@ -12,6 +16,9 @@ const PUBLIC_PATTERNS = [
   /^\/fixture\//,
   /^\/themes$/,
 ];
+
+// 로그인한 사람이 돌아갈 곳 — 루트는 하객 청첩장이므로 편집 목록으로 보낸다.
+const DASHBOARD_PATH = "/edit";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -51,7 +58,7 @@ export async function middleware(request: NextRequest) {
   }
   if (user && path === "/login") {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/";
+    redirectUrl.pathname = DASHBOARD_PATH;
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }

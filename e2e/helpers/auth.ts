@@ -30,5 +30,5 @@ export async function signIn(page: Page, user: TestUser): Promise<void> {
   await page.getByLabel("이메일").fill(user.email);
   await page.getByLabel("비밀번호").fill(user.password);
   await page.getByRole("button", { name: "로그인", exact: true }).click();
-  await page.waitForURL((url) => url.pathname === "/");
+  await page.waitForURL((url) => url.pathname === "/edit");
 }

@@ -22,16 +22,24 @@ test.beforeEach(async ({ page }) => {
 
 test("인증: 보호 경로는 로그인으로 보내고, 가입·로그아웃·재로그인이 동작한다", async ({ page }) => {
   // 세션 없이 보호 경로 접근 → /login
-  await page.goto("/");
+  await page.goto("/edit");
   await page.waitForURL(/\/login/);
   await page.goto("/editor/anything");
   await page.waitForURL(/\/login/);
+
+  // 도메인 루트는 하객이 받는 주소다 — 세션 없이도 로그인으로 튕기지 않아야 한다
+  await page.goto("/");
+  await expect(page).toHaveURL(/localhost:3100\/$/);
+
+  // 하객이 받는 일정 파일도 같은 이유로 공개다. 발행 여부와 무관하게 로그인으로만 안 튕기면 된다
+  const ics = await page.request.get("/wedding.ics");
+  expect(new URL(ics.url()).pathname).toBe("/wedding.ics");
 
   const user = await signUpFresh(page);
 
   // 로그인 상태에서 /login 접근 → 대시보드로
   await page.goto("/login");
-  await page.waitForURL((url) => url.pathname === "/");
+  await page.waitForURL((url) => url.pathname === "/edit");
 
   await page.getByRole("button", { name: "로그아웃" }).click();
   await page.waitForURL(/\/login/);
@@ -43,7 +51,7 @@ test("인증: 보호 경로는 로그인으로 보내고, 가입·로그아웃·
 test("프로젝트: 생성·이름 변경·복제·보관·삭제와 마지막 수정 시간", async ({ page }) => {
   await signUpFresh(page);
   await createSample(page);
-  await page.goto("/");
+  await page.goto("/edit");
 
   const row = page.locator("[data-project-row]");
   await expect(row).toHaveCount(1);

@@ -15,7 +15,7 @@ export default function ThemeComparePage() {
   return (
     <div className="flex h-dvh flex-col bg-tool-bg text-tool-ink">
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-tool-border bg-tool-surface px-6">
-        <Link href="/" className="text-[13px] text-tool-ink-soft hover:text-tool-ink">
+        <Link href="/edit" className="text-[13px] text-tool-ink-soft hover:text-tool-ink">
           ← 내 청첩장
         </Link>
         <div aria-hidden className="h-4 w-px bg-tool-border" />

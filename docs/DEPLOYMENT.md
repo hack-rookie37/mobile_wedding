@@ -40,10 +40,15 @@ npm run test:e2e
 - [ ] 환경 변수 (`.env.example` 참고):
   - `NEXT_PUBLIC_SUPABASE_URL` — Supabase 프로젝트 URL
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — anon(publishable) 키
+  - `NEXT_PUBLIC_INVITATION_SLUG` — 도메인 루트(`/`)가 보여줄 발행본의 공개 주소 (ADR-029).
+    편집기에서 이 slug로 발행해야 도메인에 뜬다. 값을 바꾸면 **재배포**해야 반영된다
+    (빌드 타임 인라인)
+  - (선택) `NEXT_PUBLIC_KAKAO_JS_KEY` — 카카오톡 공유 버튼. 없으면 '링크 복사'만 나온다
   - (선택) `ANTHROPIC_API_KEY` + `AI_MODEL` — AI 도우미. 서버 전용, `NEXT_PUBLIC_` 금지
   - `AI_PROVIDER`는 운영에 설정하지 않는다(mock은 데모·테스트용)
 - [ ] 빌드 커맨드 `npm run build` / Node 20+
 - [ ] 커스텀 도메인 연결 → Supabase Auth Site URL·Redirect URL에 반영
+- [ ] 카카오 개발자 콘솔: JavaScript SDK 도메인 + 제품 링크 관리 > 웹 도메인에 운영 도메인 등록
 
 ### 1.4 배포 직후 스모크 테스트 (수동)
 

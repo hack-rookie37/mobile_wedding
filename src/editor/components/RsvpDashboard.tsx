@@ -411,7 +411,7 @@ function CenteredNotice({ title, detail }: { title: string; detail?: string }) {
     <div className="flex h-dvh flex-col items-center justify-center gap-3 bg-tool-bg text-tool-ink">
       <p className="text-[15px] font-medium">{title}</p>
       {detail && <p className="max-w-md text-center text-[13px] text-tool-ink-soft">{detail}</p>}
-      <Link href="/" className="text-[13px] text-tool-accent underline underline-offset-2">
+      <Link href="/edit" className="text-[13px] text-tool-accent underline underline-offset-2">
         내 청첩장으로 돌아가기
       </Link>
     </div>

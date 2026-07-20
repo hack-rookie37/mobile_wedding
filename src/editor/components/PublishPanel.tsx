@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { publicUrlOf, rootSlugFromEnv } from "@/invitation/lib/site";
 import { slugError, suggestSlug } from "@/invitation/lib/slug";
 import type { PreviewLink, ProjectPersistence, PublishState } from "@/invitation/persistence/port";
 
@@ -104,8 +105,9 @@ export function PublishPanel({
   };
 
   const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const rootSlug = rootSlugFromEnv();
   const previewUrl = previewLink !== null ? `${origin}/p/${previewLink.token}` : null;
-  const publicUrl = publishState !== null ? `${origin}/i/${publishState.slug}` : null;
+  const publicUrl = publishState !== null ? publicUrlOf(origin, publishState.slug, rootSlug) : null;
   const slugMessage = slug === "" ? null : slugError(slug);
   const isLive = publishState?.status === "live";
   const needsRepublish = isLive && publishState !== null && currentRev > publishState.publishedRev;
@@ -240,6 +242,7 @@ export function PublishPanel({
               {slugMessage !== null && (
                 <p className="mt-1 text-[11px] text-tool-danger">{slugMessage}</p>
               )}
+              <RootSlugNote origin={origin} slug={slug} rootSlug={rootSlug} />
             </div>
 
             {publishState !== null && (
@@ -312,6 +315,34 @@ export function PublishPanel({
         </div>
       )}
     </dialog>
+  );
+}
+
+// 이 주소가 도메인 루트에 걸린 그 주소인지 알려준다. 다른 주소로 발행해두고
+// "왜 도메인에 안 뜨지"로 헤매는 게 이 화면에서 제일 하기 쉬운 실수다.
+function RootSlugNote({
+  origin,
+  slug,
+  rootSlug,
+}: {
+  origin: string;
+  slug: string;
+  rootSlug: string | null;
+}) {
+  if (rootSlug === null || slug === "") return null;
+  if (slug === rootSlug) {
+    return (
+      <p data-root-slug-note className="mt-1.5 text-[11px] text-tool-ink-soft">
+        도메인 대표 주소입니다 — 하객에게는{" "}
+        <strong className="font-semibold text-tool-ink">{origin}</strong> 로 열립니다.
+      </p>
+    );
+  }
+  return (
+    <p data-root-slug-note className="mt-1.5 text-[11px] text-[#9a6b1f]">
+      {origin} 는 <strong className="font-semibold">{rootSlug}</strong> 를 보여줍니다. 이 청첩장을
+      도메인 대표로 걸려면 주소를 <strong className="font-semibold">{rootSlug}</strong> 로 맞추세요.
+    </p>
   );
 }
 

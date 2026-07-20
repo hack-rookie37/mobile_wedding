@@ -9,7 +9,7 @@
                          ┌──────────────────────────────┐
   제작자 (데스크톱)        │  Next.js 16 App (Vercel)      │        하객 (모바일)
   ───────────────►       │                              │       ◄───────────────
-  /editor/[projectId]    │  editor UI ──┐               │       /i/[slug]
+  /edit → /editor/[id]   │  editor UI ──┐               │    / (도메인 루트)
                          │              ▼               │
                          │        ┌──────────┐          │
                          │        │ renderer │ ◄────────│──── 동일 모듈 (원칙 5)
@@ -366,17 +366,19 @@ interface AssetStore {
 
 | 경로 | 접근 | 역할 | 상태 |
 |------|------|------|------|
-| `/` | 소유자 | 대시보드: 프로젝트 목록·생성·개명·복제·보관·삭제 | ✅ Phase 6 |
+| `/` | 공개 | 도메인 루트 청첩장 — `NEXT_PUBLIC_INVITATION_SLUG`가 가리키는 발행본 (ADR-029) | ✅ |
+| `/wedding.ics` | 공개 | 루트 청첩장의 예식 일정 | ✅ |
+| `/edit` | 소유자 | 대시보드: 프로젝트 목록·생성·개명·복제·보관·삭제 | ✅ Phase 6 |
 | `/login` | 공개 | Supabase Auth 이메일+비밀번호 로그인 (A-01). 공개 가입 없음 — 계정은 Supabase 대시보드에서 생성 (ADR-024) | ✅ Phase 6 |
 | `/editor/[projectId]` | 소유자 | 편집기 (자동 저장·기록·발행) | ✅ |
 | `/preview/[projectId]` | 소유자 | draft 모바일 뷰 (A-19) | ✅ |
-| `/i/[slug]` | 공개 | 발행된 live 스냅샷 (인증 불필요, noindex, 공유 버튼) | ✅ Phase 7 |
+| `/i/[slug]` | 공개 | 발행된 live 스냅샷 (인증 불필요, noindex, 공유 버튼). 루트가 이 중 하나를 가리킨다 | ✅ Phase 7 |
 | `/p/[token]` | 공개(토큰) | 비공개 미리보기 — 현재 draft, noindex | ✅ Phase 7 |
 | `/editor/[projectId]/rsvp` | 소유자 | RSVP 결과: 집계·검색·필터·상세·삭제·CSV (A-22) | ✅ Phase 9 |
 | `POST /api/rsvp` | 공개 | RSVP 제출 (검증·허니팟·rate limit → definer RPC) | ✅ Phase 9 |
 | `POST /api/ai/propose` | 소유자 | AI 편집 제안 (sanitized projection → provider → 4겹 검증) | ✅ Phase 10 |
 
-인증 가드: `src/middleware.ts`가 세션을 검증(getUser)·갱신하고 미로그인 시 `/login` 리다이렉트. 공개 경로는 `/login`·`/i/*`·`/p/*`·`POST /api/rsvp`·dev 검증 라우트(`/fixture/*`·`/themes`)뿐. 데이터 접근의 실질 방어는 RLS.
+인증 가드: `src/middleware.ts`가 세션을 검증(getUser)·갱신하고 미로그인 시 `/login` 리다이렉트. 공개 경로는 `/`·`/wedding.ics`·`/login`·`/i/*`·`/p/*`·`POST /api/rsvp`·dev 검증 라우트(`/fixture/*`·`/themes`)뿐. 루트 패턴은 반드시 `/^\/$/`로 고정한다 — `/^\//`로 쓰면 모든 경로가 공개가 된다. 데이터 접근의 실질 방어는 RLS.
 
 ## 12. 기술 스택 확정 (버전은 2026-07-16 npm latest 실측)
 
