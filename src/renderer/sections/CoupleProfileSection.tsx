@@ -43,19 +43,19 @@ function ProfileCard({
         className={stacked ? "w-32 shrink-0" : undefined}
       />
       <div className={clsx("min-w-0", stacked ? "pt-1" : "mt-4")}>
-        <p className="text-[11px] font-medium tracking-[0.16em] text-(--canvas-accent)">
+        <p className="text-[length:calc(11px*var(--canvas-fs))] font-medium tracking-[0.16em] text-(--canvas-accent)">
           {roleLabel}
         </p>
-        <p className="mt-1 font-(family-name:--canvas-font-heading) text-[17px] leading-[1.5] font-semibold text-(--canvas-ink)">
+        <p className="mt-1 font-(family-name:--canvas-font-heading) text-[length:calc(17px*var(--canvas-fs))] leading-[1.5] font-semibold text-(--canvas-ink)">
           {person.name}
         </p>
         {showParents && parents !== null && (
-          <p className="mt-0.5 text-[12px] leading-[1.7] text-(--canvas-ink-soft)">
+          <p className="mt-0.5 text-[length:calc(12px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
             {parents.parents}의{parents.relation !== "" ? ` ${parents.relation}` : ""}
           </p>
         )}
         {entry.intro !== "" && (
-          <p className="mt-2.5 text-[13px] leading-[1.8] whitespace-pre-line text-(--canvas-ink-soft)">
+          <p className="mt-2.5 text-[length:calc(13px*var(--canvas-fs))] leading-[1.8] whitespace-pre-line text-(--canvas-ink-soft)">
             {entry.intro}
           </p>
         )}

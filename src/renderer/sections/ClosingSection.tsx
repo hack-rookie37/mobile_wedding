@@ -47,7 +47,7 @@ function ShareButton() {
       data-closing-share
       aria-live="polite"
       onClick={() => void share()}
-      className="h-10 rounded-full px-5 text-[13px] font-medium text-(--canvas-ink)"
+      className="h-10 rounded-full px-5 text-[length:calc(13px*var(--canvas-fs))] font-medium text-(--canvas-ink)"
       style={{ border: "1px solid var(--canvas-line)" }}
     >
       {copied ? "링크가 복사되었습니다" : "청첩장 링크 공유"}

@@ -5,7 +5,7 @@ export function BodyText({ text, align = "center" }: { text: string; align?: "ce
   return (
     <p
       className={clsx(
-        "text-[15px] leading-[1.8] tracking-[-0.005em] whitespace-pre-line text-(--canvas-ink)",
+        "text-[length:calc(15px*var(--canvas-fs))] leading-[1.8] tracking-[-0.005em] whitespace-pre-line text-(--canvas-ink)",
         align === "center" ? "text-center" : "text-left",
       )}
     >

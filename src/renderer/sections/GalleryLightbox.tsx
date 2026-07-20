@@ -21,7 +21,7 @@ function LightboxButton({
       type="button"
       aria-label={label}
       onClick={onClick}
-      className="flex h-9 min-w-9 items-center justify-center rounded-full bg-white/15 px-3.5 text-[13px] text-white transition-colors hover:bg-white/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+      className="flex h-9 min-w-9 items-center justify-center rounded-full bg-white/15 px-3.5 text-[length:calc(13px*var(--canvas-fs))] text-white transition-colors hover:bg-white/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
     >
       {children}
     </button>
@@ -92,14 +92,16 @@ export function GalleryLightbox({
           />
         ) : (
           <div className="flex aspect-square w-full items-center justify-center bg-[#2b2b2b]">
-            <span className="text-[12px] tracking-[0.08em] text-white/60">이미지 없음</span>
+            <span className="text-[length:calc(12px*var(--canvas-fs))] tracking-[0.08em] text-white/60">
+              이미지 없음
+            </span>
           </div>
         )}
-        <figcaption className="text-center text-[13px] leading-[1.5] text-white/85">
+        <figcaption className="text-center text-[length:calc(13px*var(--canvas-fs))] leading-[1.5] text-white/85">
           {photo.caption || photo.alt || ""}
           <span
             aria-live="polite"
-            className="mt-0.5 block text-[11px] tracking-[0.08em] text-white/50 tabular-nums"
+            className="mt-0.5 block text-[length:calc(11px*var(--canvas-fs))] tracking-[0.08em] text-white/50 tabular-nums"
           >
             {index + 1} / {photos.length}
           </span>

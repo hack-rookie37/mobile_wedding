@@ -40,6 +40,26 @@ export const themeSchema = z.object({
 
 // ── 섹션 공통
 
+// ── 폰트 — id 목록만 스키마가 안다. CSS 스택 해석은 themes.ts(FONT_CHOICES)가 담당.
+// "theme"은 테마 기본값을 그대로 쓴다는 뜻이다.
+
+export const fontIdSchema = z.enum([
+  "theme",
+  "noto-serif",
+  "nanum-myeongjo",
+  "gowun-batang",
+  "gowun-dodum",
+  "sans",
+]);
+
+export const fontScaleSchema = z.enum(["sm", "md", "lg"]); // md = 100%
+
+export const typographySchema = z.object({
+  headingFont: fontIdSchema, // 제목·이름 (테마 headingFont 대체)
+  bodyFont: fontIdSchema, // 본문 (테마 bodyFont 대체)
+  scale: fontScaleSchema, // 전체 글자 크기
+});
+
 export const sectionStyleSchema = z.object({
   paddingY: z.enum(["sm", "md", "lg"]),
   background: z
@@ -47,6 +67,9 @@ export const sectionStyleSchema = z.object({
     .regex(/^#[0-9a-fA-F]{6}$/, "background는 #rrggbb 형식이어야 합니다")
     .optional(),
   animation: z.enum(["none", "fade", "rise"]),
+  // 섹션별 폰트·크기 override — 미지정이면 전역(typography)을 따른다
+  fontFamily: fontIdSchema.optional(),
+  fontScale: fontScaleSchema.optional(),
 });
 
 const sectionBase = z.object({
@@ -352,6 +375,7 @@ export const documentSchema = z
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,
+    typography: typographySchema,
     sections: z.array(sectionSchema).min(1),
   })
   .superRefine((doc, ctx) => {
@@ -386,6 +410,9 @@ export type Wedding = z.infer<typeof weddingSchema>;
 export type ThemeId = z.infer<typeof themeIdSchema>;
 export type Theme = z.infer<typeof themeSchema>;
 export type Music = z.infer<typeof musicSchema>;
+export type FontId = z.infer<typeof fontIdSchema>;
+export type FontScale = z.infer<typeof fontScaleSchema>;
+export type Typography = z.infer<typeof typographySchema>;
 export type SectionStyle = z.infer<typeof sectionStyleSchema>;
 export type PhotoFrame = z.infer<typeof photoFrameSchema>;
 export type PhotoAspect = z.infer<typeof photoAspectSchema>;

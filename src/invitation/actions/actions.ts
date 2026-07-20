@@ -3,6 +3,7 @@ import {
   photoFrameSchema,
   sectionStyleSchema,
   themeIdSchema,
+  typographySchema,
   weddingSchema,
 } from "../schema/document";
 import { ADDABLE_SECTION_TYPES } from "../schema/sectionDefaults";
@@ -99,6 +100,12 @@ export const setMusicActionSchema = z.object({
   assetId: z.string().min(1).nullable(),
 });
 
+// 전역 폰트·글자 크기 — AI allowlist 제외 (표현은 사용자가 직접 고른다, 기본 폐쇄)
+export const updateTypographyActionSchema = z.object({
+  type: z.literal("updateTypography"),
+  patch: typographySchema.partial(),
+});
+
 // 갤러리 사진 한 장 이동 — 드래그·키보드·메뉴가 같은 action을 쓴다.
 // 연속 이동이 undo 1스텝으로 뭉치지 않도록 coalescing 대상이 아니다.
 export const moveGalleryPhotoActionSchema = z.object({
@@ -158,6 +165,7 @@ const documentActionSchemas = [
   setSectionVariantActionSchema,
   setThemeActionSchema,
   setMusicActionSchema,
+  updateTypographyActionSchema,
   updateWeddingActionSchema,
   assignAssetActionSchema,
   removeAssetReferenceActionSchema,
@@ -215,6 +223,8 @@ export function coalesceKeyOf(action: EditorAction): string | undefined {
       return `uss:${action.sectionId}:${Object.keys(action.patch).sort().join("|")}`;
     case "updateWedding":
       return `uw:${Object.keys(action.patch).sort().join("|")}`;
+    case "updateTypography":
+      return `ut:${Object.keys(action.patch).sort().join("|")}`;
     case "updateGalleryPhoto":
       // 같은 사진·같은 필드의 연속 입력(캡션 타이핑, crop 슬라이더)만 병합
       return `ugp:${action.sectionId}:${action.index}:${Object.keys(action.patch).sort().join("|")}`;

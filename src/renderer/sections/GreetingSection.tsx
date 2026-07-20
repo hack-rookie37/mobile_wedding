@@ -12,11 +12,20 @@ function ParentsLine({ person, className }: { person: Wedding["groom"]; classNam
   const line = parentsLineOf(person);
   if (!line) return null;
   return (
-    <p className={clsx("text-[15px] leading-[1.9] text-(--canvas-ink)", className)}>
+    <p
+      className={clsx(
+        "text-[length:calc(15px*var(--canvas-fs))] leading-[1.9] text-(--canvas-ink)",
+        className,
+      )}
+    >
       {line.parents}
-      <span className="mr-1.5 text-[14px] text-(--canvas-ink-soft)">의</span>
+      <span className="mr-1.5 text-[length:calc(14px*var(--canvas-fs))] text-(--canvas-ink-soft)">
+        의
+      </span>
       {line.relation !== "" && (
-        <span className="mr-1.5 text-[13px] text-(--canvas-ink-soft)">{line.relation}</span>
+        <span className="mr-1.5 text-[length:calc(13px*var(--canvas-fs))] text-(--canvas-ink-soft)">
+          {line.relation}
+        </span>
       )}
       <span className="font-medium">{line.name}</span>
     </p>
@@ -56,10 +65,13 @@ export function GreetingSection({
                 className="flex items-baseline gap-5 py-3"
                 style={{ borderTop: "1px solid var(--canvas-line)" }}
               >
-                <span className="w-12 shrink-0 text-[10px] font-medium tracking-[0.14em] text-(--canvas-ink-soft)">
+                <span className="w-12 shrink-0 text-[length:calc(10px*var(--canvas-fs))] font-medium tracking-[0.14em] text-(--canvas-ink-soft)">
                   {label}
                 </span>
-                <ParentsLine person={person} className="text-[14px]" />
+                <ParentsLine
+                  person={person}
+                  className="text-[length:calc(14px*var(--canvas-fs))]"
+                />
               </div>
             ))}
           </div>

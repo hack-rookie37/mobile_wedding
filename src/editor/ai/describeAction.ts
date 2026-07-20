@@ -148,7 +148,15 @@ export function describeAiAction(doc: InvitationDocument, action: AiAction): AiC
       if (keys.length === 1 && section) {
         const key = keys[0];
         const fieldLabel =
-          key === "paddingY" ? "상하 여백" : key === "animation" ? "진입 모션" : "배경색";
+          key === "paddingY"
+            ? "상하 여백"
+            : key === "animation"
+              ? "진입 모션"
+              : key === "fontFamily"
+                ? "글꼴"
+                : key === "fontScale"
+                  ? "글자 크기"
+                  : "배경색";
         const styleValue = (value: unknown) =>
           typeof value === "string" ? (STYLE_VALUE_LABELS[value] ?? value) : displayValue(value);
         return {

@@ -18,7 +18,9 @@ function FallbackBox({ message }: { message: string }) {
       className="flex h-full w-full items-center justify-center px-6 text-center"
       style={{ backgroundColor: "var(--canvas-line)" }}
     >
-      <span className="text-[12px] leading-[1.6] text-(--canvas-ink-soft)">{message}</span>
+      <span className="text-[length:calc(12px*var(--canvas-fs))] leading-[1.6] text-(--canvas-ink-soft)">
+        {message}
+      </span>
     </div>
   );
 }
@@ -27,7 +29,7 @@ function PlayGlyph() {
   return (
     <span
       aria-hidden
-      className="absolute inset-0 m-auto flex size-14 items-center justify-center rounded-full bg-black/60 pl-1 text-[18px] text-white"
+      className="absolute inset-0 m-auto flex size-14 items-center justify-center rounded-full bg-black/60 pl-1 text-[length:calc(18px*var(--canvas-fs))] text-white"
     >
       ▶
     </span>

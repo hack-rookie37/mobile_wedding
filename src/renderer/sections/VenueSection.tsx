@@ -15,7 +15,7 @@ function MapLinkButtons({ venue }: { venue: Wedding["venue"] }) {
   const { mode } = useRenderer();
   const interactive = mode === "published";
   const buttonClass =
-    "flex h-9 items-center gap-2 rounded-full px-4 text-[12.5px] font-medium text-(--canvas-ink)";
+    "flex h-9 items-center gap-2 rounded-full px-4 text-[length:calc(12.5px*var(--canvas-fs))] font-medium text-(--canvas-ink)";
   const buttonStyle = { border: "1px solid var(--canvas-line)" } as const;
 
   return (
@@ -104,7 +104,7 @@ export function VenueSection({
           </MetaList>
         </div>
         {content.note !== "" && (
-          <p className="mt-6 text-[12.5px] leading-[1.8] whitespace-pre-line text-(--canvas-ink-soft)">
+          <p className="mt-6 text-[length:calc(12.5px*var(--canvas-fs))] leading-[1.8] whitespace-pre-line text-(--canvas-ink-soft)">
             {content.note}
           </p>
         )}
@@ -127,18 +127,22 @@ export function VenueSection({
       <SectionShell section={section} index={index}>
         <SectionHeader label="LOCATION" title={content.title} index={index} />
         <div className="mt-7 space-y-1">
-          <p className="font-(family-name:--canvas-font-heading) text-[18px] leading-[1.5] font-semibold text-(--canvas-ink)">
+          <p className="font-(family-name:--canvas-font-heading) text-[length:calc(18px*var(--canvas-fs))] leading-[1.5] font-semibold text-(--canvas-ink)">
             {venue.name}
           </p>
           {venue.hall && (
-            <p className="text-[13px] leading-[1.7] text-(--canvas-ink-soft)">{venue.hall}</p>
+            <p className="text-[length:calc(13px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
+              {venue.hall}
+            </p>
           )}
-          <p className="pt-2 text-[14px] leading-[1.7] text-(--canvas-ink)">{venue.address}</p>
-          <p className="text-[13px] leading-[1.7] tracking-[0.04em] text-(--canvas-ink-soft) tabular-nums">
+          <p className="pt-2 text-[length:calc(14px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink)">
+            {venue.address}
+          </p>
+          <p className="text-[length:calc(13px*var(--canvas-fs))] leading-[1.7] tracking-[0.04em] text-(--canvas-ink-soft) tabular-nums">
             {formatDateStamp(wedding.datetime)}
           </p>
           {venue.phone && (
-            <p className="text-[13px] leading-[1.7]">
+            <p className="text-[length:calc(13px*var(--canvas-fs))] leading-[1.7]">
               <a
                 href={`tel:${venue.phone}`}
                 className="text-(--canvas-ink-soft) underline underline-offset-4"
@@ -155,7 +159,7 @@ export function VenueSection({
               className="mt-8 border-t border-dashed"
               style={{ borderColor: "var(--canvas-line)" }}
             />
-            <p className="mt-6 text-[13px] leading-[1.9] whitespace-pre-line text-(--canvas-ink-soft)">
+            <p className="mt-6 text-[length:calc(13px*var(--canvas-fs))] leading-[1.9] whitespace-pre-line text-(--canvas-ink-soft)">
               {content.note}
             </p>
           </>
@@ -179,20 +183,24 @@ export function VenueSection({
       <div className="flex flex-col items-center text-center">
         <SectionHeader label="LOCATION" title={content.title} index={index} />
         <div className="mt-8">
-          <p className="font-(family-name:--canvas-font-heading) text-[19px] leading-[1.5] font-semibold text-(--canvas-ink)">
+          <p className="font-(family-name:--canvas-font-heading) text-[length:calc(19px*var(--canvas-fs))] leading-[1.5] font-semibold text-(--canvas-ink)">
             {venue.name}
           </p>
           {venue.hall && (
-            <p className="mt-1 text-[14px] leading-[1.7] text-(--canvas-ink-soft)">{venue.hall}</p>
+            <p className="mt-1 text-[length:calc(14px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
+              {venue.hall}
+            </p>
           )}
         </div>
         <div className="mt-5 space-y-1">
-          <p className="text-[15px] leading-[1.7] text-(--canvas-ink)">{venue.address}</p>
-          <p className="text-[14px] leading-[1.7] text-(--canvas-ink-soft)">
+          <p className="text-[length:calc(15px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink)">
+            {venue.address}
+          </p>
+          <p className="text-[length:calc(14px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
             {formatWeddingDate(wedding.datetime)}
           </p>
           {venue.phone && (
-            <p className="text-[14px] leading-[1.7]">
+            <p className="text-[length:calc(14px*var(--canvas-fs))] leading-[1.7]">
               <a
                 href={`tel:${venue.phone}`}
                 className="text-(--canvas-ink-soft) underline underline-offset-4"
@@ -205,7 +213,7 @@ export function VenueSection({
         {content.note !== "" && (
           <>
             <div aria-hidden className="mt-9 h-px w-6 bg-(--canvas-line)" />
-            <p className="mt-8 text-[13px] leading-[1.9] whitespace-pre-line text-(--canvas-ink-soft)">
+            <p className="mt-8 text-[length:calc(13px*var(--canvas-fs))] leading-[1.9] whitespace-pre-line text-(--canvas-ink-soft)">
               {content.note}
             </p>
           </>

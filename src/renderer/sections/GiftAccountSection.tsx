@@ -40,7 +40,7 @@ function CopyButton({ account }: { account: GiftAccount }) {
       aria-label={`${account.holder} ${account.bank} 계좌번호 복사`}
       aria-live="polite"
       onClick={() => void copy()}
-      className="flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12px] font-medium text-(--canvas-ink)"
+      className="flex h-8 shrink-0 items-center rounded-full px-3.5 text-[length:calc(12px*var(--canvas-fs))] font-medium text-(--canvas-ink)"
       style={{ border: "1px solid var(--canvas-line)" }}
     >
       {copied ? "복사됨" : "복사"}
@@ -52,11 +52,11 @@ function AccountRow({ account }: { account: GiftAccount }) {
   return (
     <li data-account-row className="flex items-center gap-3 py-3">
       <div className="min-w-0 flex-1">
-        <p className="text-[13px] leading-[1.6] text-(--canvas-ink)">
+        <p className="text-[length:calc(13px*var(--canvas-fs))] leading-[1.6] text-(--canvas-ink)">
           <span className="text-(--canvas-ink-soft)">{account.bank}</span>{" "}
           <span className="tabular-nums">{account.number}</span>
         </p>
-        <p className="text-[12px] leading-[1.6] text-(--canvas-ink-soft)">
+        <p className="text-[length:calc(12px*var(--canvas-fs))] leading-[1.6] text-(--canvas-ink-soft)">
           예금주 {account.holder}
         </p>
       </div>
@@ -95,7 +95,7 @@ function SideGroup({
   }
   return (
     <div>
-      <p className="mb-1 text-[11px] font-medium tracking-[0.14em] text-(--canvas-accent)">
+      <p className="mb-1 text-[length:calc(11px*var(--canvas-fs))] font-medium tracking-[0.14em] text-(--canvas-accent)">
         {label}
       </p>
       {list}
@@ -118,7 +118,7 @@ export function GiftAccountSection({
     <SectionShell section={section} index={index}>
       <SectionHeader label="GIFT" title={content.title} index={index} />
       {content.accounts.length === 0 && mode === "editor-edit" && (
-        <p className="mt-6 text-center text-[12px] text-(--canvas-ink-soft)">
+        <p className="mt-6 text-center text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)">
           오른쪽 패널에서 계좌를 추가하세요.
         </p>
       )}

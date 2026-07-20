@@ -64,7 +64,7 @@ export function PhotoFrame({
           className="flex h-full w-full items-center justify-center"
           style={{ backgroundColor: "var(--canvas-line)" }}
         >
-          <span className="text-[11px] tracking-[0.08em] text-(--canvas-ink-soft)">
+          <span className="text-[length:calc(11px*var(--canvas-fs))] tracking-[0.08em] text-(--canvas-ink-soft)">
             이미지 없음
           </span>
         </div>

@@ -33,7 +33,7 @@ function DdayBadge({ datetime }: { datetime: string }) {
   return (
     <p
       data-dday
-      className="mt-5 text-center text-[13px] font-semibold tracking-[0.12em] text-(--canvas-accent) tabular-nums"
+      className="mt-5 text-center text-[length:calc(13px*var(--canvas-fs))] font-semibold tracking-[0.12em] text-(--canvas-accent) tabular-nums"
     >
       {label}
     </p>
@@ -50,10 +50,10 @@ function subscribeEverySecond(onChange: () => void) {
 function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
     <span className="flex w-14 flex-col items-center">
-      <span className="font-(family-name:--canvas-font-heading) text-[24px] leading-[1.2] font-semibold text-(--canvas-ink) tabular-nums">
+      <span className="font-(family-name:--canvas-font-heading) text-[length:calc(24px*var(--canvas-fs))] leading-[1.2] font-semibold text-(--canvas-ink) tabular-nums">
         {String(value).padStart(2, "0")}
       </span>
-      <span className="mt-1 text-[10px] font-medium tracking-[0.14em] text-(--canvas-ink-soft)">
+      <span className="mt-1 text-[length:calc(10px*var(--canvas-fs))] font-medium tracking-[0.14em] text-(--canvas-ink-soft)">
         {label}
       </span>
     </span>
@@ -70,7 +70,10 @@ function CountdownBar({ datetime }: { datetime: string }) {
   if (nowSecond === null) return null;
   const remain = countdownToWedding(datetime, new Date(nowSecond * 1_000));
   const separator = (
-    <span aria-hidden className="pb-5 text-[18px] font-medium text-(--canvas-ink-soft)">
+    <span
+      aria-hidden
+      className="pb-5 text-[length:calc(18px*var(--canvas-fs))] font-medium text-(--canvas-ink-soft)"
+    >
       :
     </span>
   );
@@ -111,7 +114,7 @@ function CalendarGrid({ datetime }: { datetime: string }) {
   // 콘텐츠 폭(캔버스 - 좌우 패딩)을 꽉 채운다 — 칸 높이만 고정해 세로 리듬 유지
   return (
     <div className="w-full">
-      <p className="text-center font-(family-name:--canvas-font-heading) text-[16px] font-semibold tracking-[0.06em] text-(--canvas-ink) tabular-nums">
+      <p className="text-center font-(family-name:--canvas-font-heading) text-[length:calc(16px*var(--canvas-fs))] font-semibold tracking-[0.06em] text-(--canvas-ink) tabular-nums">
         {year}. {String(month).padStart(2, "0")}
       </p>
       <table
@@ -124,7 +127,7 @@ function CalendarGrid({ datetime }: { datetime: string }) {
               <th
                 key={weekday}
                 scope="col"
-                className="pb-3 text-center text-[11px] font-medium tracking-[0.1em] text-(--canvas-ink-soft)"
+                className="pb-3 text-center text-[length:calc(11px*var(--canvas-fs))] font-medium tracking-[0.1em] text-(--canvas-ink-soft)"
               >
                 {weekday}
               </th>
@@ -139,7 +142,7 @@ function CalendarGrid({ datetime }: { datetime: string }) {
                   {date !== null && (
                     <span
                       className={clsx(
-                        "mx-auto flex size-9 items-center justify-center rounded-full text-[13.5px] tabular-nums",
+                        "mx-auto flex size-9 items-center justify-center rounded-full text-[length:calc(13.5px*var(--canvas-fs))] tabular-nums",
                         date === day
                           ? "font-semibold text-(--canvas-paper)"
                           : "text-(--canvas-ink)",
@@ -179,16 +182,16 @@ export function CalendarSection({
         {layout.variant === "grid" ? (
           <>
             <CalendarGrid datetime={wedding.datetime} />
-            <p className="mt-5 text-center text-[13.5px] leading-[1.7] text-(--canvas-ink-soft)">
+            <p className="mt-5 text-center text-[length:calc(13.5px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
               {formatWeddingDate(wedding.datetime)}
             </p>
           </>
         ) : (
           <div className="text-center">
-            <p className="font-(family-name:--canvas-font-heading) text-[26px] leading-[1.4] font-semibold tracking-[0.04em] text-(--canvas-ink) tabular-nums">
+            <p className="font-(family-name:--canvas-font-heading) text-[length:calc(26px*var(--canvas-fs))] leading-[1.4] font-semibold tracking-[0.04em] text-(--canvas-ink) tabular-nums">
               {formatDateStamp(wedding.datetime)}
             </p>
-            <p className="mt-2 text-[13.5px] leading-[1.7] text-(--canvas-ink-soft)">
+            <p className="mt-2 text-[length:calc(13.5px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
               {formatWeddingDate(wedding.datetime)}
             </p>
           </div>
@@ -204,7 +207,7 @@ export function CalendarSection({
             type="button"
             disabled={!interactive}
             onClick={() => downloadIcs(wedding)}
-            className="h-10 rounded-full px-5 text-[13px] font-medium text-(--canvas-ink)"
+            className="h-10 rounded-full px-5 text-[length:calc(13px*var(--canvas-fs))] font-medium text-(--canvas-ink)"
             style={{ border: "1px solid var(--canvas-line)" }}
           >
             📅 캘린더에 일정 저장

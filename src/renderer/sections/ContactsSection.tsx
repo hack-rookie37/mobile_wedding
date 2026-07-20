@@ -25,14 +25,16 @@ function ContactRow({ entry }: { entry: ContactEntry }) {
   const interactive = mode === "published";
 
   const actionClass =
-    "flex h-8 items-center rounded-full px-3.5 text-[12px] font-medium text-(--canvas-ink)";
+    "flex h-8 items-center rounded-full px-3.5 text-[length:calc(12px*var(--canvas-fs))] font-medium text-(--canvas-ink)";
   const actionStyle = { border: "1px solid var(--canvas-line)" } as const;
 
   return (
     <li data-contact-entry className="flex items-center gap-3 py-2.5">
       <div className="min-w-0 flex-1">
-        <p className="text-[13.5px] leading-[1.5] text-(--canvas-ink)">
-          <span className="mr-1.5 text-[12px] text-(--canvas-ink-soft)">{entry.label}</span>
+        <p className="text-[length:calc(13.5px*var(--canvas-fs))] leading-[1.5] text-(--canvas-ink)">
+          <span className="mr-1.5 text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)">
+            {entry.label}
+          </span>
           <span className="font-medium">{entry.name}</span>
         </p>
       </div>
@@ -85,7 +87,7 @@ function SideGroup({
   }
   return (
     <div>
-      <p className="mb-1 text-[11px] font-medium tracking-[0.14em] text-(--canvas-accent)">
+      <p className="mb-1 text-[length:calc(11px*var(--canvas-fs))] font-medium tracking-[0.14em] text-(--canvas-accent)">
         {CONTACT_SIDE_LABELS[side]}
       </p>
       {list}
@@ -110,7 +112,7 @@ export function ContactsSection({
     <SectionShell section={section} index={index}>
       <SectionHeader label="CONTACT" title={content.title} index={index} />
       {content.entries.length === 0 && mode === "editor-edit" && (
-        <p className="mt-6 text-center text-[12px] text-(--canvas-ink-soft)">
+        <p className="mt-6 text-center text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)">
           오른쪽 패널에서 연락처를 추가하세요.
         </p>
       )}

@@ -31,7 +31,7 @@ export function MusicToggle({ url }: { url: string }) {
         aria-label={playing ? "음악 끄기" : "음악 켜기"}
         aria-pressed={playing}
         onClick={toggle}
-        className="pointer-events-auto flex size-8 items-center justify-center rounded-full bg-black/40 text-[13px] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)] backdrop-blur transition-colors hover:bg-black/55"
+        className="pointer-events-auto flex size-8 items-center justify-center rounded-full bg-black/40 text-[length:calc(13px*var(--canvas-fs))] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)] backdrop-blur transition-colors hover:bg-black/55"
       >
         {playing ? (
           // 재생 중 — 음표

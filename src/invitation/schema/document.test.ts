@@ -159,9 +159,9 @@ describe("migrateDocument", () => {
   it("v5 → v6: hero에 photoAspect·fadeBottom, calendar에 ddayStyle이 주입된다 (기존 콘텐츠 보존)", () => {
     const base = createSampleDocument();
     const V6_FIELDS = ["photoAspect", "fadeBottom", "ddayStyle", "mapImageAssetId"];
-    // v5 문서에는 music이 없었다
+    // v5 문서에는 music·typography가 없었다
     const baseWithoutMusic = Object.fromEntries(
-      Object.entries(base).filter(([k]) => k !== "music"),
+      Object.entries(base).filter(([k]) => k !== "music" && k !== "typography"),
     );
     const v5 = {
       ...baseWithoutMusic,
@@ -198,6 +198,8 @@ describe("migrateDocument", () => {
     if (rsvp?.type !== "rsvp") throw new Error("rsvp가 없습니다");
     expect(rsvp.layout.variant).toBe("sheet"); // default → sheet 개명
     expect(migrated.music).toEqual({ assetId: null }); // 배경음악 슬롯 신설
+    // 폰트·크기 기본값 — 테마 그대로
+    expect(migrated.typography).toEqual({ headingFont: "theme", bodyFont: "theme", scale: "md" });
   });
 
   it("v3 → v4: venue에 showMapButtons가 추가된다 (기존 note 보존)", () => {

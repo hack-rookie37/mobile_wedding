@@ -29,14 +29,16 @@ type SubmitPhase =
   | { kind: "error"; message: string };
 
 const lineInputClass =
-  "h-11 w-full rounded-lg bg-transparent px-3.5 text-[14px] text-(--canvas-ink) " +
+  "h-11 w-full rounded-lg bg-transparent px-3.5 text-[length:calc(14px*var(--canvas-fs))] text-(--canvas-ink) " +
   "placeholder:text-(--canvas-ink-soft)/50 border border-(--canvas-line) " +
   "focus:border-(--canvas-ink) focus:outline-none";
 
 function FieldBlock({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
-      <p className="mb-2 text-[12px] font-medium text-(--canvas-ink-soft)">{label}</p>
+      <p className="mb-2 text-[length:calc(12px*var(--canvas-fs))] font-medium text-(--canvas-ink-soft)">
+        {label}
+      </p>
       {children}
     </div>
   );
@@ -70,7 +72,7 @@ function ChoiceChips<T extends string>({
               key={option.value}
               className={
                 "flex h-10 min-w-[72px] items-center justify-center rounded-full px-4 " +
-                "text-[13px] transition-colors has-[:focus-visible]:outline-2 " +
+                "text-[length:calc(13px*var(--canvas-fs))] transition-colors has-[:focus-visible]:outline-2 " +
                 "has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-(--canvas-ink) " +
                 (disabled ? "" : "cursor-pointer ") +
                 (checked
@@ -284,7 +286,7 @@ function RsvpForm({
             placeholder="신랑·신부에게만 보입니다"
             aria-label="전하고 싶은 말"
             className={
-              "w-full rounded-lg bg-transparent px-3.5 py-3 text-[14px] leading-[1.6] " +
+              "w-full rounded-lg bg-transparent px-3.5 py-3 text-[length:calc(14px*var(--canvas-fs))] leading-[1.6] " +
               "text-(--canvas-ink) placeholder:text-(--canvas-ink-soft)/50 " +
               "border border-(--canvas-line) focus:border-(--canvas-ink) focus:outline-none"
             }
@@ -305,7 +307,7 @@ function RsvpForm({
           disabled={!submittable}
           className="mt-0.5 size-4 shrink-0 accent-(--canvas-ink)"
         />
-        <span className="text-[12px] leading-[1.65] text-(--canvas-ink-soft)">
+        <span className="text-[length:calc(12px*var(--canvas-fs))] leading-[1.65] text-(--canvas-ink-soft)">
           <span className="font-medium text-(--canvas-ink)">개인정보 수집·이용 동의 (필수)</span>
           <br />
           입력하신 내용은 참석 확인 목적으로만 수집되며 신랑·신부만 볼 수 있습니다. 응답은
@@ -314,7 +316,7 @@ function RsvpForm({
       </label>
 
       {phase.kind === "error" && (
-        <p role="alert" className="text-[13px] text-[#b3403a]">
+        <p role="alert" className="text-[length:calc(13px*var(--canvas-fs))] text-[#b3403a]">
           {phase.message}
         </p>
       )}
@@ -323,14 +325,14 @@ function RsvpForm({
         type="submit"
         data-rsvp-submit
         disabled={!submittable || phase.kind === "submitting"}
-        className="h-12 w-full rounded-full text-[14px] font-medium transition-opacity disabled:opacity-45"
+        className="h-12 w-full rounded-full text-[length:calc(14px*var(--canvas-fs))] font-medium transition-opacity disabled:opacity-45"
         style={{ backgroundColor: "var(--canvas-ink)", color: "var(--canvas-paper)" }}
       >
         {phase.kind === "submitting" ? "전달 중…" : "참석 의사 전달하기"}
       </button>
 
       {!submittable && (
-        <p className="text-center text-[12px] text-(--canvas-ink-soft)">
+        <p className="text-center text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)">
           게스트는 발행된 청첩장에서 제출할 수 있습니다.
         </p>
       )}
@@ -363,12 +365,14 @@ function RsvpSheet({ onClose, children }: { onClose: () => void; children: React
       <div className="max-h-[85dvh] overflow-y-auto px-6 pt-3 pb-9">
         <div aria-hidden className="mx-auto h-1 w-10 rounded-full bg-(--canvas-line)" />
         <div className="mt-4 flex items-center justify-between">
-          <p className="text-[15px] font-semibold text-(--canvas-ink)">참석 여부 전달</p>
+          <p className="text-[length:calc(15px*var(--canvas-fs))] font-semibold text-(--canvas-ink)">
+            참석 여부 전달
+          </p>
           <button
             type="button"
             aria-label="닫기"
             onClick={() => dialogRef.current?.close()}
-            className="flex size-8 items-center justify-center rounded-full text-[15px] text-(--canvas-ink-soft) hover:text-(--canvas-ink)"
+            className="flex size-8 items-center justify-center rounded-full text-[length:calc(15px*var(--canvas-fs))] text-(--canvas-ink-soft) hover:text-(--canvas-ink)"
           >
             ✕
           </button>
@@ -398,9 +402,13 @@ function NoticePanel({
       className="mt-8 flex flex-col items-center gap-2 rounded-xl px-6 py-9 text-center"
       style={{ border: "1px solid var(--canvas-line)" }}
     >
-      <p className="text-[15px] font-medium text-(--canvas-ink)">{title}</p>
+      <p className="text-[length:calc(15px*var(--canvas-fs))] font-medium text-(--canvas-ink)">
+        {title}
+      </p>
       {detail !== undefined && (
-        <p className="text-[13px] leading-[1.6] text-(--canvas-ink-soft)">{detail}</p>
+        <p className="text-[length:calc(13px*var(--canvas-fs))] leading-[1.6] text-(--canvas-ink-soft)">
+          {detail}
+        </p>
       )}
       {action}
     </div>
@@ -439,7 +447,7 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
         setReopened(true);
         if (sheetVariant) setSheetOpen(true);
       }}
-      className="mt-2 flex h-10 items-center rounded-full px-5 text-[13px] font-medium text-(--canvas-ink)"
+      className="mt-2 flex h-10 items-center rounded-full px-5 text-[length:calc(13px*var(--canvas-fs))] font-medium text-(--canvas-ink)"
       style={{ border: "1px solid var(--canvas-line)" }}
     >
       응답 수정하기
@@ -497,7 +505,7 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
           data-rsvp-open
           disabled={mode !== "published"}
           onClick={() => setSheetOpen(true)}
-          className="mt-8 h-12 w-full rounded-full text-[14px] font-medium transition-opacity disabled:opacity-45"
+          className="mt-8 h-12 w-full rounded-full text-[length:calc(14px*var(--canvas-fs))] font-medium transition-opacity disabled:opacity-45"
           style={{ backgroundColor: "var(--canvas-ink)", color: "var(--canvas-paper)" }}
         >
           참석 여부 전달하기
@@ -507,7 +515,7 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
             className="mt-4 rounded-xl border border-dashed px-4 pb-4"
             style={{ borderColor: "var(--canvas-line)" }}
           >
-            <p className="pt-3 text-center text-[11px] tracking-[0.06em] text-(--canvas-ink-soft) opacity-70">
+            <p className="pt-3 text-center text-[length:calc(11px*var(--canvas-fs))] tracking-[0.06em] text-(--canvas-ink-soft) opacity-70">
               게스트가 버튼을 누르면 아래 내용이 시트로 올라옵니다
             </p>
             {form}
@@ -522,17 +530,20 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
     <SectionShell section={section} index={index}>
       <SectionHeader label="RSVP" title={content.title} index={index} />
       {content.body !== "" && (
-        <p className="mt-5 text-center text-[14px] leading-[1.85] whitespace-pre-line text-(--canvas-ink-soft)">
+        <p className="mt-5 text-center text-[length:calc(14px*var(--canvas-fs))] leading-[1.85] whitespace-pre-line text-(--canvas-ink-soft)">
           {content.body}
         </p>
       )}
       {content.deadline !== null && !deadlinePassed && (
-        <p data-rsvp-deadline className="mt-3 text-center text-[12px] text-(--canvas-accent)">
+        <p
+          data-rsvp-deadline
+          className="mt-3 text-center text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-accent)"
+        >
           {formatWeddingDate(content.deadline)}까지 전해 주세요
         </p>
       )}
       {mode === "editor-edit" && (
-        <p className="mt-3 text-center text-[11px] text-(--canvas-ink-soft) opacity-70">
+        <p className="mt-3 text-center text-[length:calc(11px*var(--canvas-fs))] text-(--canvas-ink-soft) opacity-70">
           응답은 상단 ‘RSVP 응답’에서 확인합니다 — 청첩장 문서와 분리되어 저장됩니다.
         </p>
       )}

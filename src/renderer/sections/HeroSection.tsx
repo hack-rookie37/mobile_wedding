@@ -23,7 +23,7 @@ function HeroEditorial({ content, wedding, photo, hasPhoto, venueLine }: HeroDat
   return (
     <div className="flex flex-col items-center text-center">
       {content.tagline !== "" && (
-        <p className="text-[11px] font-medium tracking-[0.24em] text-(--canvas-accent)">
+        <p className="text-[length:calc(11px*var(--canvas-fs))] font-medium tracking-[0.24em] text-(--canvas-accent)">
           {content.tagline}
         </p>
       )}
@@ -39,20 +39,24 @@ function HeroEditorial({ content, wedding, photo, hasPhoto, venueLine }: HeroDat
           className="mt-9 w-full max-w-[280px]"
         />
       )}
-      <h1 className="mt-9 font-(family-name:--canvas-font-heading) text-[26px] leading-[1.4] font-semibold tracking-[-0.01em] text-(--canvas-ink)">
+      <h1 className="mt-9 font-(family-name:--canvas-font-heading) text-[length:calc(26px*var(--canvas-fs))] leading-[1.4] font-semibold tracking-[-0.01em] text-(--canvas-ink)">
         {wedding.groom.name}
-        <span className="mx-2.5 text-[20px] font-normal text-(--canvas-accent)">·</span>
+        <span className="mx-2.5 text-[length:calc(20px*var(--canvas-fs))] font-normal text-(--canvas-accent)">
+          ·
+        </span>
         {wedding.bride.name}
       </h1>
       {(content.showDate || content.showVenue) && (
         <div className="mt-5 space-y-1">
           {content.showDate && (
-            <p className="text-[15px] leading-[1.7] text-(--canvas-ink-soft)">
+            <p className="text-[length:calc(15px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
               {formatWeddingDate(wedding.datetime)}
             </p>
           )}
           {content.showVenue && (
-            <p className="text-[15px] leading-[1.7] text-(--canvas-ink-soft)">{venueLine}</p>
+            <p className="text-[length:calc(15px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
+              {venueLine}
+            </p>
           )}
         </div>
       )}
@@ -65,13 +69,13 @@ function HeroMono({ content, wedding, photo, hasPhoto, venueLine }: HeroData) {
     <div>
       {content.tagline !== "" && (
         <div className="flex items-center gap-3">
-          <span className="text-[10px] font-medium tracking-[0.22em] text-(--canvas-ink-soft) uppercase">
+          <span className="text-[length:calc(10px*var(--canvas-fs))] font-medium tracking-[0.22em] text-(--canvas-ink-soft) uppercase">
             {content.tagline}
           </span>
           <span aria-hidden className="h-px flex-1 bg-(--canvas-line)" />
         </div>
       )}
-      <h1 className="mt-9 font-(family-name:--canvas-font-heading) text-[34px] leading-[1.22] font-bold tracking-[-0.02em] text-(--canvas-ink)">
+      <h1 className="mt-9 font-(family-name:--canvas-font-heading) text-[length:calc(34px*var(--canvas-fs))] leading-[1.22] font-bold tracking-[-0.02em] text-(--canvas-ink)">
         <span className="block">{wedding.groom.name}</span>
         <span className="block">
           <span className="mr-2 font-normal text-(--canvas-ink-soft)">&</span>
@@ -121,24 +125,28 @@ function HeroFilm({ content, wedding, photo, hasPhoto, venueLine }: HeroData) {
         />
       )}
       {content.tagline !== "" && (
-        <p className="mt-8 font-(family-name:--canvas-font-hand) text-[24px] leading-none text-(--canvas-accent) lowercase">
+        <p className="mt-8 font-(family-name:--canvas-font-hand) text-[length:calc(24px*var(--canvas-fs))] leading-none text-(--canvas-accent) lowercase">
           {content.tagline.toLowerCase()}
         </p>
       )}
-      <h1 className="mt-4 font-(family-name:--canvas-font-heading) text-[23px] leading-[1.5] font-semibold tracking-[-0.01em] text-(--canvas-ink)">
+      <h1 className="mt-4 font-(family-name:--canvas-font-heading) text-[length:calc(23px*var(--canvas-fs))] leading-[1.5] font-semibold tracking-[-0.01em] text-(--canvas-ink)">
         {wedding.groom.name}
-        <span className="mx-2 text-[16px] font-normal text-(--canvas-ink-soft)">그리고</span>
+        <span className="mx-2 text-[length:calc(16px*var(--canvas-fs))] font-normal text-(--canvas-ink-soft)">
+          그리고
+        </span>
         {wedding.bride.name}
       </h1>
       {(content.showDate || content.showVenue) && (
         <div className="mt-4 space-y-1">
           {content.showDate && (
-            <p className="text-[13px] leading-[1.7] tracking-[0.04em] text-(--canvas-ink-soft) tabular-nums">
+            <p className="text-[length:calc(13px*var(--canvas-fs))] leading-[1.7] tracking-[0.04em] text-(--canvas-ink-soft) tabular-nums">
               {formatDateStamp(wedding.datetime)}
             </p>
           )}
           {content.showVenue && (
-            <p className="text-[13px] leading-[1.7] text-(--canvas-ink-soft)">{venueLine}</p>
+            <p className="text-[length:calc(13px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
+              {venueLine}
+            </p>
           )}
         </div>
       )}
@@ -181,26 +189,30 @@ function HeroFull({
       </div>
       <div className="flex flex-col items-center px-6 text-center">
         {content.tagline !== "" && (
-          <p className="mt-7 text-[11px] font-medium tracking-[0.24em] text-(--canvas-accent)">
+          <p className="mt-7 text-[length:calc(11px*var(--canvas-fs))] font-medium tracking-[0.24em] text-(--canvas-accent)">
             {content.tagline}
           </p>
         )}
         <h1
-          className={`${content.tagline !== "" ? "mt-4" : "mt-7"} font-(family-name:--canvas-font-heading) text-[26px] leading-[1.4] font-semibold tracking-[-0.01em] text-(--canvas-ink)`}
+          className={`${content.tagline !== "" ? "mt-4" : "mt-7"} font-(family-name:--canvas-font-heading) text-[length:calc(26px*var(--canvas-fs))] leading-[1.4] font-semibold tracking-[-0.01em] text-(--canvas-ink)`}
         >
           {wedding.groom.name}
-          <span className="mx-2.5 text-[20px] font-normal text-(--canvas-accent)">·</span>
+          <span className="mx-2.5 text-[length:calc(20px*var(--canvas-fs))] font-normal text-(--canvas-accent)">
+            ·
+          </span>
           {wedding.bride.name}
         </h1>
         {(content.showDate || content.showVenue) && (
           <div className="mt-5 space-y-1">
             {content.showDate && (
-              <p className="text-[15px] leading-[1.7] text-(--canvas-ink-soft)">
+              <p className="text-[length:calc(15px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
                 {formatWeddingDate(wedding.datetime)}
               </p>
             )}
             {content.showVenue && (
-              <p className="text-[15px] leading-[1.7] text-(--canvas-ink-soft)">{venueLine}</p>
+              <p className="text-[length:calc(15px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">
+                {venueLine}
+              </p>
             )}
           </div>
         )}

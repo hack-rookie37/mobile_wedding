@@ -31,13 +31,13 @@ export function Collapsible({
         onClick={() => setOpen((v) => !v)}
         className="flex h-11 w-full items-center justify-between px-4 text-left"
       >
-        <span className="text-[13px] font-medium tracking-[0.02em] text-(--canvas-ink)">
+        <span className="text-[length:calc(13px*var(--canvas-fs))] font-medium tracking-[0.02em] text-(--canvas-ink)">
           {summary}
         </span>
         {interactive && (
           <span
             aria-hidden
-            className="text-[11px] text-(--canvas-ink-soft) transition-transform"
+            className="text-[length:calc(11px*var(--canvas-fs))] text-(--canvas-ink-soft) transition-transform"
             style={{ transform: expanded ? "rotate(180deg)" : "none" }}
           >
             ▾

@@ -13,6 +13,7 @@ export interface ThemeTokens {
   accent: string;
   line: string;
   headingFont: string; // CSS font-family 값 (layout.tsx가 주입한 폰트 변수 사용)
+  bodyFont: string; // 본문 기본 (문서 typography가 덮어쓸 수 있다)
   handFont: string; // 손글씨 강조용 (film 계열 외에는 headingFont와 동일)
   radiusPhoto: string; // 'soft' 사진 프레임의 radius
   padSm: string; // 섹션 상하 여백 preset — 테마별 vertical rhythm
@@ -45,6 +46,37 @@ const SERIF = "var(--font-noto-serif-kr), 'Noto Serif KR', serif";
 const SANS = "var(--font-sans)";
 const HAND = "var(--font-nanum-pen), 'Nanum Pen Script', cursive";
 
+// 문서 typography의 폰트 선택지 — id 목록은 document.ts(fontIdSchema)가 단일 소스.
+// "theme"은 여기 없다: 테마 토큰을 그대로 쓴다는 뜻이라 CSS 해석이 없다.
+export const FONT_CHOICES: Record<
+  Exclude<import("./document").FontId, "theme">,
+  { label: string; css: string }
+> = {
+  "noto-serif": { label: "노토 세리프", css: SERIF },
+  "nanum-myeongjo": {
+    label: "나눔명조",
+    css: "var(--font-nanum-myeongjo), 'Nanum Myeongjo', serif",
+  },
+  "gowun-batang": { label: "고운바탕", css: "var(--font-gowun-batang), 'Gowun Batang', serif" },
+  "gowun-dodum": {
+    label: "고운돋움",
+    css: "var(--font-gowun-dodum), 'Gowun Dodum', sans-serif",
+  },
+  sans: { label: "고딕", css: SANS },
+};
+
+// 글자 크기 스케일 — 렌더러의 모든 텍스트가 calc(Npx * var(--canvas-fs))로 곱한다
+export const FONT_SCALE_FACTORS: Record<import("./document").FontScale, number> = {
+  sm: 0.93,
+  md: 1,
+  lg: 1.08,
+};
+
+// fontId → CSS 스택 ("theme"은 null — 호출자가 테마 토큰으로 대체)
+export function fontCssOf(fontId: import("./document").FontId): string | null {
+  return fontId === "theme" ? null : FONT_CHOICES[fontId].css;
+}
+
 export const THEME_ORDER: ThemeId[] = ["warm-editorial", "modern-monochrome", "film-diary"];
 
 export const THEMES: Record<ThemeId, ThemeDefinition> = {
@@ -59,6 +91,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       accent: "#A6795B",
       line: "#E7E0D4",
       headingFont: SERIF,
+      bodyFont: SANS,
       handFont: SERIF,
       radiusPhoto: "10px",
       padSm: "56px",
@@ -89,6 +122,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       accent: "#141414",
       line: "#E4E4E4",
       headingFont: SANS,
+      bodyFont: SANS,
       handFont: SANS,
       radiusPhoto: "0px",
       padSm: "44px",
@@ -119,6 +153,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
       accent: "#8C7A5B",
       line: "#E4DCCB",
       headingFont: SERIF,
+      bodyFont: SANS,
       handFont: HAND,
       radiusPhoto: "2px",
       padSm: "52px",

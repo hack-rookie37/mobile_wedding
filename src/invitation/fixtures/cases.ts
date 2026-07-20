@@ -8,6 +8,7 @@ export const FIXTURE_CASES = [
   "hero-full",
   "gallery-strip",
   "venue-map",
+  "typography",
   "long-names",
   "long-greeting",
   "one-photo",
@@ -50,6 +51,15 @@ export function createCaseDocument(kind: FixtureCase): InvitationDocument {
     case "gallery-strip": {
       const gallery = gallerySectionOf(doc);
       gallery.layout = { variant: "strip" };
+      return doc;
+    }
+
+    // 폰트 선택 + 큰 글자 + 섹션별 override (인사말만 고운돋움·작게)
+    case "typography": {
+      doc.typography = { headingFont: "nanum-myeongjo", bodyFont: "gowun-batang", scale: "lg" };
+      const greeting = doc.sections.find((s) => s.type === "greeting");
+      if (greeting?.type !== "greeting") throw new Error("greeting 섹션이 없습니다");
+      greeting.style = { ...greeting.style, fontFamily: "gowun-dodum", fontScale: "sm" };
       return doc;
     }
 

@@ -256,6 +256,11 @@ function mutate(
       break;
     }
 
+    case "updateTypography": {
+      draft.typography = { ...draft.typography, ...action.patch };
+      break;
+    }
+
     case "updateWedding": {
       Object.assign(draft.wedding, action.patch);
       break;

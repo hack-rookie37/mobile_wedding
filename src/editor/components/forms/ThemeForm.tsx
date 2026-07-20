@@ -7,8 +7,8 @@ import {
   formatBytes,
   validateAudioFile,
 } from "@/invitation/assets/uploadPolicy";
-import { THEME_ORDER, THEMES } from "@/invitation/schema/themes";
-import { FieldLabel } from "@/ui/fields";
+import { FONT_CHOICES, THEME_ORDER, THEMES } from "@/invitation/schema/themes";
+import { FieldLabel, SegmentedField, SelectField } from "@/ui/fields";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor } from "../../EditorStoreContext";
 
@@ -95,6 +95,49 @@ function MusicField() {
   );
 }
 
+// 전역 폰트·글자 크기 — updateTypography action (undo 가능, 섹션별 override는 스타일 탭)
+function TypographyFields() {
+  const typography = useEditor((s) => s.doc.typography);
+  const dispatch = useEditor((s) => s.dispatch);
+  const patch = (p: Record<string, unknown>) => dispatch({ type: "updateTypography", patch: p });
+
+  const fontOptions = [
+    { value: "theme", label: "테마 기본" },
+    ...Object.entries(FONT_CHOICES).map(([value, font]) => ({ value, label: font.label })),
+  ];
+
+  return (
+    <div className="mt-6 space-y-4">
+      <FieldLabel>폰트</FieldLabel>
+      <SelectField
+        label="제목·이름 폰트"
+        value={typography.headingFont}
+        options={fontOptions}
+        onChange={(headingFont) => patch({ headingFont })}
+      />
+      <SelectField
+        label="본문 폰트"
+        value={typography.bodyFont}
+        options={fontOptions}
+        onChange={(bodyFont) => patch({ bodyFont })}
+      />
+      <SegmentedField
+        label="전체 글자 크기"
+        value={typography.scale}
+        options={[
+          { value: "sm", label: "작게" },
+          { value: "md", label: "보통" },
+          { value: "lg", label: "크게" },
+        ]}
+        onChange={(scale) => patch({ scale })}
+      />
+      <p className="text-[11px] leading-[1.5] text-tool-ink-faint">
+        섹션 하나만 다르게 하려면 해당 섹션의 ‘스타일’ 탭에서 바꿀 수 있습니다.
+      </p>
+    </div>
+  );
+}
+
 export function ThemeForm() {
   const current = useEditor((s) => s.doc.theme.id);
   const dispatch = useEditor((s) => s.dispatch);
@@ -139,6 +182,7 @@ export function ThemeForm() {
       <p className="rounded-md bg-tool-bg px-3 py-2.5 text-[12px] leading-[1.6] text-tool-ink-soft">
         테마는 디자인 토큰과 섹션 표현만 바꿉니다. 문구·사진·섹션 순서는 그대로 유지됩니다.
       </p>
+      <TypographyFields />
       <MusicField />
     </div>
   );

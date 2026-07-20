@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import type { ResolveAsset } from "@/invitation/assets/assetTypes";
 import type { InvitationDocument, Section, Wedding } from "@/invitation/schema/document";
-import { THEMES } from "@/invitation/schema/themes";
+import { FONT_SCALE_FACTORS, fontCssOf, THEMES } from "@/invitation/schema/themes";
 import { MusicToggle } from "./MusicToggle";
 import { RendererProvider, type RendererMode } from "./RendererContext";
 import { CalendarSection } from "./sections/CalendarSection";
@@ -83,14 +83,19 @@ export function InvitationRenderer({
   const theme = THEMES[doc.theme.id];
   const t = theme.tokens;
 
+  // 문서 typography가 테마 폰트를 덮어쓴다 ("theme"이면 테마 기본).
+  // 크기는 --canvas-fs 곱으로 — 섹션별 override는 SectionShell이 같은 변수를 지역 재정의한다.
+  const { typography } = doc;
   const canvasVars = {
     "--canvas-paper": t.paper,
     "--canvas-ink": t.ink,
     "--canvas-ink-soft": t.inkSoft,
     "--canvas-accent": t.accent,
     "--canvas-line": t.line,
-    "--canvas-font-heading": t.headingFont,
+    "--canvas-font-heading": fontCssOf(typography.headingFont) ?? t.headingFont,
+    "--canvas-font-body": fontCssOf(typography.bodyFont) ?? t.bodyFont,
     "--canvas-font-hand": t.handFont,
+    "--canvas-fs": FONT_SCALE_FACTORS[typography.scale],
     "--canvas-radius-photo": t.radiusPhoto,
     "--canvas-pad-sm": t.padSm,
     "--canvas-pad-md": t.padMd,
@@ -114,7 +119,7 @@ export function InvitationRenderer({
       <div
         data-invitation-root
         data-canvas-theme={theme.id}
-        className="w-full bg-(--canvas-paper) text-(--canvas-ink) antialiased"
+        className="w-full bg-(--canvas-paper) font-(family-name:--canvas-font-body) text-(--canvas-ink) antialiased"
         style={canvasVars}
       >
         {musicUrl !== null && <MusicToggle url={musicUrl} />}

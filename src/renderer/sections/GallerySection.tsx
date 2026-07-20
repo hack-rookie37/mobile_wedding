@@ -133,10 +133,10 @@ export function GallerySection({ section, index }: { section: GallerySectionData
               "mt-2 leading-tight",
               kind !== "collage" && "text-center",
               kind === "filmstrip"
-                ? "text-[11px] tracking-[0.02em] text-[#D8D2C4]"
+                ? "text-[length:calc(11px*var(--canvas-fs))] tracking-[0.02em] text-[#D8D2C4]"
                 : flavor === "film"
-                  ? "font-(family-name:--canvas-font-hand) text-[16px] text-(--canvas-ink-soft)"
-                  : "text-[12px] text-(--canvas-ink-soft)",
+                  ? "font-(family-name:--canvas-font-hand) text-[length:calc(16px*var(--canvas-fs))] text-(--canvas-ink-soft)"
+                  : "text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)",
             )}
           >
             {caption}

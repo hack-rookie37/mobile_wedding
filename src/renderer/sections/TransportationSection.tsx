@@ -41,7 +41,7 @@ export function TransportationSection({
     <SectionShell section={section} index={index}>
       <SectionHeader label="TRANSPORT" title={content.title} index={index} />
       {content.items.length === 0 && mode === "editor-edit" && (
-        <p className="mt-6 text-center text-[12px] text-(--canvas-ink-soft)">
+        <p className="mt-6 text-center text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)">
           오른쪽 패널에서 교통 안내 항목을 추가하세요.
         </p>
       )}
@@ -57,18 +57,18 @@ export function TransportationSection({
               aria-hidden
               className={
                 cards
-                  ? "block text-[18px] leading-none"
-                  : "flex size-9 shrink-0 items-center justify-center rounded-full text-[15px]"
+                  ? "block text-[length:calc(18px*var(--canvas-fs))] leading-none"
+                  : "flex size-9 shrink-0 items-center justify-center rounded-full text-[length:calc(15px*var(--canvas-fs))]"
               }
               style={cards ? undefined : { backgroundColor: "var(--canvas-line)" }}
             >
               {TRANSPORT_ICON_GLYPHS[item.icon]}
             </span>
             <div className={cards ? "mt-2.5 min-w-0" : "min-w-0 flex-1 pt-1"}>
-              <p className="text-[13.5px] leading-[1.5] font-semibold break-keep text-(--canvas-ink)">
+              <p className="text-[length:calc(13.5px*var(--canvas-fs))] leading-[1.5] font-semibold break-keep text-(--canvas-ink)">
                 {item.title !== "" ? item.title : TRANSPORT_ICON_LABELS[item.icon]}
               </p>
-              <p className="mt-1 text-[13px] leading-[1.8] break-keep whitespace-pre-line text-(--canvas-ink-soft)">
+              <p className="mt-1 text-[length:calc(13px*var(--canvas-fs))] leading-[1.8] break-keep whitespace-pre-line text-(--canvas-ink-soft)">
                 {item.body}
               </p>
             </div>

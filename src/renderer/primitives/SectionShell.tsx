@@ -3,6 +3,7 @@
 import clsx from "clsx";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import type { Section } from "@/invitation/schema/document";
+import { FONT_SCALE_FACTORS, fontCssOf } from "@/invitation/schema/themes";
 import { useRenderer } from "../RendererContext";
 
 function prefersReducedMotion(): boolean {
@@ -88,6 +89,17 @@ export function SectionShell({
         paddingBlock: `var(--canvas-pad-${section.style.paddingY})`,
         ...(flushTop ? { paddingTop: 0 } : {}),
         ...(section.style.background ? { backgroundColor: section.style.background } : {}),
+        // 섹션별 폰트·크기 override — CSS 변수를 지역 재정의하면 하위 텍스트가 전부 따라온다
+        ...(section.style.fontFamily !== undefined && fontCssOf(section.style.fontFamily) !== null
+          ? ({
+              "--canvas-font-heading": fontCssOf(section.style.fontFamily),
+              "--canvas-font-body": fontCssOf(section.style.fontFamily),
+              fontFamily: "var(--canvas-font-body)",
+            } as CSSProperties)
+          : {}),
+        ...(section.style.fontScale !== undefined
+          ? ({ "--canvas-fs": FONT_SCALE_FACTORS[section.style.fontScale] } as CSSProperties)
+          : {}),
       }}
     >
       {theme.variants.sectionDivider && index > 0 && (

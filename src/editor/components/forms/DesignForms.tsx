@@ -1,7 +1,8 @@
 "use client";
 
-import type { Section } from "@/invitation/schema/document";
-import { FieldLabel, SegmentedField, ToggleField } from "@/ui/fields";
+import type { FontId, Section } from "@/invitation/schema/document";
+import { FONT_CHOICES } from "@/invitation/schema/themes";
+import { FieldLabel, SegmentedField, SelectField, ToggleField } from "@/ui/fields";
 import { useEditor } from "../../EditorStoreContext";
 import { SECTION_VARIANT_OPTIONS } from "../../sectionMeta";
 
@@ -63,6 +64,28 @@ export function StyleForm({ section }: { section: Section }) {
           { value: "rise", label: "라이즈" },
         ]}
         onChange={(animation) => patch({ animation })}
+      />
+      <SelectField
+        label="글꼴 (이 섹션만)"
+        value={section.style.fontFamily ?? "inherit"}
+        options={[
+          { value: "inherit", label: "전체 설정 따름" },
+          ...Object.entries(FONT_CHOICES).map(([value, font]) => ({ value, label: font.label })),
+        ]}
+        onChange={(value) =>
+          patch({ fontFamily: value === "inherit" ? undefined : (value as FontId) })
+        }
+      />
+      <SegmentedField
+        label="글자 크기 (이 섹션만)"
+        value={section.style.fontScale ?? "inherit"}
+        options={[
+          { value: "inherit", label: "전체" },
+          { value: "sm", label: "작게" },
+          { value: "md", label: "보통" },
+          { value: "lg", label: "크게" },
+        ]}
+        onChange={(value) => patch({ fontScale: value === "inherit" ? undefined : value })}
       />
       <InfoNote>모던 모노크롬 테마는 모션을 사용하지 않아 애니메이션이 적용되지 않습니다.</InfoNote>
     </div>
