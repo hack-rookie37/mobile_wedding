@@ -66,6 +66,14 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // 정적 자원은 미들웨어를 거치지 않는다
-  matcher: ["/((?!_next/static|_next/image|favicon\\.ico|samples/).*)"],
+  // 정적 파일은 미들웨어를 거치지 않는다. public/ 폴더 이름을 하나씩 적던 방식은
+  // 새 폴더가 생길 때마다 조용히 깨졌다 — map-apps/를 추가하고 이 목록을 잊자
+  // 하객에게 지도 앱 아이콘이 로그인 리다이렉트로 돌아가 깨진 이미지로 보였다.
+  // 그래서 폴더가 아니라 '브라우저가 하위 자원으로 받아가는 확장자'로 거른다.
+  //
+  // 지켜야 할 조건: 보호가 필요한 라우트의 경로가 이 확장자로 끝나면 안 된다.
+  // (.ics는 일부러 뺐다 — /preview/<id>/wedding.ics는 소유자 전용이라 검사를 거쳐야 한다.)
+  matcher: [
+    "/((?!_next/static|_next/image|.*\\.(?:png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf)$).*)",
+  ],
 };

@@ -214,6 +214,15 @@ test("발행: /i/[slug]는 인증 없이 접근되고 draft 경로는 계속 보
   await expect(anonPage.locator("[data-invitation-root]")).toBeVisible();
   await expect(anonPage.getByText("발행될 문구")).toBeVisible();
 
+  // public/의 정적 파일은 하객에게도 그대로 와야 한다. 미들웨어가 이걸 로그인으로
+  // 돌려보내면 <img>가 PNG 대신 HTML을 받아 깨진 이미지가 된다 — 실제로 지도 앱
+  // 아이콘이 그렇게 깨졌고, 편집기(로그인 상태)에서는 멀쩡해서 늦게 발견됐다.
+  for (const icon of ["naver", "kakao", "tmap"]) {
+    const response = await anonPage.request.get(`/map-apps/${icon}.png`);
+    expect(response.status(), `${icon} 아이콘`).toBe(200);
+    expect(response.headers()["content-type"]).toContain("image/");
+  }
+
   // 같은 anon 컨텍스트에서 private 경로는 로그인으로 리다이렉트
   await anonPage.goto(`/preview/${projectId}`);
   await anonPage.waitForURL(/\/login/);
