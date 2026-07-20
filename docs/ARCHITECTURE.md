@@ -134,6 +134,12 @@ type PhotoFrame = { zoom: number /*1~3*/; focalX: number /*0~1*/; focalY: number
 ### 규칙
 - **프로젝트 제목·타임스탬프는 문서에 없다.** DB 컬럼(`projects.title` 등)이 단일 소스 — 같은 지식을 두 곳에 두지 않는다 (DRY).
 - **검증 경계 (fail fast)**: 문서는 로드·저장·발행·공개 렌더 직전 4개 경계에서 zod full parse. 실패 시 즉시 구조화 에러 — silent fallback 금지.
+- **저장돼 있던 문서는 반드시 다시 열려야 한다 (타협 없음).** 스키마에 필드를 추가·변경하면
+  **같은 커밋에서** 마이그레이션과 `schema/openability.test.ts`를 함께 고친다.
+  샘플 문서로만 확인하면 절대 잡히지 않는다 — 샘플은 언제나 최신 모양이라 마이그레이션을
+  거치지 않는다. *옛 모양 그대로의 문서*를 만들어 열어 봐야 한다.
+  값을 계산해 심는 마이그레이션은 **입력 범위 전체**에서 결과가 스키마 범위 안인지 확인한다
+  (곱셈으로 파생된 pt·비율이 min/max를 벗어나기 쉽다 — v12에서 실제로 문서가 열리지 않았다).
 - **마이그레이션**: `schemaVersion` 정수 증가. `migrations: Record<number, (doc) => doc>`를 로드 시 순차 적용(forward-only), 저장은 항상 최신 버전. publication에도 `schema_version` 저장 — 공개 렌더도 같은 마이그레이터를 통과시켜 오래된 스냅샷을 계속 렌더할 수 있게 한다.
 - **sensitive 마킹 (Phase 8 구현)**: 민감 필드(contacts.phone·giftAccount.number)는 zod `.meta({ sensitive: true })`로 스키마에 선언한다 — §10 redaction의 데이터 원천. projection 구현은 `invitation/sensitive.ts`의 `redactForAi`이며, 선언·구현의 일치는 단위 테스트가 고정한다.
 

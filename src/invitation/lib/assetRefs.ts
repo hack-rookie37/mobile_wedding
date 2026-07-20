@@ -15,6 +15,11 @@ export function customFontAssetIds(doc: InvitationDocument): Set<string> {
     add(doc.typography.roles[role].font);
     for (const section of doc.sections) add(section.style.text[role].font);
   }
+  // 메인 사진 위 문구는 역할 밖에서 자기 글꼴을 따로 갖는다 (ADR-034) — 여기서 빠지면
+  // @font-face가 주입되지 않아 업로드한 글꼴이 조용히 기본 글꼴로 떨어진다.
+  for (const section of doc.sections) {
+    if (section.type === "hero") add(section.content.overlay.font);
+  }
   return ids;
 }
 

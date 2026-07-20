@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { customFontAssetIds } from "../lib/assetRefs";
+import { customFontAssetIds, referencedAssetIds } from "../lib/assetRefs";
 import { createSampleDocument } from "../fixtures/sample";
 import {
   BASE_BODY_PX,
@@ -53,5 +53,14 @@ describe("customFontAssetIds", () => {
     doc.sections[1].style.text.body.font = "custom:font-b";
     doc.sections[2].style.text.label.font = "gowun-dodum";
     expect([...customFontAssetIds(doc)].sort()).toEqual(["font-a", "font-b"]);
+
+    // 메인 사진 위 문구는 역할 밖에서 자기 글꼴을 갖는다 — 빠뜨리면 @font-face가 주입되지
+    // 않아 업로드한 글꼴이 조용히 기본 글꼴로 떨어진다 (실제로 그랬다)
+    const hero = doc.sections[0];
+    if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    hero.content.overlay.font = "custom:font-c";
+    expect([...customFontAssetIds(doc)].sort()).toEqual(["font-a", "font-b", "font-c"]);
+    // 삭제 보호도 같은 목록을 쓴다 — 쓰고 있는 폰트 파일이 경고 없이 지워지면 안 된다
+    expect(referencedAssetIds(doc).has("font-c")).toBe(true);
   });
 });

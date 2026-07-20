@@ -12,6 +12,8 @@ import {
   DEFAULT_HEADING_PT,
   ITEM_PT_OF_BODY,
   LABEL_PT_OF_HEADING,
+  PT_MAX,
+  PT_MIN,
 } from "./themes";
 
 export const CURRENT_SCHEMA_VERSION = 12;
@@ -338,6 +340,7 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
   // v11 → v12: 글자 설정을 네 역할(눈썹·제목·항목 제목·본문)로 나눈다 (ADR-035)
   //  * 전역 headingFont/bodyFont/headingPt/bodyPt → typography.roles 네 벌.
   //  * 섹션 style의 fontFamily·headingPt·bodyPt·color → style.text 네 벌.
+  //  * 메인 사진 위 문구: 3단 위치(position) → 세로 위치 %(positionPct), 그림자 on/off 추가.
   //  눈썹은 그때까지 '제목' 배율을, 항목 제목은 '본문' 배율을 따라가고 있었다. 역할이 갈라져도
   //  처음 모습이 같도록 그 관계를 pt로 환산해 심는다 (제목 15pt → 눈썹 8.25pt).
   //  섹션 글자색(style.color)은 본문 역할의 색이 된다 — 섹션의 기본 글자색이라는 뜻이 같고,
@@ -352,6 +355,8 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
         bodyPt?: unknown;
       };
       sections?: Array<{
+        type?: unknown;
+        content?: { overlay?: { position?: unknown; positionPct?: unknown } };
         style?: {
           text?: unknown;
           fontFamily?: unknown;
@@ -390,6 +395,8 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
         },
       },
       sections: (doc.sections ?? []).map((section) => {
+        const content =
+          section.type === "hero" ? { ...section.content, overlay: overlayOf(section) } : undefined;
         const {
           fontFamily,
           headingPt: sectionHeadingPt,
@@ -409,6 +416,7 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
         const merge = (role: string, legacy: object) => ({ ...legacy, ...(kept[role] ?? {}) });
         return {
           ...section,
+          ...(content === undefined ? {} : { content }),
           style: {
             ...styleRest,
             text: {
@@ -432,10 +440,28 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
   },
 };
 
-// 0.5pt 단위로 맞춘다 — 편집기의 pt 입력이 0.5 눈금이라, 어긋난 값이 들어가면
-// 사용자가 한 번 건드리는 순간 크기가 눈에 띄게 튄다.
+// 0.5pt 단위로 맞추고 허용 범위 안으로 자른다 — 편집기의 pt 입력이 0.5 눈금이고,
+// 파생값(눈썹 = 제목 × 0.55)은 원본이 작으면 최솟값 아래로 떨어진다.
+// 자르지 않으면 스키마 검증에서 걸려 **문서가 아예 열리지 않는다**.
 function halfPt(pt: number): number {
-  return Math.round(pt * 2) / 2;
+  return Math.min(PT_MAX, Math.max(PT_MIN, Math.round(pt * 2) / 2));
+}
+
+// v11의 3단 위치를 %로. 0 = 위쪽 끝, 50 = 한가운데, 100 = 아래쪽 끝이라
+// 그때 보이던 자리가 그대로 나온다. 그림자는 v11에서 늘 켜져 있었다.
+const V11_OVERLAY_POSITION: Record<string, number> = { top: 0, center: 50, bottom: 100 };
+
+function overlayOf(section: {
+  content?: { overlay?: { position?: unknown; positionPct?: unknown } };
+}) {
+  const overlay = section.content?.overlay;
+  if (overlay === undefined) return DEFAULT_HERO_OVERLAY;
+  const { position, ...rest } = overlay;
+  return {
+    ...DEFAULT_HERO_OVERLAY,
+    ...rest,
+    positionPct: overlay.positionPct ?? V11_OVERLAY_POSITION[String(position)] ?? 50,
+  };
 }
 
 function ptOr(value: unknown, fallback: number): number {

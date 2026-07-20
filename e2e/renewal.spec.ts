@@ -698,3 +698,43 @@ test("글꼴 고르기: 최근 고른 글꼴이 목록 맨 위에 모인다", as
   await expect(recent.first()).toContainText("나눔명조");
   await expect(recent.nth(1)).toContainText("고운바탕");
 });
+
+test("메인 사진 위 문구: 업로드한 글꼴을 고르면 @font-face가 주입되고 실제로 그려진다", async ({
+  page,
+}) => {
+  await signUpFresh(page);
+  await createSample(page);
+
+  // 폰트 업로드 (테마 패널)
+  await page.getByRole("button", { name: "테마", exact: true }).click();
+  await inspector(page)
+    .locator('input[type="file"][accept*="font"]')
+    .setInputFiles({
+      name: "overlay-font.woff2",
+      mimeType: "font/woff2",
+      buffer: Buffer.from("wOF2fake-font-bytes-for-e2e"),
+    });
+  await expect(
+    inspector(page).getByRole("listitem").filter({ hasText: "overlay-font.woff2" }),
+  ).toBeVisible();
+
+  // 메인 '내용' 탭에서 사진 위 문구의 글꼴로 그 폰트를 고른다
+  await selectSection(page, "메인", "내용");
+  await inspector(page).getByLabel("사진 위 문구").fill("we're getting married");
+  await inspector(page).getByRole("combobox", { name: "글꼴" }).click();
+  await inspector(page)
+    .getByRole("option", { name: /overlay-font\.woff2/ })
+    .first()
+    .click();
+
+  // 문서가 참조하는 폰트라면 @font-face가 캔버스에 주입돼야 한다 —
+  // 빠지면 브라우저가 조용히 기본 글꼴로 떨어져서 "글꼴이 안 먹는다"로만 보인다
+  const overlay = heroSection(page).locator("[data-hero-overlay] p");
+  const family = await overlay.evaluate((el) => getComputedStyle(el).fontFamily);
+  expect(family).toMatch(/^"?cf-/);
+  const injected = await canvas(page).evaluate(
+    (el) => el.querySelector("style")?.textContent ?? "",
+  );
+  const declared = family.replace(/^"?(cf-[\w-]+)"?.*$/, "$1");
+  expect(injected).toContain(`font-family:"${declared}"`);
+});
