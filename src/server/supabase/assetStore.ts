@@ -6,7 +6,7 @@ import type {
   UploadOptions,
   UploadOutcome,
 } from "@/invitation/assets/assetTypes";
-import { decodeImage, makeThumbnail, sha256Hex } from "@/invitation/assets/imageProcessing";
+import { decodeImage, downscaleImage, makeThumbnail, sha256Hex } from "@/invitation/assets/imageProcessing";
 import {
   ALLOWED_AUDIO_TYPES,
   fontMimeOf,
@@ -114,17 +114,26 @@ export class SupabaseAssetStore implements AssetStore {
       return { asset: this.toStored(existing.data as AssetRow), duplicate: true, warnings: [] };
     }
 
-    // 이미지가 아니면 디코드·썸네일 없음 — 치수는 null (DB 제약)
+    // 이미지가 아니면 디코드·축소·썸네일 없음 — 치수는 null (DB 제약)
     let width: number | null = null;
     let height: number | null = null;
     let thumbnail: Blob | null = null;
     let warning: string | null = null;
+    // 저장·전송할 실체. 폰 원본을 그대로 내보내지 않는다 (ADR-030).
+    let stored: Blob = file;
     if (kind === "image") {
       const bitmap = await decodeImage(file);
       onProgress?.(0.35);
       thumbnail = await makeThumbnail(bitmap, file.type);
-      warning = lowResolutionWarning(bitmap.width);
+      warning = lowResolutionWarning(bitmap.width); // 경고는 원본 해상도 기준
       ({ width, height } = bitmap);
+      const downscaled = await downscaleImage(bitmap, file.type);
+      // 다시 인코딩했는데 더 커지는 경우(이미 잘 압축된 파일)는 원본을 쓴다
+      if (downscaled !== null && downscaled.blob.size < file.size) {
+        stored = downscaled.blob;
+        width = downscaled.width;
+        height = downscaled.height;
+      }
       bitmap.close();
     }
 
@@ -134,7 +143,7 @@ export class SupabaseAssetStore implements AssetStore {
     const storagePath = `projects/${this.projectId}/${contentHash}.${EXTENSIONS[contentType]}`;
     const bucket = this.client.storage.from(PHOTOS_BUCKET);
 
-    const originalUpload = await bucket.upload(storagePath, file, { contentType, upsert: true });
+    const originalUpload = await bucket.upload(storagePath, stored, { contentType, upsert: true });
     if (originalUpload.error) {
       throw new AssetStorageError(`업로드 실패: ${originalUpload.error.message}`);
     }
@@ -158,7 +167,7 @@ export class SupabaseAssetStore implements AssetStore {
       kind,
       filename: file.name,
       mime_type: contentType,
-      bytes: file.size,
+      bytes: stored.size,
       width,
       height,
       content_hash: contentHash,

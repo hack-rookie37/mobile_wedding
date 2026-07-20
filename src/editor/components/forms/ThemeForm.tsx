@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { useRef, useState } from "react";
 import {
   ALLOWED_AUDIO_TYPES,
+  MAX_UPLOAD_BYTES,
   formatBytes,
   validateAudioFile,
 } from "@/invitation/assets/uploadPolicy";
@@ -69,7 +70,9 @@ function MusicField() {
           onClick={() => inputRef.current?.click()}
           className="h-9 w-full rounded-md border border-dashed border-tool-border text-[12px] text-tool-ink-soft hover:border-tool-border-strong hover:text-tool-ink disabled:opacity-40"
         >
-          {busy ? "업로드 중…" : "음악 파일 업로드 (MP3·M4A, 최대 10MB)"}
+          {busy
+            ? "업로드 중…"
+            : `음악 파일 업로드 (${Object.values(ALLOWED_AUDIO_TYPES).join("·")}, 최대 ${formatBytes(MAX_UPLOAD_BYTES)})`}
         </button>
       )}
       <input

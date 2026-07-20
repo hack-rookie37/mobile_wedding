@@ -1,6 +1,6 @@
 # CURRENT_STATE — 프로젝트 현재 상태
 
-- 최종 갱신: 2026-07-20 (커스텀 도메인 라우팅 — ADR-029)
+- 최종 갱신: 2026-07-20 (사진 전송량 축소 — ADR-030)
 - 갱신 규칙: **각 vertical slice 완료 시, 그리고 중요한 결정·환경 변화 시 이 파일을 갱신한다.** 이 파일은 "지금 어디까지 왔고 다음이 무엇인지"의 단일 소스다.
 
 ## 1. 한 줄 요약
@@ -9,6 +9,8 @@
 7개 영역(architecture·security·data integrity·accessibility·responsive·performance·e2e)을 감사해 실제 결함 **14건을 수정**했고(핵심: anon이 `publish_records` 직접 조회로 public projection을 우회해 숨긴 계좌·연락처 열람 + 발행 목록 열거가 가능했던 취약점 — RPC 단일 경로로 봉쇄, ADR-023), 배포 문서(README·DEPLOYMENT·.env.example)를 완성했다. 전 검사 green: format·lint·typecheck·renderer-units / 단위 216 / 통합 29 / build / e2e 59. 남은 조건은 §3.
 
 **Phase 11 이후 변경**: 아직 서비스로 열지 않으므로 **공개 가입을 닫았다**(ADR-024) — 로그인 화면에서 회원가입 모드 제거, 계정은 Supabase 대시보드에서 직접 생성, 운영 `enable_signup = false`가 실제 경계(§3-2). admin role은 도입하지 않았다(소유권 모델로 충분, YAGNI). e2e 헬퍼는 가입 UI 대신 anon API로 계정을 만들고 로그인만 UI로 수행한다 — 전 검사 재실행 green(§4).
+
+**사진 전송량 (ADR-030)**: 폰 원본을 그대로 저장·전송하던 것을 **저장 시 긴 변 1600px로 축소**하도록 바꿨다(업로드 상한은 10MB→20MB — 받는 크기와 내보내는 크기를 분리). 무료 플랜 egress 5GB에 하객 500명을 상정한 판단이며, Pro 승급($25/월) 대신 택했다. 실측으로 확인한 것: 기본 갤러리(`grid3`, 144px)에서는 하객이 원본을 받지 않고 640px 썸네일만 받는다 — 원본을 받는 자리는 전면 사진·대형 스트립·약도·사진 확대다. 재인코딩 부수 효과로 EXIF(GPS 포함)가 사라지며, 회전이 풀리지 않도록 `imageOrientation`을 명시했다. **이미 올린 사진은 다시 올려야 줄어든다.** 폰트 업로드도 사진처럼 여러 개를 한 번에 받도록 바꿨다(하나가 실패해도 나머지는 계속 올라간다). 전 검사 green: 단위 260 / 통합 32 / e2e 77 / build.
 
 **커스텀 도메인 라우팅 (ADR-029, DB 마이그레이션 7개째)**: 도메인을 junghoon-eunjin.com으로 붙이면서 **`/` = 하객이 받는 청첩장**, **`/edit` = 대시보드**로 바꿨다. 발행의 기본은 도메인 그 자체다 — `publish_records.slug`를 nullable로 바꿔 **NULL = 루트**로 읽고, 공개 주소를 적어 넣은 발행본만 `/i/<slug>`로 열린다. 루트는 부분 unique 인덱스로 동시에 하나만 살아 있게 막는다(`status='live'` 조건 포함 — 발행 중단하면 놓아준다). RSVP는 `rsvpSlug: string|null`의 null이 '제출 불가'와 '루트'로 겹쳐서 `rsvpTarget`으로 분리했고, `submit_rsvp`는 `is not distinct from`으로 루트를 찾는다. 새 환경변수는 없다. 루트 청첩장의 일정 파일은 `/wedding.ics`. 전 검사 green: 단위 256 / 통합 32 / e2e 75 / build.
 

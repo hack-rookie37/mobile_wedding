@@ -31,3 +31,19 @@ export async function fetchRsvpRows(
   if (error) throw new Error(`응답 조회 실패: ${error.message}`);
   return data ?? [];
 }
+
+// 업로드된 asset이 실제로 어떤 크기·치수로 저장됐는지 (축소 저장 검증 — ADR-030)
+export async function fetchAssetRows(
+  user: TestUser,
+  projectId: string,
+): Promise<{ filename: string; bytes: number; width: number | null; height: number | null }[]> {
+  const client = anonClient();
+  const signIn = await client.auth.signInWithPassword(user);
+  if (signIn.error) throw new Error(`asset 확인용 로그인 실패: ${signIn.error.message}`);
+  const { data, error } = await client
+    .from("project_assets")
+    .select("filename, bytes, width, height")
+    .eq("project_id", projectId);
+  if (error) throw new Error(`asset 조회 실패: ${error.message}`);
+  return data ?? [];
+}

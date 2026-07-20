@@ -1,6 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { signUpFresh } from "./helpers/auth";
-import { fetchStoredDoc } from "./helpers/db";
+import { fetchAssetRows, fetchStoredDoc } from "./helpers/db";
+import { MAX_UPLOAD_BYTES } from "../src/invitation/assets/uploadPolicy";
 import { makeTestPng } from "./helpers/png";
 
 // Phase 5 — media library · gallery editor 검증
@@ -82,7 +83,7 @@ test("업로드: 검증(형식·크기·저해상도)·중복·재시도·일괄
 
   // 크기 초과 → 실패
   await uploadFiles(page, [
-    { name: "huge.png", mimeType: "image/png", buffer: Buffer.alloc(10 * 1024 * 1024 + 1) },
+    { name: "huge.png", mimeType: "image/png", buffer: Buffer.alloc(MAX_UPLOAD_BYTES + 1) },
   ]);
   await expect(uploadItem(page, "huge.png")).toContainText("파일이 너무 큽니다");
 
@@ -388,4 +389,26 @@ test("모바일 스크린샷: 세로·가로 사진 crop을 4개 variant와 crop
   for (let i = 0; i < 20; i++) await focalY.press("ArrowLeft");
   await expect(page.getByText("저장됨")).toBeVisible({ timeout: 5000 });
   await shoot("preview-collage-crop-390");
+});
+
+test("업로드 시 원본을 줄여 저장한다 — 하객이 받는 건 폰 원본이 아니다 (ADR-030)", async ({
+  page,
+}) => {
+  const { projectId, user } = await createProject(page);
+  await openGalleryLibrary(page);
+
+  // 폰 세로 사진 크기(3024x4032)로 올린다
+  const source = makeTestPng(3024, 4032, { seed: 7 });
+  await uploadFiles(page, [{ name: "phone-photo.png", mimeType: "image/png", buffer: source }]);
+  await expect(uploadItem(page, "phone-photo.png").getByText("완료")).toBeVisible({
+    timeout: 60_000,
+  });
+
+  const rows = await fetchAssetRows(user, projectId);
+  const stored = rows.find((row) => row.filename === "phone-photo.png");
+  expect(stored).toBeDefined();
+  // 캔버스가 430px이라 긴 변 1600px이면 충분하다 — 비율은 유지된다
+  expect(stored!.width).toBe(1600);
+  expect(stored!.height).toBe(2133);
+  expect(stored!.bytes).toBeLessThan(source.byteLength);
 });

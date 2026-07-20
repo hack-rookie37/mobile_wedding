@@ -271,8 +271,8 @@ interface AssetStore {
 ```
 
 - **현재 구현 (Phase 6)**: `server/supabase/assetStore.ts` — Storage(photos 버킷, `projects/{projectId}/{assetId}.{ext}` + 640px 썸네일) 업로드 + `project_assets` 행 기록, content_hash 중복 감지. app이 편집기·미리보기에 주입한다. Phase 5의 IndexedDB 어댑터(`editor/assets/localAssetStore.ts`)는 오프라인 개발 대안으로 유지.
-- **업로드 검증 정책**(`invitation/assets/uploadPolicy.ts` 단일 소스): JPG·PNG·WebP만, ≤10MB, 가로 800px 미만은 경고(거부 아님). 형식·크기는 읽기 전에 즉시 거부(fail fast), 디코딩 실패는 재시도 가능한 에러. 디코딩·썸네일·해시는 `invitation/assets/imageProcessing.ts`를 두 어댑터가 공유.
-- 후속 개선: 캔버스 재인코딩(최대 변 2560px, WebP — **EXIF/GPS 제거는 재인코딩의 부수 효과**)과 Storage 변환 URL(`?width=`) srcset은 아직 미적용 — 현재는 원본+썸네일 2단 srcset.
+- **업로드 검증 정책**(`invitation/assets/uploadPolicy.ts` 단일 소스): JPG·PNG·WebP만, ≤20MB, 가로 800px 미만은 경고(거부 아님). 형식·크기는 읽기 전에 즉시 거부(fail fast), 디코딩 실패는 재시도 가능한 에러. 디코딩·썸네일·해시는 `invitation/assets/imageProcessing.ts`를 두 어댑터가 공유.
+- **저장 시 축소** (ADR-030): 긴 변 1600px(세로 2400px) 초과분은 캔버스로 다시 그려 저장한다 — 하객이 받는 건 폰 원본이 아니다. EXIF/GPS 제거는 재인코딩의 부수 효과이며, 회전이 풀리지 않도록 `imageOrientation: "from-image"`를 명시한다. srcset은 여전히 썸네일(640w)+저장본 2단 — Storage 변환 URL(`?width=`)은 유료 기능이라 미사용.
 - 문서에는 `assetId` + 표시 metadata(alt·caption·frame)만 저장 — 원본·base64 금지. 미리보기·공개 페이지 동일 경로.
 
 ## 8. 발행 파이프라인과 캐싱 (ADR-012 · ADR-019, Phase 7 구현)

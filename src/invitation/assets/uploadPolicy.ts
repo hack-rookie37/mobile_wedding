@@ -35,9 +35,17 @@ export function fontMimeOf(file: { type: string; name: string }): string | null 
   return FONT_EXTENSION_TYPES[extension] ?? null;
 }
 
-export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
+export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20MB — 받아주는 파일 크기
 export const MIN_RECOMMENDED_WIDTH = 800; // px — 미만이면 저해상도 경고 (거부 아님)
 export const THUMBNAIL_WIDTH = 640; // px — 그리드 표시용 파생 이미지 폭
+
+// 저장·전송하는 이미지의 최대 치수 (ADR-030). 받는 크기와 내보내는 크기를 분리한다.
+// 청첩장은 폰으로 본다 — 캔버스 최대 폭이 430px이고 화소밀도 3배 화면이 1290px를
+// 요구하므로 1600px이면 넘친다. 폰 원본(4032px·5MB)을 그대로 저장하면 하객 한 명이
+// 사진 열몇 장에 수십 MB를 내려받고, 그게 전송량과 로딩 시간의 대부분이다.
+export const MAX_STORED_WIDTH = 1600;
+export const MAX_STORED_HEIGHT = 2400; // 전면 사진이 세로로 길어질 수 있어 여유를 둔다
+export const STORED_JPEG_QUALITY = 0.82;
 
 export class AssetValidationError extends Error {}
 
