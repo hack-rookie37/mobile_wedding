@@ -56,10 +56,15 @@ export function createCaseDocument(kind: FixtureCase): InvitationDocument {
 
     // 폰트 선택 + 큰 글자 + 섹션별 override (인사말만 고운돋움·작게)
     case "typography": {
-      doc.typography = { headingFont: "nanum-myeongjo", bodyFont: "gowun-batang", basePt: 13 };
+      doc.typography = {
+        headingFont: "nanum-myeongjo",
+        bodyFont: "gowun-batang",
+        headingPt: 17,
+        bodyPt: 13,
+      };
       const greeting = doc.sections.find((s) => s.type === "greeting");
       if (greeting?.type !== "greeting") throw new Error("greeting 섹션이 없습니다");
-      greeting.style = { ...greeting.style, fontFamily: "gowun-dodum", fontSizePt: 9 };
+      greeting.style = { ...greeting.style, fontFamily: "gowun-dodum", bodyPt: 9, headingPt: 12 };
       return doc;
     }
 

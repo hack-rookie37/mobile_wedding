@@ -7,7 +7,7 @@ import {
   formatBytes,
   validateAudioFile,
 } from "@/invitation/assets/uploadPolicy";
-import { THEME_ORDER, THEMES } from "@/invitation/schema/themes";
+import { PT_MAX, PT_MIN, THEME_ORDER, THEMES } from "@/invitation/schema/themes";
 import { FieldLabel, NumberField, SelectField } from "@/ui/fields";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor } from "../../EditorStoreContext";
@@ -119,19 +119,80 @@ function TypographyFields() {
         onChange={(bodyFont) => patch({ bodyFont })}
       />
       <NumberField
-        label="전체 글자 크기"
-        value={typography.basePt}
-        min={7}
-        max={20}
+        label="제목 글자 크기"
+        value={typography.headingPt}
+        min={PT_MIN}
+        max={PT_MAX}
         step={0.5}
         unit="pt"
-        onChange={(basePt) => patch({ basePt })}
+        onChange={(headingPt) => patch({ headingPt })}
+      />
+      <NumberField
+        label="본문 글자 크기"
+        value={typography.bodyPt}
+        min={PT_MIN}
+        max={PT_MAX}
+        step={0.5}
+        unit="pt"
+        onChange={(bodyPt) => patch({ bodyPt })}
       />
       <p className="text-[11px] leading-[1.5] text-tool-ink-faint">
-        본문 기준 크기입니다 — 제목·캡션도 같은 비율로 함께 커집니다. 섹션 하나만 다르게 하려면 해당
-        섹션의 ‘스타일’ 탭에서 바꿀 수 있습니다.
+        제목 크기는 섹션 제목·이름·날짜처럼 제목 글꼴을 쓰는 글자에, 본문 크기는 나머지에
+        적용됩니다. 섹션 하나만 다르게 하려면 그 섹션의 ‘스타일’ 탭에서 바꿀 수 있습니다.
       </p>
       <CustomFontUpload />
+    </div>
+  );
+}
+
+// 테마 색 덮어쓰기 — 고른 테마 위에 색만 바꾼다.
+// ink-soft·구분선은 글자색과 배경색에서 자동으로 만들어지므로 여기서 고르지 않는다.
+const PALETTE_FIELDS = [
+  { key: "paper", label: "배경색" },
+  { key: "ink", label: "글자색" },
+  { key: "accent", label: "강조색" },
+] as const;
+
+function PaletteFields() {
+  const themeId = useEditor((s) => s.doc.theme.id);
+  const palette = useEditor((s) => s.doc.theme.palette);
+  const dispatch = useEditor((s) => s.dispatch);
+  const tokens = THEMES[themeId].tokens;
+  const patch = (p: Record<string, string | undefined>) =>
+    dispatch({ type: "updatePalette", patch: p });
+
+  return (
+    <div className="mt-6">
+      <FieldLabel>색 직접 고르기</FieldLabel>
+      <div className="space-y-2">
+        {PALETTE_FIELDS.map((field) => {
+          const overridden = palette[field.key] !== undefined;
+          return (
+            <div key={field.key} className="flex items-center gap-2">
+              <input
+                type="color"
+                aria-label={field.label}
+                value={palette[field.key] ?? tokens[field.key]}
+                onChange={(e) => patch({ [field.key]: e.target.value })}
+                className="h-8 w-10 shrink-0 cursor-pointer rounded-md border border-tool-border bg-white p-0.5"
+              />
+              <span className="flex-1 text-[12px] text-tool-ink">{field.label}</span>
+              <button
+                type="button"
+                disabled={!overridden}
+                onClick={() => patch({ [field.key]: undefined })}
+                className="text-[12px] text-tool-ink-soft underline underline-offset-2 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40"
+              >
+                테마 기본값
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-[11px] leading-[1.5] text-tool-ink-faint">
+        흐린 글자색과 구분선은 글자색·배경색을 섞어 자동으로 맞춰집니다. 섹션 하나만 다르게 하려면
+        그 섹션의 ‘스타일’ 탭에서 바꿀 수 있습니다.
+      </p>
     </div>
   );
 }
@@ -180,6 +241,7 @@ export function ThemeForm() {
       <p className="rounded-md bg-tool-bg px-3 py-2.5 text-[12px] leading-[1.6] text-tool-ink-soft">
         테마는 디자인 토큰과 섹션 표현만 바꿉니다. 문구·사진·섹션 순서는 그대로 유지됩니다.
       </p>
+      <PaletteFields />
       <TypographyFields />
       <MusicField />
     </div>

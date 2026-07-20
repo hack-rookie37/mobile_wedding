@@ -46,7 +46,7 @@ function ProfileCard({
         <p className="text-[length:calc(11px*var(--canvas-fs))] font-medium tracking-[0.16em] text-(--canvas-accent)">
           {roleLabel}
         </p>
-        <p className="mt-1 font-(family-name:--canvas-font-heading) text-[length:calc(17px*var(--canvas-fs))] leading-[1.5] font-semibold text-(--canvas-ink)">
+        <p className="mt-1 font-(family-name:--canvas-font-heading) text-[length:calc(17px*var(--canvas-fs-heading))] leading-[1.5] font-semibold text-(--canvas-ink)">
           {person.name}
         </p>
         {showParents && parents !== null && (

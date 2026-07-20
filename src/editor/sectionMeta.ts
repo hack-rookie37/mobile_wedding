@@ -13,6 +13,7 @@ export const SECTION_LABELS: Record<SectionType, string> = {
   giftAccount: "마음 전하실 곳",
   rsvp: "참석 여부 (RSVP)",
   closing: "맺음말",
+  share: "공유하기",
 };
 
 // 인스펙터 '레이아웃' 탭 — 타입별 layout.variant 선택지 (스키마 enum과 값 동일)
@@ -60,4 +61,5 @@ export const SECTION_VARIANT_OPTIONS: Record<SectionType, { value: string; label
     { value: "simple", label: "텍스트" },
     { value: "photo", label: "전면 사진" },
   ],
+  share: [],
 };

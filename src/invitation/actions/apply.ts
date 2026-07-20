@@ -251,6 +251,16 @@ function mutate(
       break;
     }
 
+    case "updatePalette": {
+      // undefined는 "테마 기본값으로 되돌리기" — 병합이 아니라 키 삭제로 표현한다
+      for (const [key, value] of Object.entries(action.patch)) {
+        if (value === undefined)
+          delete draft.theme.palette[key as keyof typeof draft.theme.palette];
+        else draft.theme.palette[key as keyof typeof draft.theme.palette] = value;
+      }
+      break;
+    }
+
     case "setMusic": {
       draft.music.assetId = action.assetId;
       break;

@@ -62,7 +62,7 @@ function PersonFields({
         onChange={(name) => onChange({ ...person, name })}
       />
       <TextField
-        label="관계 (장남, 차녀 등)"
+        label="관계 (아들, 딸 등)"
         value={person.familyRole ?? ""}
         onChange={(v) => onChange({ ...person, familyRole: v === "" ? undefined : v })}
       />

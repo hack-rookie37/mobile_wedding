@@ -1,9 +1,11 @@
 "use client";
 
+import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import { parseVideoUrl } from "@/invitation/lib/videoEmbed";
 import type {
   CalendarSection,
   ClosingSection,
+  ShareSection,
   GreetingSection,
   HeroSection,
   RsvpCollect,
@@ -186,7 +188,7 @@ export function VenueForm({
         </p>
       </PhotoPickField>
       <ToggleField
-        label="외부 지도 열기 버튼 (네이버 지도·카카오맵·티맵)"
+        label="외부 지도 열기 버튼 (네이버·카카오맵·티맵)"
         checked={content.showMapButtons}
         onChange={(showMapButtons) => patch({ showMapButtons })}
       />
@@ -303,6 +305,31 @@ export function RsvpForm({ section }: { section: RsvpSection }) {
   );
 }
 
+// 공유하기 — 링크 복사는 어디서나 되지만, 카카오톡 공유는 카카오 JS 앱 키가 있어야 한다.
+// 키가 없으면 공개 페이지에 카카오 버튼이 아예 나오지 않으므로 그 사실을 여기서 알린다.
+export function ShareForm({ section }: { section: ShareSection }) {
+  const patch = usePatchContent(section.id);
+  const { content } = section;
+  const kakaoReady = kakaoJsKeyFromEnv() !== null;
+
+  return (
+    <div className="space-y-4">
+      <TextField label="제목" value={content.title} onChange={(title) => patch({ title })} />
+      <TextAreaField
+        label="안내 문구"
+        value={content.body}
+        onChange={(body) => patch({ body })}
+        rows={3}
+      />
+      <p className="rounded-md bg-tool-bg px-3 py-2.5 text-[12px] leading-[1.6] text-tool-ink-soft">
+        {kakaoReady
+          ? "링크 복사와 카카오톡 공유 버튼이 게스트 화면에 표시됩니다. 두 버튼은 발행된 페이지에서만 눌립니다."
+          : "카카오 JS 앱 키(NEXT_PUBLIC_KAKAO_JS_KEY)가 설정되지 않아 게스트 화면에는 ‘링크 복사’만 표시됩니다. 카카오 개발자 사이트에서 앱을 만들고 JavaScript 키를 환경변수에 넣으면 카카오톡 공유 버튼이 함께 나옵니다."}
+      </p>
+    </div>
+  );
+}
+
 export function ClosingForm({ section }: { section: ClosingSection }) {
   const patch = usePatchContent(section.id);
   const dispatch = useEditor((s) => s.dispatch);
@@ -345,11 +372,6 @@ export function ClosingForm({ section }: { section: ClosingSection }) {
           onChange={(photoFrame) => patch({ photoFrame })}
         />
       )}
-      <ToggleField
-        label="링크 공유 버튼 표시"
-        checked={content.showShare}
-        onChange={(showShare) => patch({ showShare })}
-      />
     </div>
   );
 }

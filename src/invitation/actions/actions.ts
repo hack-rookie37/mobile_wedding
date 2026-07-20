@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   photoFrameSchema,
   sectionStyleSchema,
+  paletteSchema,
   themeIdSchema,
   typographySchema,
   weddingSchema,
@@ -89,6 +90,13 @@ export const setThemeActionSchema = z.object({
   themeId: themeIdSchema,
 });
 
+// 테마 색 덮어쓰기 — AI allowlist 제외 (색은 사용자가 직접 고른다, 기본 폐쇄).
+// 값이 undefined면 그 색을 테마 기본값으로 되돌린다.
+export const updatePaletteActionSchema = z.object({
+  type: z.literal("updatePalette"),
+  patch: paletteSchema.partial(),
+});
+
 export const updateWeddingActionSchema = z.object({
   type: z.literal("updateWedding"),
   patch: weddingSchema.partial(),
@@ -164,6 +172,7 @@ const documentActionSchemas = [
   updateSectionSettingsActionSchema,
   setSectionVariantActionSchema,
   setThemeActionSchema,
+  updatePaletteActionSchema,
   setMusicActionSchema,
   updateTypographyActionSchema,
   updateWeddingActionSchema,
@@ -223,6 +232,8 @@ export function coalesceKeyOf(action: EditorAction): string | undefined {
       return `uss:${action.sectionId}:${Object.keys(action.patch).sort().join("|")}`;
     case "updateWedding":
       return `uw:${Object.keys(action.patch).sort().join("|")}`;
+    case "updatePalette":
+      return `up:${Object.keys(action.patch).sort().join("|")}`;
     case "updateTypography":
       return `ut:${Object.keys(action.patch).sort().join("|")}`;
     case "updateGalleryPhoto":

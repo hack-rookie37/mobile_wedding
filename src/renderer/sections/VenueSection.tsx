@@ -3,6 +3,7 @@
 import { mapSearchLinks, venueMapQuery } from "@/invitation/lib/mapLinks";
 import type { VenueSection as VenueSectionData, Wedding } from "@/invitation/schema/document";
 import { formatDateStamp, formatWeddingDate } from "../format";
+import { MapAppIcon } from "../primitives/MapAppIcon";
 import { MetaList, MetaRow } from "../primitives/MetaRow";
 import { PhotoFrame } from "../primitives/PhotoFrame";
 import { SectionHeader } from "../primitives/SectionHeader";
@@ -10,24 +11,22 @@ import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
 
 // 외부 지도 열기 — MVP는 지도 API 없이 URL·딥링크만 사용 (Phase 8).
-// 각 서비스는 로고 이미지 대신 브랜드색 점으로 식별한다 (상표 리소스 미포함).
+// 각 버튼은 해당 앱의 아이콘을 위에 달아 글자 없이도 어디로 열리는지 알아볼 수 있게 한다.
+// 3등분 그리드에 70px 높이 — 모바일에서 엄지로 누르기 충분한 크기다.
 function MapLinkButtons({ venue }: { venue: Wedding["venue"] }) {
   const { mode } = useRenderer();
   const interactive = mode === "published";
   const buttonClass =
-    "flex h-9 items-center gap-2 rounded-full px-4 text-[length:calc(12.5px*var(--canvas-fs))] font-medium text-(--canvas-ink)";
+    "flex min-h-[70px] flex-col items-center justify-center gap-[7px] rounded-lg px-1.5 py-2.5 " +
+    "text-[length:calc(12px*var(--canvas-fs))] font-semibold text-(--canvas-ink) active:bg-black/5";
   const buttonStyle = { border: "1px solid var(--canvas-line)" } as const;
 
   return (
-    <div data-map-links className="flex flex-wrap justify-center gap-2">
+    <div data-map-links className="grid grid-cols-3 gap-2.5">
       {mapSearchLinks(venueMapQuery(venue)).map((link) => {
         const inner = (
           <>
-            <span
-              aria-hidden
-              className="size-2 rounded-full"
-              style={{ backgroundColor: link.brandColor }}
-            />
+            <MapAppIcon id={link.id} />
             {link.label}
           </>
         );
@@ -128,7 +127,7 @@ export function VenueSection({
         <SectionHeader label="LOCATION" title={content.title} index={index} />
         <VenueMap assetId={content.mapImageAssetId} />
         <div className="mt-7 space-y-1">
-          <p className="font-(family-name:--canvas-font-heading) text-[length:calc(18px*var(--canvas-fs))] leading-[1.5] font-semibold text-(--canvas-ink)">
+          <p className="font-(family-name:--canvas-font-heading) text-[length:calc(18px*var(--canvas-fs-heading))] leading-[1.5] font-semibold text-(--canvas-ink)">
             {venue.name}
           </p>
           {venue.hall && (
@@ -180,7 +179,7 @@ export function VenueSection({
         <SectionHeader label="LOCATION" title={content.title} index={index} />
         <VenueMap assetId={content.mapImageAssetId} />
         <div className="mt-8">
-          <p className="font-(family-name:--canvas-font-heading) text-[length:calc(19px*var(--canvas-fs))] leading-[1.5] font-semibold text-(--canvas-ink)">
+          <p className="font-(family-name:--canvas-font-heading) text-[length:calc(19px*var(--canvas-fs-heading))] leading-[1.5] font-semibold text-(--canvas-ink)">
             {venue.name}
           </p>
           {venue.hall && (

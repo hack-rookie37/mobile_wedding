@@ -214,10 +214,12 @@ test("공개 페이지: 복사·전화/문자·지도 링크·일정 저장·D-d
   expect(ics).toContain("SUMMARY:이정훈 ♥ 양은진 결혼식");
   expect(ics).toContain("LOCATION:공군호텔 3층 그랜드볼룸 서울 영등포구 여의대방로 259");
 
-  // ── 맺음말: 링크 공유 (Web Share 미지원 → 클립보드 fallback)
-  await guest.getByRole("button", { name: "청첩장 링크 공유" }).click();
-  await expect(guest.getByText("링크가 복사되었습니다")).toBeVisible();
+  // ── 공유하기: 링크 복사 (맺음말이 아니라 전용 영역에 있다)
+  await guest.getByRole("button", { name: "링크 복사" }).click();
+  await expect(guest.getByText("복사되었습니다")).toBeVisible();
   expect(await guest.evaluate(() => navigator.clipboard.readText())).toContain(`/i/${slug}`);
+  // 카카오톡 공유 버튼의 유무는 NEXT_PUBLIC_KAKAO_JS_KEY(빌드 시점에 박힌다)에 달려 있어
+  // 여기서 단언하지 않는다 — 키 유무에 따른 분기는 kakaoShare 단위 테스트가 덮는다.
 
   await context.close();
 });

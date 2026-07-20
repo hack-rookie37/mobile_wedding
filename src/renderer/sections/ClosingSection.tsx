@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import type { ClosingSection as ClosingSectionData } from "@/invitation/schema/document";
 import { BodyText } from "../primitives/BodyText";
 import { FullBleedPhoto } from "../primitives/FullBleedPhoto";
@@ -8,67 +8,41 @@ import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
 
-const COPIED_FEEDBACK_MS = 2000;
+// 사진 위 글자는 흰색으로 — 캔버스 색 변수를 이 자리에서만 다시 정의하면
+// SectionHeader·BodyText·공유 버튼이 손대지 않고도 전부 따라온다.
+const OVERLAY_VARS = {
+  "--canvas-ink": "#ffffff",
+  "--canvas-ink-soft": "rgba(255,255,255,0.82)",
+  "--canvas-accent": "#ffffff",
+  "--canvas-line": "rgba(255,255,255,0.55)",
+  textShadow: "0 1px 8px rgba(0,0,0,0.35)", // 밝은 사진 위에서도 읽히도록
+} as CSSProperties;
 
-// 마무리 공유 버튼 — Web Share API 우선, 미지원 환경은 링크 복사로 fallback
-function ShareButton() {
-  const { mode } = useRenderer();
-  const interactive = mode === "published";
-  const [copied, setCopied] = useState(false);
-  const timerRef = useRef<number | null>(null);
-
-  useEffect(
-    () => () => {
-      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-    },
-    [],
-  );
-
-  const share = async () => {
-    const url = window.location.href;
-    if (typeof navigator.share === "function") {
-      try {
-        await navigator.share({ title: document.title, url });
-      } catch {
-        // 사용자가 공유 시트를 닫음 — 아무것도 하지 않는다
-      }
-      return;
-    }
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    if (timerRef.current !== null) window.clearTimeout(timerRef.current);
-    timerRef.current = window.setTimeout(() => setCopied(false), COPIED_FEEDBACK_MS);
-  };
-
-  return (
-    <button
-      type="button"
-      disabled={!interactive}
-      data-closing-share
-      aria-live="polite"
-      onClick={() => void share()}
-      className="h-10 rounded-full px-5 text-[length:calc(13px*var(--canvas-fs))] font-medium text-(--canvas-ink)"
-      style={{ border: "1px solid var(--canvas-line)" }}
-    >
-      {copied ? "링크가 복사되었습니다" : "청첩장 링크 공유"}
-    </button>
-  );
-}
-
-// 사진 레이아웃은 메인과 같은 전면 사진이다 — 캔버스 가로를 꽉 채우고 밝기·투명도를 조절한다.
+// 사진 레이아웃은 마지막 한 장면이다 — 캔버스 가로를 꽉 채우고 상하 여백 없이
+// 위아래 끝까지 닿는다(여백 설정과 무관). 글자는 사진 위에 흰색으로 얹으며,
+// 눈썹 라벨(THANK YOU) 없이 제목만 둔다.
 export function ClosingSection({ section, index }: { section: ClosingSectionData; index: number }) {
   const { resolveAsset } = useRenderer();
   const { content, layout } = section;
   const withPhoto = layout.variant === "photo" && content.photoAssetId !== null;
 
-  return (
-    <SectionShell section={section} index={index} bleed={withPhoto}>
-      <div className="flex flex-col items-center text-center">
-        <div className={withPhoto ? "w-full px-6" : "w-full"}>
-          <SectionHeader label="THANK YOU" title={content.title} index={index} />
+  const text = (
+    <>
+      <SectionHeader title={content.title} index={index} />
+      {content.body !== "" && (
+        <div className="mt-8 w-full">
+          <BodyText text={content.body} />
         </div>
-        {withPhoto && content.photoAssetId !== null && (
-          <div className="mt-8 w-full">
+      )}
+    </>
+  );
+
+  if (withPhoto && content.photoAssetId !== null) {
+    return (
+      <SectionShell section={section} index={index} bleed flushTop flushBottom>
+        {/* 사진과 글자를 같은 grid 칸에 겹친다 — 글이 길어지면 칸이 늘어나므로 사진 밖으로 넘치지 않는다 */}
+        <div className="grid">
+          <div className="col-start-1 row-start-1">
             <FullBleedPhoto
               asset={resolveAsset(content.photoAssetId)}
               alt="마무리 사진"
@@ -78,20 +52,22 @@ export function ClosingSection({ section, index }: { section: ClosingSectionData
               fadeColor={section.style.background ?? "var(--canvas-paper)"}
             />
           </div>
-        )}
-        <div className={withPhoto ? "w-full px-6" : "w-full"}>
-          {content.body !== "" && (
-            <div className="mt-8 w-full">
-              <BodyText text={content.body} />
-            </div>
-          )}
-          {content.showShare && (
-            <div className="mt-8">
-              <ShareButton />
-            </div>
-          )}
+          {/* relative가 필요하다 — 둘 다 static이면 <img>(inline 단계)가 뒤 형제의 내용보다
+              나중에 그려져 글자·버튼을 덮고 클릭까지 가로챈다 */}
+          <div
+            className="relative col-start-1 row-start-1 flex flex-col items-center justify-center px-8 py-12 text-center"
+            style={OVERLAY_VARS}
+          >
+            {text}
+          </div>
         </div>
-      </div>
+      </SectionShell>
+    );
+  }
+
+  return (
+    <SectionShell section={section} index={index}>
+      <div className="flex flex-col items-center text-center">{text}</div>
     </SectionShell>
   );
 }

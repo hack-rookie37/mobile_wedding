@@ -35,7 +35,7 @@ export function formatDateStamp(iso: string): string {
 
 export interface ParentsLineParts {
   parents: string; // "김영호 · 박정숙" (故 표기 포함)
-  relation: string; // "장남" 등 (없으면 "아들"/"딸" 미추정 — 빈 문자열)
+  relation: string; // "아들", "딸" 등 (비어 있으면 표기하지 않는다 — 추정하지 않음)
   name: string;
 }
 

@@ -26,7 +26,6 @@ const CONTENT_FIELD_LABELS: Record<string, string> = {
   showVenue: "예식장 표시",
   showDday: "D-day 표시",
   ddayStyle: "D-day 표시 방식",
-  showShare: "공유 버튼",
   showMapButtons: "지도 버튼",
   deadline: "마감일",
   collect: "수집 항목",
@@ -154,9 +153,13 @@ export function describeAiAction(doc: InvitationDocument, action: AiAction): AiC
               ? "진입 모션"
               : key === "fontFamily"
                 ? "글꼴"
-                : key === "fontSizePt"
-                  ? "글자 크기"
-                  : "배경색";
+                : key === "bodyPt"
+                  ? "본문 크기"
+                  : key === "headingPt"
+                    ? "제목 크기"
+                    : key === "color"
+                      ? "글자색"
+                      : "배경색";
         const styleValue = (value: unknown) =>
           typeof value === "string" ? (STYLE_VALUE_LABELS[value] ?? value) : displayValue(value);
         return {

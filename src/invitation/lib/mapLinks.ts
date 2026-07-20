@@ -1,29 +1,20 @@
 // 외부 지도 연결 — MVP는 지도 API 없이 공개 URL·딥링크만 사용한다 (Phase 8).
 // 네이버·카카오는 웹 URL(모바일에서 앱으로 연결), 티맵은 앱 딥링크만 제공된다.
 
+export type MapAppId = "naver" | "kakao" | "tmap";
+
 export interface MapLink {
-  id: "naver" | "kakao" | "tmap";
+  id: MapAppId;
   label: string;
   href: string;
-  brandColor: string; // 버튼의 서비스 식별 색 (로고 이미지는 쓰지 않는다 — 상표 리소스 미포함)
 }
 
 export function mapSearchLinks(query: string): MapLink[] {
   const q = encodeURIComponent(query);
   return [
-    {
-      id: "naver",
-      label: "네이버 지도",
-      href: `https://map.naver.com/p/search/${q}`,
-      brandColor: "#03C75A",
-    },
-    {
-      id: "kakao",
-      label: "카카오맵",
-      href: `https://map.kakao.com/link/search/${q}`,
-      brandColor: "#FEE500",
-    },
-    { id: "tmap", label: "티맵", href: `tmap://search?name=${q}`, brandColor: "#F82F62" },
+    { id: "naver", label: "네이버", href: `https://map.naver.com/p/search/${q}` },
+    { id: "kakao", label: "카카오맵", href: `https://map.kakao.com/link/search/${q}` },
+    { id: "tmap", label: "티맵", href: `tmap://search?name=${q}` },
   ];
 }
 

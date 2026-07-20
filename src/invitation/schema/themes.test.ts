@@ -5,16 +5,16 @@ import {
   BASE_BODY_PX,
   customFontAssetIdOf,
   customFontFamily,
-  DEFAULT_BASE_PT,
+  DEFAULT_BODY_PT,
   fontCssOf,
   fontScaleFromPt,
 } from "./themes";
 
 describe("fontScaleFromPt", () => {
   it("기본 pt는 본문 기준선(15px)과 거의 같은 배율이다", () => {
-    expect(fontScaleFromPt(DEFAULT_BASE_PT)).toBeCloseTo((11 * 4) / 3 / BASE_BODY_PX, 5);
-    expect(fontScaleFromPt(DEFAULT_BASE_PT)).toBeGreaterThan(0.95);
-    expect(fontScaleFromPt(DEFAULT_BASE_PT)).toBeLessThan(1.0);
+    expect(fontScaleFromPt(DEFAULT_BODY_PT)).toBeCloseTo((11 * 4) / 3 / BASE_BODY_PX, 5);
+    expect(fontScaleFromPt(DEFAULT_BODY_PT)).toBeGreaterThan(0.95);
+    expect(fontScaleFromPt(DEFAULT_BODY_PT)).toBeLessThan(1.0);
   });
 
   it("pt가 커질수록 배율이 단조 증가한다", () => {

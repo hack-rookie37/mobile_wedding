@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import { InvitationRenderer } from "@/renderer/InvitationRenderer";
 import { useAssetLibrary } from "../assets/AssetLibraryContext";
 import { useEditor, useEditorStoreHandle } from "../EditorStoreContext";
@@ -52,13 +53,15 @@ export function PreviewCanvas() {
   const editMode = mode === "edit";
 
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-center overflow-hidden bg-tool-bg px-8 py-5">
+    // 바탕·그림자를 게스트 화면(PublicInvitationView)과 똑같이 맞춘다 —
+    // 회색 바탕과 회색 테두리 안에 두면 같은 종이색이 더 탁해 보인다
+    <div className="flex min-w-0 flex-1 flex-col items-center overflow-hidden bg-canvas-backdrop px-8 py-5">
       <div className="flex min-h-0 w-full flex-1 justify-center">
         <div
           ref={scrollRef}
           data-preview-frame
           style={{ width }}
-          className="min-h-0 shrink-0 overflow-y-auto rounded-lg border border-tool-border bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
+          className="min-h-0 shrink-0 overflow-y-auto rounded-lg shadow-[0_0_28px_rgba(0,0,0,0.07)]"
         >
           <InvitationRenderer
             doc={doc}
@@ -66,6 +69,7 @@ export function PreviewCanvas() {
             resolveAsset={resolveAsset}
             musicUrl={musicUrl}
             resolveFontUrl={resolveFontUrl}
+            kakaoJsKey={kakaoJsKeyFromEnv()}
             motionReplay={editMode ? motionReplay : null}
             selectedSectionId={editMode ? selectedSectionId : null}
             onSectionSelect={

@@ -65,14 +65,42 @@ export const FONT_CHOICES: Record<
   sans: { label: "고딕", css: SANS },
 };
 
-// 렌더러 텍스트 크기의 기준선(px). 모든 텍스트가 calc(Npx * var(--canvas-fs))로 곱해지므로
-// 사용자가 입력한 pt를 이 기준에 대한 배율로 환산하면 전체가 함께 커진다.
-export const BASE_BODY_PX = 15;
+// 렌더러 텍스트 크기의 기준선(px). 모든 텍스트가 calc(Npx * var(--canvas-fs[-heading]))로
+// 곱해지므로, 입력한 pt를 이 기준에 대한 배율로 환산하면 그 무리가 함께 커진다.
+// 제목과 본문의 기준선을 따로 두는 이유: 각각의 pt가 실제 렌더 크기와 맞아떨어져야
+// "제목 15pt"라고 적힌 값이 화면의 제목 크기를 뜻하게 된다.
+export const BASE_BODY_PX = 15; // 본문 기준 (BodyText 등)
+export const BASE_HEADING_PX = 20; // 제목 기준 (SectionHeader의 h2)
 const PT_TO_PX = 96 / 72;
-export const DEFAULT_BASE_PT = 11; // ≈ 14.7px — 기존 '보통' 크기
+
+export const DEFAULT_BODY_PT = 11; // ≈ 14.7px
+export const DEFAULT_HEADING_PT = 15; // = 20px
 
 export function fontScaleFromPt(pt: number): number {
   return (pt * PT_TO_PX) / BASE_BODY_PX;
+}
+
+export function headingScaleFromPt(pt: number): number {
+  return (pt * PT_TO_PX) / BASE_HEADING_PX;
+}
+
+// 테마 토큰 + 문서의 색 override → 실제로 칠할 색.
+// ink-soft·line은 override가 있을 때만 ink·paper를 섞어 다시 만든다 —
+// 테마 기본 상태에서는 손대지 않아 기존 테마의 결이 그대로 남는다.
+export function resolvePalette(
+  tokens: ThemeTokens,
+  palette: import("./document").Palette,
+): Pick<ThemeTokens, "paper" | "ink" | "inkSoft" | "accent" | "line"> {
+  const paper = palette.paper ?? tokens.paper;
+  const ink = palette.ink ?? tokens.ink;
+  const recolored = palette.paper !== undefined || palette.ink !== undefined;
+  return {
+    paper,
+    ink,
+    accent: palette.accent ?? tokens.accent,
+    inkSoft: recolored ? `color-mix(in srgb, ${ink} 62%, ${paper})` : tokens.inkSoft,
+    line: recolored ? `color-mix(in srgb, ${ink} 16%, ${paper})` : tokens.line,
+  };
 }
 
 // 업로드 폰트의 CSS family 이름 — @font-face 선언과 사용처가 이 함수 하나를 공유한다
@@ -190,3 +218,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     },
   },
 };
+
+// pt 입력 범위 — 스키마(fontSizePtSchema)와 편집기 입력 칸이 같은 값을 쓴다
+export const PT_MIN = 7;
+export const PT_MAX = 28;

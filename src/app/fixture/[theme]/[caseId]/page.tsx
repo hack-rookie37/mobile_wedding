@@ -25,7 +25,10 @@ export default function FixturePage({
 
   const load = useCallback(() => {
     if (!valid) return null;
-    return { ...createCaseDocument(caseId as FixtureCase), theme: { id: theme as ThemeId } };
+    return {
+      ...createCaseDocument(caseId as FixtureCase),
+      theme: { id: theme as ThemeId, palette: {} },
+    };
   }, [theme, caseId, valid]);
   const state = useDeferredLoad(load);
 

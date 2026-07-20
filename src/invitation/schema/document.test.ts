@@ -66,7 +66,7 @@ describe("migrateDocument", () => {
     const v1 = { ...base, schemaVersion: 1, theme: { preset: "ivory", fontPair: "classic-serif" } };
     const migrated = migrateDocument(v1);
     expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
-    expect(migrated.theme).toEqual({ id: "warm-editorial" });
+    expect(migrated.theme).toEqual({ id: "warm-editorial", palette: {} });
     expect(migrated.sections).toEqual(base.sections); // 콘텐츠 보존
 
     const v1snow = {
@@ -74,7 +74,7 @@ describe("migrateDocument", () => {
       schemaVersion: 1,
       theme: { preset: "snow", fontPair: "modern-sans" },
     };
-    expect(migrateDocument(v1snow).theme).toEqual({ id: "modern-monochrome" });
+    expect(migrateDocument(v1snow).theme).toEqual({ id: "modern-monochrome", palette: {} });
   });
 
   it("v2 문서는 v3로 마이그레이션된다 (gallery carousel → slider, 콘텐츠 보존)", () => {
@@ -200,8 +200,14 @@ describe("migrateDocument", () => {
     if (rsvp?.type !== "rsvp") throw new Error("rsvp가 없습니다");
     expect(rsvp.layout.variant).toBe("sheet"); // default → sheet 개명
     expect(migrated.music).toEqual({ assetId: null }); // 배경음악 슬롯 신설
-    // 폰트는 테마 그대로, 크기는 v6의 '보통'에 해당하는 pt로 환산된다
-    expect(migrated.typography).toEqual({ headingFont: "theme", bodyFont: "theme", basePt: 11 });
+    // 폰트는 테마 그대로, 크기는 v6의 '보통' → 11pt로 환산된 뒤 v8에서 제목·본문으로 갈린다.
+    // 제목 14.5pt는 기존 화면 크기(19.6px)를 지키는 값이다 — 새 문서 기본값(15pt = 20px)과는 다르다.
+    expect(migrated.typography).toEqual({
+      headingFont: "theme",
+      bodyFont: "theme",
+      headingPt: 14.5,
+      bodyPt: 11,
+    });
   });
 
   it("v6 → v7: 글자 크기가 pt로 환산되고 hero·closing·gallery가 새 표현으로 옮겨진다", () => {
@@ -233,16 +239,18 @@ describe("migrateDocument", () => {
       }),
     };
     const migrated = migrateDocument(v6);
-    expect(migrated.schemaVersion).toBe(7);
-    // 3단계 enum → pt (lg = 12pt, sm = 10pt)
-    expect(migrated.typography.basePt).toBe(12);
+    expect(migrated.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    // 3단계 enum → pt (lg = 12pt), 그리고 v8에서 제목은 본문의 4/3배로 갈린다
+    expect(migrated.typography.bodyPt).toBe(12);
+    expect(migrated.typography.headingPt).toBe(16);
     expect(migrated.typography.headingFont).toBe("gowun-batang"); // 폰트 선택 보존
     const hero = migrated.sections[0];
     if (hero.type !== "hero") throw new Error("hero가 없습니다");
     expect(hero.layout.variant).toBe("photoFull"); // 레이아웃 통일
     expect(hero.content.effects.fadeBottom).toBe(false); // 기존 선택 승계
     expect(hero.content.effects.brightness).toBe(1); // 새 효과는 원본 그대로가 기본
-    expect(hero.style.fontSizePt).toBe(10);
+    expect(hero.style.bodyPt).toBe(10); // 섹션 override도 pt로 환산된 뒤 둘로 갈린다
+    expect(hero.style.headingPt).toBe(13.5);
     const closing = migrated.sections.find((s) => s.type === "closing");
     if (closing?.type !== "closing") throw new Error("closing이 없습니다");
     expect(closing.content.photoAspect).toBe("4/5");
@@ -250,6 +258,41 @@ describe("migrateDocument", () => {
     const gallery = migrated.sections.find((s) => s.type === "gallery");
     if (gallery?.type !== "gallery") throw new Error("gallery가 없습니다");
     expect(gallery.layout.variant).toBe("slider"); // 필름 제거 → 가장 가까운 가로 스크롤
+  });
+
+  it("v7 → v8: 맺음말의 공유 버튼이 켜져 있었으면 그 뒤에 공유 섹션이 생긴다", () => {
+    const base = createSampleDocument();
+    // v7 문서: 공유 섹션이 없고, 맺음말이 showShare를 들고 있었다
+    const v7Of = (showShare: boolean) => ({
+      ...base,
+      schemaVersion: 7,
+      sections: base.sections
+        .filter((s) => s.type !== "share")
+        .map((s) => (s.type === "closing" ? { ...s, content: { ...s.content, showShare } } : s)),
+    });
+
+    const on = migrateDocument(v7Of(true));
+    const closingIndex = on.sections.findIndex((s) => s.type === "closing");
+    expect(on.sections[closingIndex + 1].type).toBe("share"); // 맺음말 바로 뒤
+    expect("showShare" in on.sections[closingIndex].content).toBe(false); // 옛 필드는 사라진다
+
+    // 꺼 두었던 문서에는 새 영역이 생기지 않는다
+    expect(migrateDocument(v7Of(false)).sections.some((s) => s.type === "share")).toBe(false);
+
+    // 같은 입력은 항상 같은 문서 — 섹션 id가 실행마다 달라지면 재현이 깨진다
+    expect(migrateDocument(v7Of(true))).toEqual(on);
+  });
+
+  it("마이그레이션은 이미 현재 모양인 값을 기본값으로 되돌리지 않는다", () => {
+    // 옛 버전 번호가 찍혔지만 내용은 이미 최신 모양인 문서 — 두 번 태워도 결과가 같아야 한다.
+    // 덮어쓰면 사용자가 맞춰 둔 사진 밝기·페이드가 조용히 초기화된다.
+    const base = createSampleDocument();
+    const closing = base.sections.find((s) => s.type === "closing");
+    if (closing?.type !== "closing") throw new Error("closing이 없습니다");
+    expect(closing.content.effects.brightness).not.toBe(1); // 기본값과 달라야 의미 있는 검증
+
+    expect(migrateDocument({ ...base, schemaVersion: 6 })).toEqual(base);
+    expect(migrateDocument(base)).toEqual(base);
   });
 
   it("v3 → v4: venue에 showMapButtons가 추가된다 (기존 note 보존)", () => {

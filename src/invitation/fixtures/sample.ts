@@ -14,17 +14,17 @@ const style = (
 // 실제 한국 청첩장 관례를 따른 샘플 문서 (연락처·계좌만 가상)
 export function createSampleDocument(): InvitationDocument {
   return {
-    schemaVersion: 7,
+    schemaVersion: 8,
     wedding: {
       groom: {
         name: "이정훈",
-        familyRole: "장남",
+        familyRole: "아들",
         father: { name: "이길재", deceased: false },
         mother: { name: "최은주", deceased: false },
       },
       bride: {
         name: "양은진",
-        familyRole: "차녀",
+        familyRole: "딸",
         father: { name: "양길모", deceased: false },
         mother: { name: "임현이", deceased: false },
       },
@@ -36,9 +36,9 @@ export function createSampleDocument(): InvitationDocument {
         phone: "02-844-0336",
       },
     },
-    theme: { id: "warm-editorial" },
+    theme: { id: "warm-editorial", palette: {} },
     music: { assetId: null },
-    typography: { headingFont: "theme", bodyFont: "theme", basePt: 11 },
+    typography: { headingFont: "theme", bodyFont: "theme", headingPt: 15, bodyPt: 11 },
     sections: [
       {
         id: nanoid(),
@@ -212,8 +212,20 @@ export function createSampleDocument(): InvitationDocument {
           body: "저희 두 사람의 시작을 함께해 주셔서 감사합니다.\n주신 마음 오래 간직하며 예쁘게 살겠습니다.",
           photoAssetId: "gallery-06",
           photoAspect: "4/5",
-          effects: { fadeBottom: true, sparkle: false, brightness: 1, opacity: 1 },
-          showShare: true,
+          // 글자가 사진 위에 얹히므로 어둡게 깔고, 하단 페이드는 끈다
+          // (사진이 캔버스 맨 아래에 붙는데 바닥이 종이색으로 흐려지면 덜 붙어 보인다)
+          effects: { fadeBottom: false, sparkle: false, brightness: 0.6, opacity: 1 },
+        },
+      },
+      {
+        id: nanoid(),
+        type: "share",
+        visible: true,
+        layout: { variant: "default" },
+        style: style("md", "fade"),
+        content: {
+          title: "청첩장 공유하기",
+          body: "이 청첩장을 소중한 분들께 전해 주세요.",
         },
       },
     ],

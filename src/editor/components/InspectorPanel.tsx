@@ -11,6 +11,7 @@ import { ContactsForm, GiftAccountForm, TransportationForm } from "./forms/ListS
 import {
   CalendarForm,
   ClosingForm,
+  ShareForm,
   GreetingForm,
   HeroForm,
   RsvpForm,
@@ -94,6 +95,7 @@ export function InspectorPanel() {
             {section.type === "giftAccount" && <GiftAccountForm section={section} />}
             {section.type === "rsvp" && <RsvpForm section={section} />}
             {section.type === "closing" && <ClosingForm section={section} />}
+            {section.type === "share" && <ShareForm section={section} />}
           </>
         )}
         {section && tab === "layout" && <LayoutForm section={section} />}

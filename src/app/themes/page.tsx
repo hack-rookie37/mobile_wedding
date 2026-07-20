@@ -36,7 +36,7 @@ export default function ThemeComparePage() {
                   </div>
                   <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-tool-border bg-white shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
                     <InvitationRenderer
-                      doc={{ ...state.value, theme: { id } }}
+                      doc={{ ...state.value, theme: { id, palette: {} } }}
                       mode="published"
                       resolveAsset={resolveBuiltinAsset}
                     />

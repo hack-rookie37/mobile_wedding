@@ -51,6 +51,8 @@ test("메인: 레이아웃 탭이 전면 사진 효과(페이드·반짝임·밝
   const photoBox = heroSection(page).locator("[data-photo-stage]");
   await inspector(page).getByLabel("반짝임").check();
   await expect(photoBox.locator("[data-sparkle]")).toBeVisible();
+  // 빛줄기 하나가 아니라 여러 별빛이 흩어져 깜빡인다
+  expect(await photoBox.locator("[data-star]").count()).toBeGreaterThan(3);
 
   await inspector(page).getByLabel("밝기", { exact: true }).fill("60");
   await inspector(page).getByLabel("투명도", { exact: true }).fill("50");
@@ -117,29 +119,117 @@ test("오시는 길: 약도 이미지는 제목 바로 아래에 온다", async 
   expect(mapTop).toBeLessThan(addressTop);
 });
 
-test("글자 크기: pt를 직접 입력하면 전체·섹션별로 반영된다", async ({ page }) => {
+const cssVar = (locator: ReturnType<typeof canvas>, name: string) =>
+  locator.evaluate((el, v) => Number(getComputedStyle(el).getPropertyValue(v)), name);
+
+test("글자 크기: 제목과 본문을 따로 조절할 수 있다 (전체·섹션별)", async ({ page }) => {
   await signUpFresh(page);
   await createSample(page);
 
-  const canvasFs = () =>
-    canvas(page).evaluate((el) => Number(getComputedStyle(el).getPropertyValue("--canvas-fs")));
-  const base = await canvasFs();
+  const bodyFs = () => cssVar(canvas(page), "--canvas-fs");
+  const headingFs = () => cssVar(canvas(page), "--canvas-fs-heading");
+  const [baseBody, baseHeading] = [await bodyFs(), await headingFs()];
 
   await page.getByRole("button", { name: "테마", exact: true }).click();
-  await inspector(page).getByLabel("전체 글자 크기", { exact: true }).fill("16");
-  await inspector(page).getByLabel("전체 글자 크기", { exact: true }).blur();
-  await expect.poll(canvasFs).toBeGreaterThan(base);
+  // 본문만 키운다 — 제목은 그대로 있어야 둘이 독립임이 증명된다
+  await inspector(page).getByLabel("본문 글자 크기", { exact: true }).fill("16");
+  await inspector(page).getByLabel("본문 글자 크기", { exact: true }).blur();
+  await expect.poll(bodyFs).toBeGreaterThan(baseBody);
+  expect(await headingFs()).toBeCloseTo(baseHeading, 3);
+
+  // 이제 제목만 키운다
+  await inspector(page).getByLabel("제목 글자 크기", { exact: true }).fill("22");
+  await inspector(page).getByLabel("제목 글자 크기", { exact: true }).blur();
+  await expect.poll(headingFs).toBeGreaterThan(baseHeading);
 
   // 섹션별 override는 그 섹션 안에서만 다시 정의된다
   await selectSection(page, "인사말", "스타일");
-  await inspector(page).getByLabel("글자 크기 (이 섹션만)", { exact: true }).fill("8");
-  await inspector(page).getByLabel("글자 크기 (이 섹션만)", { exact: true }).blur();
+  await inspector(page).getByLabel("본문 크기 (이 섹션만)", { exact: true }).fill("8");
+  await inspector(page).getByLabel("본문 크기 (이 섹션만)", { exact: true }).blur();
+  const greeting = canvas(page).locator('section:has-text("소중한 분들을 초대합니다")').last();
+  await expect.poll(() => cssVar(greeting, "--canvas-fs")).toBeLessThan(await bodyFs());
+});
+
+test("테마 색: 배경·글자색을 직접 고르면 캔버스에 그대로 칠해진다", async ({ page }) => {
+  await signUpFresh(page);
+  await createSample(page);
+  await page.getByRole("button", { name: "테마", exact: true }).click();
+
+  const root = canvas(page);
+  await inspector(page).getByLabel("배경색", { exact: true }).fill("#102030");
+  await inspector(page).getByLabel("글자색", { exact: true }).fill("#f0e8d8");
+  await expect
+    .poll(() => root.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .toBe("rgb(16, 32, 48)");
+  await expect
+    .poll(() => root.evaluate((el) => getComputedStyle(el).color))
+    .toBe("rgb(240, 232, 216)");
+
+  // ‘테마 기본값’을 누르면 배경만 되돌아가고 글자색 선택은 남는다
+  await inspector(page)
+    .getByLabel("배경색", { exact: true })
+    .locator("xpath=following-sibling::button")
+    .click();
+  await expect
+    .poll(() => root.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .toBe("rgb(250, 247, 241)"); // 웜 에디토리얼 기본 종이색
+  expect(await root.evaluate((el) => getComputedStyle(el).color)).toBe("rgb(240, 232, 216)");
+
+  // 섹션 하나만 다른 글자색으로
+  await selectSection(page, "인사말", "스타일");
+  await inspector(page).getByLabel("글자색 (이 섹션만)", { exact: true }).fill("#c01020");
   const greeting = canvas(page).locator('section:has-text("소중한 분들을 초대합니다")').last();
   await expect
+    .poll(() => greeting.evaluate((el) => getComputedStyle(el).color))
+    .toBe("rgb(192, 16, 32)");
+});
+
+test("글자 크기: 두 자리 수를 한 글자씩 쳐도 중간에 최솟값으로 튀지 않는다", async ({ page }) => {
+  await signUpFresh(page);
+  await createSample(page);
+  await page.getByRole("button", { name: "테마", exact: true }).click();
+
+  const input = inspector(page).getByLabel("본문 글자 크기", { exact: true });
+  await input.fill("");
+  // "1"은 최솟값(7)보다 작다 — 여기서 곧바로 7로 잘리면 다음 글자가 붙어 "72" → 최댓값 20이 된다
+  await input.pressSequentially("12");
+  await expect(input).toHaveValue("12");
+  await input.blur();
+  await expect(input).toHaveValue("12");
+  await expect
     .poll(() =>
-      greeting.evaluate((el) => Number(getComputedStyle(el).getPropertyValue("--canvas-fs"))),
+      canvas(page).evaluate((el) => Number(getComputedStyle(el).getPropertyValue("--canvas-fs"))),
     )
-    .toBeLessThan(await canvasFs());
+    .toBeCloseTo(16 / 15, 2);
+});
+
+test("오시는 길: 지도 버튼은 앱 아이콘과 함께 뜨고 네이버는 '네이버'로 적힌다", async ({
+  page,
+}) => {
+  await signUpFresh(page);
+  await createSample(page);
+
+  const buttons = canvas(page).locator("[data-map-links] > *");
+  await expect(buttons).toHaveCount(3);
+  await expect(buttons.nth(0)).toHaveText("네이버");
+  await expect(buttons.nth(1)).toHaveText("카카오맵");
+  await expect(buttons.nth(2)).toHaveText("티맵");
+
+  // 앱 아이콘 이미지가 실제로 로드된다 (경로 오타는 여기서 잡힌다).
+  // lazy 로딩이라 화면에 들어와야 받아온다
+  const icons = canvas(page).locator("[data-map-links] img");
+  await expect(icons).toHaveCount(3);
+  await buttons.nth(0).scrollIntoViewIfNeeded();
+  for (let i = 0; i < 3; i += 1) {
+    await expect
+      .poll(() => icons.nth(i).evaluate((el: HTMLImageElement) => el.naturalWidth))
+      .toBeGreaterThan(0);
+  }
+
+  // 모바일에서 누르기 쉬운 크기 — 손가락 터치 타깃 권장치(44px)를 넘는다
+  const box = await buttons.nth(0).boundingBox();
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(70);
+  expect(box?.width ?? 0).toBeGreaterThanOrEqual(44);
 });
 
 test("커스텀 폰트: 업로드하면 선택지에 뜨고 @font-face가 주입된다", async ({ page }) => {
@@ -212,7 +302,7 @@ test("맺음말: 전면 사진 레이아웃과 밝기·투명도 조절", async 
   ).toBeVisible();
 
   await inspector(page).getByLabel("밝기", { exact: true }).fill("70");
-  const closing = canvas(page).locator("section").last();
+  const closing = canvas(page).locator('section:has-text("감사합니다")').last();
   const photoBox = closing.locator("[data-photo-stage]");
   await expect
     .poll(() => photoBox.evaluate((el) => getComputedStyle(el).filter))
@@ -224,4 +314,34 @@ test("맺음말: 전면 사진 레이아웃과 밝기·투명도 조절", async 
     canvas(page).evaluate((el) => el.getBoundingClientRect().width),
   ]);
   expect(photoWidth).toBeCloseTo(canvasWidth, 0);
+
+  // 마지막 장면은 상하 여백이 없다 — 여백 설정을 바꿔도 위아래 모두 0
+  await selectSection(page, "맺음말", "스타일");
+  for (const label of ["좁게", "넓게"]) {
+    await inspector(page).getByRole("button", { name: label, exact: true }).click();
+    await expect
+      .poll(() =>
+        closing.evaluate((el) => {
+          const s = getComputedStyle(el);
+          return `${s.paddingTop}/${s.paddingBottom}`;
+        }),
+      )
+      .toBe("0px/0px");
+  }
+
+  // 눈썹 라벨(THANK YOU)은 없고 제목만 사진 위에 흰 글씨로 얹힌다
+  await expect(closing.getByText("THANK YOU")).toHaveCount(0);
+  const title = closing.getByRole("heading", { name: "감사합니다" });
+  expect(await title.evaluate((el) => getComputedStyle(el).color)).toBe("rgb(255, 255, 255)");
+  const [titleBox, photoRect] = await Promise.all([title.boundingBox(), photoBox.boundingBox()]);
+  expect(titleBox!.y).toBeGreaterThan(photoRect!.y);
+  expect(titleBox!.y + titleBox!.height).toBeLessThan(photoRect!.y + photoRect!.height);
+});
+
+test("마음 전하실 곳: 눈썹 라벨이 REGISTRY다", async ({ page }) => {
+  await signUpFresh(page);
+  await createSample(page);
+  const gift = canvas(page).locator('section:has-text("마음 전하실 곳")').last();
+  await expect(gift.getByText("REGISTRY")).toBeVisible();
+  await expect(gift.getByText("GIFT")).toHaveCount(0);
 });

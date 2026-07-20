@@ -34,6 +34,7 @@ const SAMPLE_LABELS = [
   "마음 전하실 곳",
   "참석 여부 (RSVP)",
   "맺음말",
+  "공유하기",
 ];
 
 test("섹션 추가: 목록·미리보기에 나타나고 새 섹션이 선택된다", async ({ page }) => {
@@ -121,6 +122,8 @@ test("text 수정과 variant 변경이 미리보기에 동기화되고 내용이
 
   // 레이아웃 탭에서 variant 변경 → 사진 개수(내용) 보존
   await page.getByRole("button", { name: "갤러리", exact: true }).click();
+  // count()는 재시도하지 않는다 — 사진이 그려진 걸 확인한 뒤에 센다
+  await expect(preview.locator("figure img").first()).toBeVisible();
   const photoCount = await preview.locator("figure img").count();
   await inspector(page).getByRole("button", { name: "레이아웃", exact: true }).click();
   await inspector(page).getByRole("button", { name: "슬라이더" }).click();
@@ -138,14 +141,14 @@ test("text 수정과 variant 변경이 미리보기에 동기화되고 내용이
 
 test("preview 클릭으로 섹션 선택", async ({ page }) => {
   await createProject(page);
-  // 마지막 섹션(맺음말)의 상단 여백 지점을 클릭
+  // 마지막 섹션(공유하기)의 상단 여백 지점을 클릭
   await page
     .locator("[data-invitation-root] [data-section-id]")
     .last()
     .click({ position: { x: 30, y: 20 } });
-  await expect(inspector(page).getByRole("heading", { name: "맺음말" })).toBeVisible();
+  await expect(inspector(page).getByRole("heading", { name: "공유하기" })).toBeVisible();
   // 좌측 목록에도 선택 반영
-  await expect(sectionRow(page, "맺음말").locator("[data-row-select]")).toHaveClass(
+  await expect(sectionRow(page, "공유하기").locator("[data-row-select]")).toHaveClass(
     /text-tool-accent/,
   );
 });

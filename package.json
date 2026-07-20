@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "playwright test",
-    "check:renderer-units": "! grep -rnE '[0-9.]+(vw|vh)[^a-z]|@media' src/renderer"
+    "check:renderer-units": "! grep -rnE '[0-9.]+(vw|vh)[^a-z]|@media' src/renderer | grep -v prefers-reduced-motion"
   },
   "dependencies": {
     "@atlaskit/pragmatic-drag-and-drop": "^2.0.1",

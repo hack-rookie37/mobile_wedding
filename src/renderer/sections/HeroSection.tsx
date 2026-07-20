@@ -39,7 +39,7 @@ export function HeroSection({
           </p>
         )}
         <h1
-          className={`${content.tagline !== "" ? "mt-4" : "mt-7"} font-(family-name:--canvas-font-heading) text-[length:calc(26px*var(--canvas-fs))] leading-[1.4] font-semibold tracking-[-0.01em] text-(--canvas-ink)`}
+          className={`${content.tagline !== "" ? "mt-4" : "mt-7"} font-(family-name:--canvas-font-heading) text-[length:calc(26px*var(--canvas-fs-heading))] leading-[1.4] font-semibold tracking-[-0.01em] text-(--canvas-ink)`}
         >
           {wedding.groom.name}
           <span className="mx-2.5 text-[length:calc(20px*var(--canvas-fs))] font-normal text-(--canvas-accent)">

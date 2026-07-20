@@ -116,7 +116,7 @@ export function GiftAccountSection({
 
   return (
     <SectionShell section={section} index={index}>
-      <SectionHeader label="GIFT" title={content.title} index={index} />
+      <SectionHeader label="REGISTRY" title={content.title} index={index} />
       {content.accounts.length === 0 && mode === "editor-edit" && (
         <p className="mt-6 text-center text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)">
           오른쪽 패널에서 계좌를 추가하세요.

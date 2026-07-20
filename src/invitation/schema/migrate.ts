@@ -1,13 +1,16 @@
 import { documentSchema, type InvitationDocument } from "./document";
 
-export const CURRENT_SCHEMA_VERSION = 7;
+export const CURRENT_SCHEMA_VERSION = 8;
 
 // v6의 글자 크기 3단계 → v7의 pt 값. 기존 배율(0.93·1·1.08)에 가장 가까운 정수 pt다.
 const V6_SCALE_TO_PT: Record<string, number> = { sm: 10, md: 11, lg: 12 };
 
-// 새 photoEffects 기본값 — 기존 문서의 fadeBottom(있으면)만 이어받고 나머지는 원본 그대로
-function effectsFrom(fadeBottom: unknown) {
-  return { fadeBottom: fadeBottom !== false, sparkle: false, brightness: 1, opacity: 1 };
+// 새 photoEffects — 기존 문서의 fadeBottom(있으면)만 이어받고 나머지는 기본값.
+// 이미 v7 모양의 effects가 들어 있으면 손대지 않는다: 마이그레이션을 두 번 태워도
+// 결과가 같아야 하고, 사용자가 맞춰 둔 밝기·페이드를 기본값으로 되돌리면 안 된다.
+function effectsOf(content: { effects?: unknown; fadeBottom?: unknown } | undefined) {
+  if (content?.effects !== undefined) return content.effects;
+  return { fadeBottom: content?.fadeBottom !== false, sparkle: false, brightness: 1, opacity: 1 };
 }
 
 export class InvalidDocumentError extends Error {}
@@ -108,39 +111,42 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
   //  * gallery: filmstrip(필름) 제거 — 가장 가까운 가로 스크롤인 slider로 옮긴다
   6: (raw) => {
     const doc = raw as {
-      typography?: { scale?: unknown };
+      typography?: { scale?: unknown; basePt?: unknown };
       sections?: Array<{
         type?: unknown;
-        style?: { fontScale?: unknown };
+        style?: { fontScale?: unknown; fontSizePt?: unknown };
         layout?: { variant?: unknown };
-        content?: { fadeBottom?: unknown };
+        content?: { fadeBottom?: unknown; effects?: unknown; photoAspect?: unknown };
       }>;
     };
     const { scale, ...typographyRest } = doc.typography ?? {};
     return {
       ...(raw as object),
       schemaVersion: 7,
-      typography: { ...typographyRest, basePt: V6_SCALE_TO_PT[String(scale)] ?? 11 },
+      typography: {
+        ...typographyRest,
+        basePt: typographyRest.basePt ?? V6_SCALE_TO_PT[String(scale)] ?? 11,
+      },
       sections: (doc.sections ?? []).map((section) => {
         const { fontScale, ...styleRest } = section.style ?? {};
         const style =
-          fontScale === undefined
+          fontScale === undefined || styleRest.fontSizePt !== undefined
             ? styleRest
             : { ...styleRest, fontSizePt: V6_SCALE_TO_PT[String(fontScale)] ?? 11 };
         if (section.type === "hero") {
-          const { fadeBottom, ...contentRest } = section.content ?? {};
-          return {
-            ...section,
-            style,
-            layout: { variant: "photoFull" },
-            content: { ...contentRest, effects: effectsFrom(fadeBottom) },
-          };
+          const content = { ...section.content, effects: effectsOf(section.content) };
+          delete content.fadeBottom; // v6의 fadeBottom은 effects 안으로 흡수됐다
+          return { ...section, style, layout: { variant: "photoFull" }, content };
         }
         if (section.type === "closing") {
           return {
             ...section,
             style,
-            content: { ...section.content, photoAspect: "4/5", effects: effectsFrom(true) },
+            content: {
+              ...section.content,
+              photoAspect: section.content?.photoAspect ?? "4/5",
+              effects: effectsOf(section.content),
+            },
           };
         }
         if (section.type === "gallery" && section.layout?.variant === "filmstrip") {
@@ -150,7 +156,71 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
       }),
     };
   },
+  // v7 → v8: 제목·본문 글자 크기 분리 + 테마 색 override + 공유 섹션 분리 (ADR-028)
+  //  * 하나였던 pt가 둘로 갈린다. 제목은 20px, 본문은 15px 기준선이라 같은 화면 크기를
+  //    유지하려면 제목 pt는 본문 pt의 4/3배다 (기존 basePt 11 → 제목 15pt·본문 11pt).
+  //  * theme.palette는 비어 있는 채로 추가 — 색을 덮어쓰지 않으면 테마 그대로다.
+  //  * 맺음말의 showShare가 켜져 있었다면 그 자리 뒤에 'share' 섹션을 만든다 —
+  //    공유 버튼을 쓰고 있던 문서는 기능을 잃지 않고, 꺼 두었던 문서는 새 영역이 생기지 않는다.
+  7: (raw) => {
+    const doc = raw as {
+      theme?: { palette?: unknown };
+      typography?: { basePt?: unknown; headingPt?: unknown; bodyPt?: unknown };
+      sections?: Array<{
+        id?: unknown;
+        type?: unknown;
+        style?: { fontSizePt?: unknown; headingPt?: unknown; bodyPt?: unknown };
+        content?: { showShare?: unknown };
+      }>;
+    };
+    const splitPt = (base: unknown, existing: { headingPt?: unknown; bodyPt?: unknown }) => {
+      const bodyPt = existing.bodyPt ?? base;
+      return {
+        ...(bodyPt !== undefined ? { bodyPt } : {}),
+        ...(existing.headingPt !== undefined
+          ? { headingPt: existing.headingPt }
+          : typeof bodyPt === "number"
+            ? { headingPt: Math.round(((bodyPt * 4) / 3) * 2) / 2 } // 0.5pt 단위로 반올림
+            : {}),
+      };
+    };
+    const { basePt, ...typographyRest } = doc.typography ?? {};
+    return {
+      ...(raw as object),
+      schemaVersion: 8,
+      theme: { ...doc.theme, palette: doc.theme?.palette ?? {} },
+      typography: { ...typographyRest, ...splitPt(basePt ?? 11, typographyRest) },
+      sections: (doc.sections ?? []).flatMap((section): unknown[] => {
+        const { fontSizePt, ...styleRest } = section.style ?? {};
+        // 섹션 override는 없던 문서가 대부분이다 — 있을 때만 둘로 나눈다
+        const style =
+          fontSizePt === undefined && styleRest.bodyPt === undefined
+            ? styleRest
+            : { ...styleRest, ...splitPt(fontSizePt, styleRest) };
+        if (section.type !== "closing") return [{ ...section, style }];
+
+        const { showShare, ...contentRest } = section.content ?? {};
+        const closing = { ...section, style, content: contentRest };
+        if (showShare !== true) return [closing];
+        return [closing, shareSectionAfter(section.id)];
+      }),
+    };
+  },
 };
+
+// 맺음말에 붙어 있던 공유 버튼을 이어받는 새 섹션.
+// id는 원래 섹션 id에서 파생한다 — 마이그레이션을 두 번 태워도 같은 문서가 나와야 한다
+// (nanoid를 쓰면 실행할 때마다 다른 문서가 되어 재현이 깨진다).
+function shareSectionAfter(closingId: unknown) {
+  return {
+    id: `${typeof closingId === "string" ? closingId : "closing"}-share`,
+    type: "share",
+    visible: true,
+    layout: { variant: "default" },
+    style: { paddingY: "md", animation: "fade" },
+    content: { title: "청첩장 공유하기", body: "" },
+  };
+}
 
 export function migrateDocument(raw: unknown): InvitationDocument {
   if (typeof raw !== "object" || raw === null || !("schemaVersion" in raw)) {

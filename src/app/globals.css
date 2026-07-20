@@ -14,6 +14,10 @@
   --color-tool-accent-soft: #eef0fc;
   --color-tool-danger: #d5423c;
 
+  /* 청첩장이 놓이는 바탕 — 편집기 미리보기와 게스트 화면이 같은 색을 써야 한다.
+     tool 회색 위에 올리면 같은 종이색도 더 탁하게 보인다 (주변 대비 효과) */
+  --color-canvas-backdrop: #eceae5;
+
   --font-sans:
     "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
     sans-serif;

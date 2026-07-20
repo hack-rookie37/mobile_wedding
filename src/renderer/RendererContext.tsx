@@ -17,6 +17,10 @@ export interface RendererContextValue {
   rsvpSlug: string | null;
   // 편집기에서 진입 애니메이션을 고른 순간 그 섹션을 다시 재생시키는 신호 (토큰이 바뀔 때마다)
   motionReplay: { sectionId: string; token: number } | null;
+  // 카카오 JS 앱 키 — 호스트가 넘겨줄 때만 카카오톡 공유 버튼이 나타난다 (없으면 링크 복사만)
+  kakaoJsKey: string | null;
+  // 공유 카드에 실을 대표 사진 (메인 사진) — 없으면 카카오는 이미지 없는 카드로 보낸다
+  shareImageUrl: string | null;
 }
 
 const RendererContext = createContext<RendererContextValue | null>(null);

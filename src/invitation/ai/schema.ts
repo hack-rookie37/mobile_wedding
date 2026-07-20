@@ -22,6 +22,7 @@ import {
 //  * updateWedding — 신랑신부·혼주 실명과 예식 정보는 AI가 바꾸지 않는다
 //  * updateListItem — 연락처·계좌 목록(민감 값 담는 반복 그룹)은 수동 편집 전용
 //  * removeAssetReference — 허용 목록 밖 (요구되지 않음)
+//  * setMusic·updateTypography·updatePalette — 음악·폰트·색은 사용자가 직접 고른다 (기본 폐쇄)
 //  * batch — 제안은 평탄한 action 목록이어야 한다 (중첩 없이 개수 제한이 그대로 적용되도록)
 
 const aiActionSchemas = [

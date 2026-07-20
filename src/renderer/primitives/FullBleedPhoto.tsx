@@ -63,28 +63,59 @@ export function FullBleedPhoto({
   );
 }
 
-// 반짝임 — 사진 위를 천천히 지나가는 빛줄기. prefers-reduced-motion에서는 멈춘다
+// 별빛의 자리와 박자는 고정값이다 — 난수를 쓰면 서버와 클라이언트 렌더가 어긋난다.
+// 서로 다른 주기·지연을 주어 규칙적으로 깜빡이지 않게 흩어 놓았다.
+const STARS = [
+  { top: "9%", left: "16%", size: 15, delay: "0s", duration: "3.6s" },
+  { top: "21%", left: "73%", size: 22, delay: "0.9s", duration: "4.4s" },
+  { top: "36%", left: "31%", size: 11, delay: "2.2s", duration: "3.1s" },
+  { top: "46%", left: "87%", size: 14, delay: "1.4s", duration: "4.9s" },
+  { top: "60%", left: "9%", size: 18, delay: "2.9s", duration: "4.1s" },
+  { top: "69%", left: "57%", size: 12, delay: "0.4s", duration: "3.8s" },
+  { top: "83%", left: "79%", size: 16, delay: "3.4s", duration: "4.6s" },
+  { top: "90%", left: "38%", size: 10, delay: "1.8s", duration: "3.4s" },
+];
+
+// 4각 별의 윤곽 — 각 변이 안으로 휘어 끝이 뾰족하다 (24×24 기준)
+const STAR_PATH =
+  "M12 0c0 6.6 5.4 12 12 12-6.6 0-12 5.4-12 12 0-6.6-5.4-12-12-12 6.6 0 12-5.4 12-12z";
+
+// 반짝임 — 사진 위에서 별빛이 잔잔하게 깜빡인다. prefers-reduced-motion에서는 멈춘 채 은은하게 남는다
 // (renderer의 미디어 쿼리 금지는 뷰포트 폭 대응 규칙이므로 모션 접근성 쿼리는 예외다).
 function Sparkle() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div data-sparkle aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       <style>{`
-        @keyframes canvas-sparkle {
-          0% { transform: translateX(-120%) rotate(18deg); }
-          100% { transform: translateX(220%) rotate(18deg); }
+        @keyframes canvas-twinkle {
+          0%, 100% { opacity: 0; transform: scale(0.3); }
+          40%      { opacity: 0.95; transform: scale(1); }
+          64%      { opacity: 0.3; transform: scale(0.72); }
         }
         @media (prefers-reduced-motion: reduce) {
-          [data-sparkle] { animation: none; opacity: 0.25; }
+          [data-star] { animation: none; opacity: 0.65; }
         }
       `}</style>
-      <div
-        data-sparkle
-        className="absolute inset-y-[-30%] w-[45%]"
-        style={{
-          background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent)",
-          animation: "canvas-sparkle 5.5s ease-in-out infinite",
-        }}
-      />
+      {STARS.map((star) => (
+        <svg
+          key={`${star.top}-${star.left}`}
+          data-star
+          viewBox="0 0 24 24"
+          className="absolute"
+          style={{
+            top: star.top,
+            left: star.left,
+            width: star.size,
+            height: star.size,
+            marginTop: -star.size / 2, // 좌표를 별의 중심으로 삼는다
+            marginLeft: -star.size / 2,
+            fill: "rgba(255,255,255,0.92)",
+            filter: "drop-shadow(0 0 4px rgba(255,255,255,0.55))",
+            animation: `canvas-twinkle ${star.duration} ease-in-out ${star.delay} infinite`,
+          }}
+        >
+          <path d={STAR_PATH} />
+        </svg>
+      ))}
     </div>
   );
 }

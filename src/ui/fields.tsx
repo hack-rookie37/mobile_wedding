@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { useId, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 
 // 편집기 도구 UI 공용 컨트롤 (DESIGN_SYSTEM.md §9)
 
@@ -229,7 +229,8 @@ export function SegmentedField<T extends string>({
 }
 
 // pt 같은 수치 직접 입력 — 슬라이더와 숫자 입력을 같은 값에 묶는다.
-// 입력 중 빈 문자열·범위 밖 값은 문서로 내보내지 않는다 (문서는 항상 유효한 값만 갖는다).
+// 숫자 칸은 라벨 줄 오른쪽에, 슬라이더는 그 아래 한 줄을 통째로 쓴다 —
+// 좁은 인스펙터에서 둘을 한 줄에 나눠 담으면 슬라이더가 잡기 어려울 만큼 짧아진다.
 export function NumberField({
   label,
   value,
@@ -248,37 +249,64 @@ export function NumberField({
   onChange: (value: number) => void;
 }) {
   const id = useId();
-  const commit = (raw: string) => {
-    const parsed = Number(raw);
-    if (raw === "" || Number.isNaN(parsed)) return;
+  // 타이핑 중에는 범위로 자르지 않는다. "12"를 치려고 "1"을 누른 순간 min(7)으로 튀면
+  // 다음 글자가 그 뒤에 붙어 "72" → max(20)이 되어버린다 — 확정할 때만 한 번 자른다.
+  const [draft, setDraft] = useState<string | null>(null);
+
+  const commit = () => {
+    if (draft === null) return;
+    const parsed = Number(draft);
+    setDraft(null);
+    // 빈 칸·숫자가 아닌 입력은 확정하지 않는다 — 직전 값으로 되돌아간다
+    if (draft.trim() === "" || Number.isNaN(parsed)) return;
     onChange(Math.min(max, Math.max(min, parsed)));
   };
+
   return (
     <div>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <div className="flex items-center gap-2">
-        <input
-          type="range"
-          aria-label={`${label} 슬라이더`}
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="min-w-0 flex-1 accent-(--color-tool-accent)"
-        />
-        <input
-          id={id}
-          type="number"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => commit(e.target.value)}
-          className={clsx(inputClass, "h-8 w-16 shrink-0 tabular-nums")}
-        />
-        <span className="shrink-0 text-[12px] text-tool-ink-faint">{unit}</span>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <label htmlFor={id} className="text-[12px] leading-none text-tool-ink-soft">
+          {label}
+        </label>
+        <div className="flex shrink-0 items-center gap-1">
+          <input
+            id={id}
+            type="number"
+            min={min}
+            max={max}
+            step={step}
+            value={draft ?? value}
+            onChange={(e) => {
+              const raw = e.target.value;
+              setDraft(raw);
+              // 범위 안이면 곧바로 미리보기에 반영하고, 벗어난 값은 확정할 때까지 들고만 있는다
+              const parsed = Number(raw);
+              if (raw !== "" && !Number.isNaN(parsed) && parsed >= min && parsed <= max) {
+                onChange(parsed);
+              }
+            }}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
+            className={clsx(inputClass, "h-7 w-15 px-1.5 text-center tabular-nums")}
+          />
+          <span className="text-[12px] text-tool-ink-faint">{unit}</span>
+        </div>
       </div>
+      <input
+        type="range"
+        aria-label={`${label} 슬라이더`}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => {
+          setDraft(null);
+          onChange(Number(e.target.value));
+        }}
+        className="block w-full accent-(--color-tool-accent)"
+      />
     </div>
   );
 }

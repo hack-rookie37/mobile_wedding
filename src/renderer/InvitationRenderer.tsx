@@ -4,7 +4,13 @@ import type { CSSProperties } from "react";
 import type { ResolveAsset } from "@/invitation/assets/assetTypes";
 import { customFontAssetIds } from "@/invitation/lib/assetRefs";
 import type { InvitationDocument, Section, Wedding } from "@/invitation/schema/document";
-import { fontCssOf, fontScaleFromPt, THEMES } from "@/invitation/schema/themes";
+import {
+  fontCssOf,
+  fontScaleFromPt,
+  headingScaleFromPt,
+  resolvePalette,
+  THEMES,
+} from "@/invitation/schema/themes";
 import { CustomFontFaces, type ResolveFontUrl } from "./CustomFontFaces";
 import { MusicToggle } from "./MusicToggle";
 import { RendererProvider, type RendererMode } from "./RendererContext";
@@ -17,6 +23,7 @@ import { GiftAccountSection } from "./sections/GiftAccountSection";
 import { GreetingSection } from "./sections/GreetingSection";
 import { HeroSection } from "./sections/HeroSection";
 import { RsvpSection } from "./sections/RsvpSection";
+import { ShareSection } from "./sections/ShareSection";
 import { TransportationSection } from "./sections/TransportationSection";
 import { VenueSection } from "./sections/VenueSection";
 import { VideoSection } from "./sections/VideoSection";
@@ -55,6 +62,8 @@ function SectionSwitch({
       return <RsvpSection section={section} index={index} />;
     case "closing":
       return <ClosingSection section={section} index={index} />;
+    case "share":
+      return <ShareSection section={section} wedding={wedding} index={index} />;
   }
 }
 
@@ -72,6 +81,8 @@ export interface InvitationRendererProps {
   resolveFontUrl?: ResolveFontUrl;
   // 편집기 전용: 이 토큰이 바뀌면 해당 섹션의 진입 애니메이션을 그 자리에서 다시 재생한다
   motionReplay?: { sectionId: string; token: number } | null;
+  // 카카오 JS 앱 키 — 공개 페이지만 넘긴다. 없으면 공유 영역에 링크 복사만 나온다.
+  kakaoJsKey?: string | null;
 }
 
 // 편집기 미리보기와 공개 페이지가 공유하는 유일한 renderer (ADR-004).
@@ -87,24 +98,31 @@ export function InvitationRenderer({
   musicUrl = null,
   resolveFontUrl,
   motionReplay = null,
+  kakaoJsKey = null,
 }: InvitationRendererProps) {
   const theme = THEMES[doc.theme.id];
   const t = theme.tokens;
   const fontAssetIds = [...customFontAssetIds(doc)];
 
+  // 공유 카드 대표 사진 — 메인 섹션의 사진을 쓴다 (문서의 얼굴이라 별도 설정을 두지 않는다)
+  const heroPhotoId = doc.sections.find((s) => s.type === "hero")?.content.photoAssetId ?? null;
+  const shareImageUrl = heroPhotoId === null ? null : (resolveAsset(heroPhotoId)?.src ?? null);
+
   // 문서 typography가 테마 폰트를 덮어쓴다 ("theme"이면 테마 기본).
   // 크기는 --canvas-fs 곱으로 — 섹션별 override는 SectionShell이 같은 변수를 지역 재정의한다.
   const { typography } = doc;
+  const palette = resolvePalette(t, doc.theme.palette);
   const canvasVars = {
-    "--canvas-paper": t.paper,
-    "--canvas-ink": t.ink,
-    "--canvas-ink-soft": t.inkSoft,
-    "--canvas-accent": t.accent,
-    "--canvas-line": t.line,
+    "--canvas-paper": palette.paper,
+    "--canvas-ink": palette.ink,
+    "--canvas-ink-soft": palette.inkSoft,
+    "--canvas-accent": palette.accent,
+    "--canvas-line": palette.line,
     "--canvas-font-heading": fontCssOf(typography.headingFont) ?? t.headingFont,
     "--canvas-font-body": fontCssOf(typography.bodyFont) ?? t.bodyFont,
     "--canvas-font-hand": t.handFont,
-    "--canvas-fs": fontScaleFromPt(typography.basePt),
+    "--canvas-fs": fontScaleFromPt(typography.bodyPt),
+    "--canvas-fs-heading": headingScaleFromPt(typography.headingPt),
     "--canvas-radius-photo": t.radiusPhoto,
     "--canvas-pad-sm": t.padSm,
     "--canvas-pad-md": t.padMd,
@@ -124,6 +142,8 @@ export function InvitationRenderer({
         theme,
         rsvpSlug: rsvpSlug ?? null,
         motionReplay,
+        kakaoJsKey,
+        shareImageUrl,
       }}
     >
       <div

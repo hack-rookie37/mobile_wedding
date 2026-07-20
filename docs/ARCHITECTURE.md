@@ -68,14 +68,14 @@ src/
 interface InvitationDocument {
   schemaVersion: 7;
   wedding: {
-    groom: Person;               // { name, familyRole?("장남"…), father?, mother? }
+    groom: Person;               // { name, familyRole?("아들"…), father?, mother? }
     bride: Person;               //   Parent = { name, deceased: boolean }
     datetime: string;            // ISO 8601, +09:00 고정
     venue: { name; hall?; address; phone? };
   };
   theme: { id: ThemeId };        // 토큰·variant는 THEMES 레지스트리에서 해석 (ADR-014)
   music: { assetId: string | null };  // 배경음악 — 참조만 (ADR-025)
-  typography: {                  // 전역 폰트·크기 (ADR-026), 섹션별 override는 style
+  typography: {                  // 전역 폰트·크기 (ADR-028: headingPt·bodyPt), 섹션별 override는 style
     headingFont: FontId;         // "theme" | 내장 id | "custom:<assetId>"
     bodyFont: FontId;
     basePt: number;              // 본문 기준 pt — 렌더러가 --canvas-fs 배율로 환산

@@ -8,6 +8,7 @@ import {
   musicUrlOf,
   type PublicAssetEntry,
 } from "@/invitation/publicPayload";
+import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import type { InvitationDocument } from "@/invitation/schema/document";
 import { InvitationRenderer } from "@/renderer/InvitationRenderer";
 
@@ -35,7 +36,7 @@ export function PublicInvitationView({
   );
 
   return (
-    <main className="flex min-h-dvh justify-center bg-[#eceae5]">
+    <main className="flex min-h-dvh justify-center bg-canvas-backdrop">
       <div className="relative w-full max-w-[430px] shadow-[0_0_28px_rgba(0,0,0,0.07)]">
         {previewBadge && (
           <div className="sticky top-0 z-10 bg-[#26262a] px-4 py-2 text-center text-[12px] text-white/90">
@@ -49,6 +50,7 @@ export function PublicInvitationView({
           rsvpSlug={rsvpSlug}
           musicUrl={musicUrl}
           resolveFontUrl={resolveFontUrl}
+          kakaoJsKey={kakaoJsKeyFromEnv()}
         />
         {shareTitle !== undefined && <ShareBar title={shareTitle} />}
       </div>

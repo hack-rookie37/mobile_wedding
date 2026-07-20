@@ -50,7 +50,7 @@ function subscribeEverySecond(onChange: () => void) {
 function CountdownUnit({ value, label }: { value: number; label: string }) {
   return (
     <span className="flex w-14 flex-col items-center">
-      <span className="font-(family-name:--canvas-font-heading) text-[length:calc(24px*var(--canvas-fs))] leading-[1.2] font-semibold text-(--canvas-ink) tabular-nums">
+      <span className="font-(family-name:--canvas-font-heading) text-[length:calc(24px*var(--canvas-fs-heading))] leading-[1.2] font-semibold text-(--canvas-ink) tabular-nums">
         {String(value).padStart(2, "0")}
       </span>
       <span className="mt-1 text-[length:calc(10px*var(--canvas-fs))] font-medium tracking-[0.14em] text-(--canvas-ink-soft)">
@@ -114,7 +114,7 @@ function CalendarGrid({ datetime }: { datetime: string }) {
   // 콘텐츠 폭(캔버스 - 좌우 패딩)을 꽉 채운다 — 칸 높이만 고정해 세로 리듬 유지
   return (
     <div className="w-full">
-      <p className="text-center font-(family-name:--canvas-font-heading) text-[length:calc(16px*var(--canvas-fs))] font-semibold tracking-[0.06em] text-(--canvas-ink) tabular-nums">
+      <p className="text-center font-(family-name:--canvas-font-heading) text-[length:calc(16px*var(--canvas-fs-heading))] font-semibold tracking-[0.06em] text-(--canvas-ink) tabular-nums">
         {year}. {String(month).padStart(2, "0")}
       </p>
       <table
@@ -188,7 +188,7 @@ export function CalendarSection({
           </>
         ) : (
           <div className="text-center">
-            <p className="font-(family-name:--canvas-font-heading) text-[length:calc(26px*var(--canvas-fs))] leading-[1.4] font-semibold tracking-[0.04em] text-(--canvas-ink) tabular-nums">
+            <p className="font-(family-name:--canvas-font-heading) text-[length:calc(26px*var(--canvas-fs-heading))] leading-[1.4] font-semibold tracking-[0.04em] text-(--canvas-ink) tabular-nums">
               {formatDateStamp(wedding.datetime)}
             </p>
             <p className="mt-2 text-[length:calc(13.5px*var(--canvas-fs))] leading-[1.7] text-(--canvas-ink-soft)">

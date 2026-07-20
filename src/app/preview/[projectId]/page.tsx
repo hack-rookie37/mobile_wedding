@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use, useCallback, useState } from "react";
 import { AssetLibraryProvider, useAssetLibrary } from "@/editor/assets/AssetLibraryContext";
 import { BUILTIN_ASSETS } from "@/editor/assets/builtinAssets";
+import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import type { InvitationDocument } from "@/invitation/schema/document";
 import { InvitationRenderer } from "@/renderer/InvitationRenderer";
 import { SupabaseAssetStore } from "@/server/supabase/assetStore";
@@ -25,6 +26,7 @@ function PreviewBody({ doc }: { doc: InvitationDocument }) {
       mode="published"
       resolveAsset={resolveAsset}
       musicUrl={musicUrl}
+      kakaoJsKey={kakaoJsKeyFromEnv()}
     />
   );
 }
@@ -66,7 +68,7 @@ export default function PreviewPage({ params }: { params: Promise<{ projectId: s
   }
 
   return (
-    <main className="flex min-h-dvh justify-center bg-[#eceae5]">
+    <main className="flex min-h-dvh justify-center bg-canvas-backdrop">
       <div className="w-full max-w-[430px] shadow-[0_0_28px_rgba(0,0,0,0.07)]">
         <AssetLibraryProvider store={deps.assetStore}>
           <PreviewBody doc={state.value.doc} />

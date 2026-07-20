@@ -8,7 +8,7 @@ import type {
   PhotoEffects,
   Section,
 } from "@/invitation/schema/document";
-import { DEFAULT_BASE_PT } from "@/invitation/schema/themes";
+import { PT_MAX, PT_MIN } from "@/invitation/schema/themes";
 import { FieldLabel, NumberField, SegmentedField, SelectField, ToggleField } from "@/ui/fields";
 import { useEditor } from "../../EditorStoreContext";
 import { SECTION_VARIANT_OPTIONS } from "../../sectionMeta";
@@ -135,9 +135,79 @@ export function LayoutForm({ section }: { section: Section }) {
   );
 }
 
-// '스타일' 탭 — updateSectionSettings (여백·진입 애니메이션·섹션별 글꼴)
+// 섹션 override 한 줄 — 값이 없으면 전체 설정값을 보여주고, 있으면 되돌리기 버튼이 붙는다
+function SectionOverride({
+  label,
+  value,
+  fallback,
+  onChange,
+}: {
+  label: string;
+  value: number | undefined;
+  fallback: number;
+  onChange: (value: number | undefined) => void;
+}) {
+  return (
+    <div>
+      <NumberField
+        label={label}
+        value={value ?? fallback}
+        min={PT_MIN}
+        max={PT_MAX}
+        step={0.5}
+        unit="pt"
+        onChange={onChange}
+      />
+      {value !== undefined && (
+        <button
+          type="button"
+          onClick={() => onChange(undefined)}
+          className="mt-1.5 text-[12px] text-tool-ink-soft underline underline-offset-2"
+        >
+          전체 설정 따르기
+        </button>
+      )}
+    </div>
+  );
+}
+
+function ColorOverride({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string | undefined;
+  onChange: (value: string | undefined) => void;
+}) {
+  return (
+    <div>
+      <FieldLabel>{label}</FieldLabel>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          aria-label={label}
+          value={value ?? "#222222"}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 w-10 shrink-0 cursor-pointer rounded-md border border-tool-border bg-white p-0.5"
+        />
+        <button
+          type="button"
+          disabled={value === undefined}
+          onClick={() => onChange(undefined)}
+          className="text-[12px] text-tool-ink-soft underline underline-offset-2 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40"
+        >
+          전체 설정 따르기
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// '스타일' 탭 — updateSectionSettings (여백·진입 애니메이션·섹션별 글꼴·색)
 export function StyleForm({ section }: { section: Section }) {
   const dispatch = useEditor((s) => s.dispatch);
+  const typography = useEditor((s) => s.doc.typography);
   const fontOptions = useFontOptions("전체 설정 따름", "inherit");
   const patch = (p: Record<string, unknown>) =>
     dispatch({ type: "updateSectionSettings", sectionId: section.id, patch: p });
@@ -177,26 +247,23 @@ export function StyleForm({ section }: { section: Section }) {
           patch({ fontFamily: value === "inherit" ? undefined : (value as FontId) })
         }
       />
-      <div>
-        <NumberField
-          label="글자 크기 (이 섹션만)"
-          value={section.style.fontSizePt ?? DEFAULT_BASE_PT}
-          min={7}
-          max={20}
-          step={0.5}
-          unit="pt"
-          onChange={(fontSizePt) => patch({ fontSizePt })}
-        />
-        {section.style.fontSizePt !== undefined && (
-          <button
-            type="button"
-            onClick={() => patch({ fontSizePt: undefined })}
-            className="mt-1.5 text-[12px] text-tool-ink-soft underline underline-offset-2"
-          >
-            전체 설정 따르기
-          </button>
-        )}
-      </div>
+      <SectionOverride
+        label="제목 크기 (이 섹션만)"
+        value={section.style.headingPt}
+        fallback={typography.headingPt}
+        onChange={(headingPt) => patch({ headingPt })}
+      />
+      <SectionOverride
+        label="본문 크기 (이 섹션만)"
+        value={section.style.bodyPt}
+        fallback={typography.bodyPt}
+        onChange={(bodyPt) => patch({ bodyPt })}
+      />
+      <ColorOverride
+        label="글자색 (이 섹션만)"
+        value={section.style.color}
+        onChange={(color) => patch({ color })}
+      />
       <InfoNote>모던 모노크롬 테마는 모션을 사용하지 않아 애니메이션이 적용되지 않습니다.</InfoNote>
     </div>
   );

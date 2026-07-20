@@ -16,6 +16,7 @@ export const ADDABLE_SECTION_TYPES = [
   "giftAccount",
   "rsvp",
   "closing",
+  "share",
 ] as const;
 
 export type AddableSectionType = (typeof ADDABLE_SECTION_TYPES)[number];
@@ -129,7 +130,16 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
           photoAssetId: null,
           photoAspect: "4/5",
           effects: { fadeBottom: true, sparkle: false, brightness: 1, opacity: 1 },
-          showShare: true,
+        },
+      };
+    case "share":
+      return {
+        ...base,
+        type,
+        layout: { variant: "default" },
+        content: {
+          title: "청첩장 공유하기",
+          body: "",
         },
       };
   }

@@ -11,7 +11,7 @@ export const parentSchema = z.object({
 // — 편집 중 "지우고 다시 입력"하는 정상 흐름을 막지 않기 위해 빈 문자열을 허용
 export const personSchema = z.object({
   name: z.string(),
-  familyRole: z.string().optional(), // "장남", "차녀" 등
+  familyRole: z.string().optional(), // "아들", "딸" 등 (자유 입력)
   father: parentSchema.optional(),
   mother: parentSchema.optional(),
 });
@@ -34,8 +34,22 @@ export const weddingSchema = z.object({
 
 export const themeIdSchema = z.enum(["warm-editorial", "modern-monochrome", "film-diary"]);
 
+export const hexColorSchema = z
+  .string()
+  .regex(/^#[0-9a-fA-F]{6}$/, "색은 #rrggbb 형식이어야 합니다");
+
+// 테마 색 override — 고른 테마 위에 개별 색만 덮어쓴다. 비어 있으면 테마 토큰 그대로.
+// ink-soft·line은 여기 없다: ink와 paper를 섞어 자동으로 만든다 (themes.ts) —
+// 다섯 색을 따로 맞추게 하면 서로 안 어울리는 조합이 나오기 쉽다.
+export const paletteSchema = z.object({
+  paper: hexColorSchema.optional(), // 배경색
+  ink: hexColorSchema.optional(), // 글자색
+  accent: hexColorSchema.optional(), // 강조색 (라벨·구분선)
+});
+
 export const themeSchema = z.object({
   id: themeIdSchema,
+  palette: paletteSchema,
 });
 
 // ── 섹션 공통
@@ -58,25 +72,26 @@ export const fontIdSchema = z.union([
   z.templateLiteral(["custom:", z.string().min(1)]),
 ]);
 
-// 본문 기준 글자 크기(pt). 렌더러의 모든 px 크기가 이 값에 비례해 곱해진다 — themes.ts가 환산.
-export const fontSizePtSchema = z.number().min(7).max(20);
+// 글자 크기(pt). 렌더러의 px 크기가 이 값에 비례해 곱해진다 — themes.ts가 환산한다.
+// 제목과 본문은 기준선이 달라서(20px·15px) 각각의 pt가 실제 렌더 크기와 맞아떨어진다.
+export const fontSizePtSchema = z.number().min(7).max(28);
 
 export const typographySchema = z.object({
   headingFont: fontIdSchema, // 제목·이름 (테마 headingFont 대체)
   bodyFont: fontIdSchema, // 본문 (테마 bodyFont 대체)
-  basePt: fontSizePtSchema, // 전체 글자 크기 기준
+  headingPt: fontSizePtSchema, // 제목 글자 크기 — 제목 글꼴을 쓰는 텍스트 전체
+  bodyPt: fontSizePtSchema, // 본문 글자 크기 — 그 외 전체
 });
 
 export const sectionStyleSchema = z.object({
   paddingY: z.enum(["sm", "md", "lg"]),
-  background: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/, "background는 #rrggbb 형식이어야 합니다")
-    .optional(),
+  background: hexColorSchema.optional(), // 섹션 배경색
+  color: hexColorSchema.optional(), // 섹션 글자색
   animation: z.enum(["none", "fade", "rise"]),
   // 섹션별 폰트·크기 override — 미지정이면 전역(typography)을 따른다
   fontFamily: fontIdSchema.optional(),
-  fontSizePt: fontSizePtSchema.optional(),
+  headingPt: fontSizePtSchema.optional(),
+  bodyPt: fontSizePtSchema.optional(),
 });
 
 const sectionBase = z.object({
@@ -167,7 +182,7 @@ export const venueContentSchema = z.object({
   note: z.string(), // 주차·안내 등 자유 문구 (빈 문자열 허용)
   // 약도 이미지 (예식장 안내도 캡처 등) — 원본 비율 그대로 표시, crop 없음
   mapImageAssetId: z.string().nullable(),
-  // 외부 지도 앱으로 열기 버튼 (네이버 지도·카카오맵·티맵) — 별도 지도 API 없이 URL·딥링크만 사용
+  // 외부 지도 앱으로 열기 버튼 (네이버·카카오맵·티맵) — 별도 지도 API 없이 URL·딥링크만 사용
   showMapButtons: z.boolean(),
 });
 
@@ -325,13 +340,25 @@ export const closingContentSchema = z.object({
   // 메인과 같은 전면 사진 연출 — photo variant에서만 쓰인다
   photoAspect: photoAspectSchema,
   effects: photoEffectsSchema,
-  showShare: z.boolean(),
 });
 
 export const closingSectionSchema = sectionBase.extend({
   type: z.literal("closing"),
   layout: z.object({ variant: z.enum(["simple", "photo"]) }),
   content: closingContentSchema,
+});
+
+// 공유하기 — 맺음말 아래에 따로 두는 마지막 영역.
+// 링크 복사는 어디서나 되고, 카카오톡 공유는 호스트가 카카오 JS 키를 넘겨줄 때만 나타난다.
+export const shareContentSchema = z.object({
+  title: z.string(),
+  body: z.string(),
+});
+
+export const shareSectionSchema = sectionBase.extend({
+  type: z.literal("share"),
+  layout: z.object({ variant: z.enum(["default"]) }),
+  content: shareContentSchema,
 });
 
 export const sectionSchema = z.discriminatedUnion("type", [
@@ -347,6 +374,7 @@ export const sectionSchema = z.discriminatedUnion("type", [
   giftAccountSectionSchema,
   rsvpSectionSchema,
   closingSectionSchema,
+  shareSectionSchema,
 ]);
 
 export const SECTION_CONTENT_SCHEMAS = {
@@ -362,6 +390,7 @@ export const SECTION_CONTENT_SCHEMAS = {
   giftAccount: giftAccountContentSchema,
   rsvp: rsvpContentSchema,
   closing: closingContentSchema,
+  share: shareContentSchema,
 } as const;
 
 // setSectionVariant가 섹션 타입별 허용 variant를 검증할 때 사용
@@ -378,6 +407,7 @@ export const SECTION_LAYOUT_SCHEMAS = {
   giftAccount: giftAccountSectionSchema.shape.layout,
   rsvp: rsvpSectionSchema.shape.layout,
   closing: closingSectionSchema.shape.layout,
+  share: shareSectionSchema.shape.layout,
 } as const;
 
 // ── 배경음악 — 문서에는 asset 참조만 (ADR-016). 재생 on/off는 게스트가 화면에서 조작한다.
@@ -390,7 +420,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(7),
+    schemaVersion: z.literal(8),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,
@@ -428,6 +458,7 @@ export type Person = z.infer<typeof personSchema>;
 export type Wedding = z.infer<typeof weddingSchema>;
 export type ThemeId = z.infer<typeof themeIdSchema>;
 export type Theme = z.infer<typeof themeSchema>;
+export type Palette = z.infer<typeof paletteSchema>;
 export type Music = z.infer<typeof musicSchema>;
 export type FontId = z.infer<typeof fontIdSchema>;
 export type BuiltinFontId = z.infer<typeof builtinFontIdSchema>;
@@ -456,6 +487,7 @@ export type GiftAccount = z.infer<typeof giftAccountSchema>;
 export type RsvpSection = z.infer<typeof rsvpSectionSchema>;
 export type RsvpCollect = z.infer<typeof rsvpCollectSchema>;
 export type ClosingSection = z.infer<typeof closingSectionSchema>;
+export type ShareSection = z.infer<typeof shareSectionSchema>;
 export type Section = z.infer<typeof sectionSchema>;
 export type SectionType = Section["type"];
 export type InvitationDocument = z.infer<typeof documentSchema>;
