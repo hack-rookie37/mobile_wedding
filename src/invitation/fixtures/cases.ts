@@ -145,16 +145,19 @@ export function createCaseDocument(kind: FixtureCase): InvitationDocument {
       transportation.content.items = [
         {
           icon: "subway",
+          emoji: "",
           title: "지하철로 오시는 매우 상세한 안내",
           body: "2호선 역삼역 3번 출구로 나와서 테헤란로 방면으로 350m 직진 후, GS25 편의점이 있는 사거리에서 좌회전하여 200m 직진하면 오른편에 건물 정문이 보입니다. 분당선 선릉역 5번 출구에서도 도보 12분 거리입니다.",
         },
         {
           icon: "bus",
+          emoji: "",
           title: "버스",
           body: "간선 146 · 341 · 360 · 740, 지선 3422 · 4319 역삼역.포스코타워 정류장 하차 후 도보 5분\n광역 9404 · 9408 역삼동사무소 정류장 하차 후 도보 8분",
         },
         {
           icon: "parking",
+          emoji: "",
           title: "주차 안내 (매우 김)",
           body: "건물 지하 2~5층 주차장 이용 가능하며 예식 당일 2시간 무료입니다. 만차 시 길 건너 공영주차장(테헤란로123길 89)을 이용해 주세요 — 주차권은 로비 안내데스크에서 하객 등록 후 수령하실 수 있습니다.",
         },

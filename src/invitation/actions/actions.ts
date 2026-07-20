@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  musicSchema,
   photoFrameSchema,
   sectionStyleSchema,
   paletteSchema,
@@ -108,6 +109,13 @@ export const setMusicActionSchema = z.object({
   assetId: z.string().min(1).nullable(),
 });
 
+// 배경음악 재생 설정(음량·속도·자동재생) — AI allowlist 제외.
+// 파일 지정은 setMusic이 맡는다: 어떤 곡이냐와 어떻게 트느냐는 서로 다른 결정이다.
+export const updateMusicActionSchema = z.object({
+  type: z.literal("updateMusic"),
+  patch: musicSchema.omit({ assetId: true }).partial(),
+});
+
 // 전역 폰트·글자 크기 — AI allowlist 제외 (표현은 사용자가 직접 고른다, 기본 폐쇄)
 export const updateTypographyActionSchema = z.object({
   type: z.literal("updateTypography"),
@@ -174,6 +182,7 @@ const documentActionSchemas = [
   setThemeActionSchema,
   updatePaletteActionSchema,
   setMusicActionSchema,
+  updateMusicActionSchema,
   updateTypographyActionSchema,
   updateWeddingActionSchema,
   assignAssetActionSchema,

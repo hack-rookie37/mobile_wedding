@@ -8,8 +8,9 @@ import {
   formatBytes,
   validateAudioFile,
 } from "@/invitation/assets/uploadPolicy";
+import { MUSIC_SPEED_MAX, MUSIC_SPEED_MIN } from "@/invitation/schema/document";
 import { PT_MAX, PT_MIN, THEME_ORDER, THEMES } from "@/invitation/schema/themes";
-import { FieldLabel, NumberField } from "@/ui/fields";
+import { FieldLabel, NumberField, ToggleField } from "@/ui/fields";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor } from "../../EditorStoreContext";
 import { CustomFontUpload, useFontOptions } from "./FontFields";
@@ -92,10 +93,52 @@ function MusicField() {
           {error}
         </p>
       )}
+      {current !== null && <MusicPlaybackFields />}
       <p className="mt-2 text-[11px] leading-[1.5] text-tool-ink-faint">
-        게스트 화면 우상단에 음악 켜기 버튼이 표시됩니다. 자동재생은 하지 않습니다 — 모바일
-        브라우저가 차단합니다.
+        게스트 화면 우상단에 음악 켜기/끄기 버튼이 표시됩니다.
       </p>
+    </div>
+  );
+}
+
+// 재생 설정 — 음악 파일이 있을 때만 의미가 있어서 파일이 올라간 뒤에만 보여 준다
+function MusicPlaybackFields() {
+  const music = useEditor((s) => s.doc.music);
+  const dispatch = useEditor((s) => s.dispatch);
+  const patch = (p: Record<string, unknown>) => dispatch({ type: "updateMusic", patch: p });
+
+  return (
+    <div className="mt-3 space-y-4">
+      <NumberField
+        label="음량"
+        value={Math.round(music.volume * 100)}
+        min={0}
+        max={100}
+        step={5}
+        unit="%"
+        onChange={(percent) => patch({ volume: percent / 100 })}
+      />
+      <NumberField
+        label="재생 속도"
+        value={Math.round(music.speed * 100)}
+        min={MUSIC_SPEED_MIN * 100}
+        max={MUSIC_SPEED_MAX * 100}
+        step={5}
+        unit="%"
+        onChange={(percent) => patch({ speed: percent / 100 })}
+      />
+      <div>
+        <ToggleField
+          label="자동 재생"
+          checked={music.autoplay}
+          onChange={(autoplay) => patch({ autoplay })}
+        />
+        <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+          브라우저 대부분은 소리 있는 자동재생을 막습니다. 막히면 게스트가 처음 화면을 스크롤하거나
+          터치하는 순간 켭니다 — 반드시 켜진다는 보장은 없습니다. 편집 화면에서는 울리지 않고,
+          ‘미리보기’와 발행된 페이지에서만 동작합니다.
+        </p>
+      </div>
     </div>
   );
 }

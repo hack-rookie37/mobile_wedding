@@ -43,7 +43,8 @@ export const SECTION_VARIANT_OPTIONS: Record<SectionType, { value: string; label
   ],
   transportation: [
     { value: "list", label: "리스트" },
-    { value: "cards", label: "카드" },
+    { value: "cards", label: "카드 격자" },
+    { value: "accordion", label: "접이식" },
   ],
   contacts: [
     { value: "inline", label: "펼침" },
@@ -61,5 +62,8 @@ export const SECTION_VARIANT_OPTIONS: Record<SectionType, { value: string; label
     { value: "simple", label: "텍스트" },
     { value: "photo", label: "전면 사진" },
   ],
-  share: [],
+  share: [
+    { value: "default", label: "기본" },
+    { value: "dark", label: "어둡게" },
+  ],
 };

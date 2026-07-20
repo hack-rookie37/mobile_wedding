@@ -6,6 +6,8 @@ import {
   SECTION_LABEL_MAX,
   type CalendarSection,
   type ClosingSection,
+  type FontId,
+  type HeroOverlay,
   type ShareSection,
   type GreetingSection,
   type HeroSection,
@@ -15,11 +17,23 @@ import {
   type TitledSection,
   type VideoSection,
 } from "@/invitation/schema/document";
+import { PT_MAX, PT_MIN, resolvePalette, THEMES } from "@/invitation/schema/themes";
 import { PHOTO_ASPECT_CSS } from "@/renderer/primitives/PhotoFrame";
-import { FieldLabel, SegmentedField, TextAreaField, TextField, ToggleField } from "@/ui/fields";
+import {
+  ColorField,
+  ColorOverrideField,
+  FieldLabel,
+  NumberField,
+  SegmentedField,
+  TextAreaField,
+  TextField,
+  ToggleField,
+} from "@/ui/fields";
 import { useAssetLibrary } from "../../assets/AssetLibraryContext";
 import { useEditor } from "../../EditorStoreContext";
 import { FrameEditor } from "../media/FrameEditor";
+import { useFontOptions } from "./FontFields";
+import { FontPicker } from "./FontPicker";
 import { PhotoPickField } from "./PhotoPickField";
 
 function usePatchContent(sectionId: string) {
@@ -48,6 +62,64 @@ export function SectionLabelField({ section }: { section: TitledSection }) {
   );
 }
 
+// 사진 위에 얹는 문구 — 글자·위치·크기·글꼴·색을 한자리에서 고른다.
+// 다른 섹션은 전역 typography를 따르지만 여기는 사진 위라 균형이 사진마다 달라진다.
+function HeroOverlayFields({ section }: { section: HeroSection }) {
+  const patch = usePatchContent(section.id);
+  const { overlay } = section.content;
+  const fontOptions = useFontOptions("제목 글꼴 따름", "theme");
+  const patchOverlay = (p: Partial<HeroOverlay>) => patch({ overlay: { ...overlay, ...p } });
+
+  return (
+    <div className="space-y-4 rounded-md border border-tool-border p-3">
+      <TextField
+        label="사진 위 문구"
+        value={overlay.text}
+        onChange={(text) => patchOverlay({ text })}
+        placeholder="we're getting married"
+      />
+      {overlay.text !== "" && (
+        <>
+          <SegmentedField
+            label="위치"
+            value={overlay.position}
+            options={[
+              { value: "top", label: "위" },
+              { value: "center", label: "가운데" },
+              { value: "bottom", label: "아래" },
+            ]}
+            onChange={(position) => patchOverlay({ position })}
+          />
+          <NumberField
+            label="글자 크기"
+            value={overlay.sizePt}
+            min={PT_MIN}
+            max={PT_MAX}
+            step={0.5}
+            unit="pt"
+            onChange={(sizePt) => patchOverlay({ sizePt })}
+          />
+          <FontPicker
+            label="글꼴"
+            value={overlay.font}
+            options={fontOptions}
+            onChange={(font) => patchOverlay({ font: font as FontId })}
+          />
+          <ColorField
+            label="글자색"
+            value={overlay.color}
+            onChange={(color) => patchOverlay({ color })}
+          />
+          <p className="text-[11px] leading-[1.5] text-tool-ink-faint">
+            사진 위에서 읽히도록 옅은 그림자가 함께 깔립니다. 사진의 밝기·투명도를 낮춰도 이 문구는
+            또렷하게 남습니다.
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 export function PhaseNote({ children }: { children: string }) {
   return (
     <p className="rounded-md bg-tool-bg px-3 py-2.5 text-[12px] leading-[1.6] text-tool-ink-soft">
@@ -71,6 +143,8 @@ export function HeroForm({ section }: { section: HeroSection }) {
         onChange={(tagline) => patch({ tagline })}
         placeholder="THE MARRIAGE OF"
       />
+
+      <HeroOverlayFields section={section} />
 
       <PhotoPickField
         label="대표 사진"
@@ -331,8 +405,11 @@ export function RsvpForm({ section }: { section: RsvpSection }) {
 // 키가 없으면 공개 페이지에 카카오 버튼이 아예 나오지 않으므로 그 사실을 여기서 알린다.
 export function ShareForm({ section }: { section: ShareSection }) {
   const patch = usePatchContent(section.id);
+  const theme = useEditor((s) => s.doc.theme);
   const { content } = section;
   const kakaoReady = kakaoJsKeyFromEnv() !== null;
+  // 색을 고르지 않았을 때 스와치가 보여 줄 색 — 캔버스가 실제로 칠하는 강조색과 같아야 한다
+  const accentColor = resolvePalette(THEMES[theme.id].tokens, theme.palette).accent;
 
   return (
     <div className="space-y-4">
@@ -343,6 +420,19 @@ export function ShareForm({ section }: { section: ShareSection }) {
         onChange={(body) => patch({ body })}
         rows={3}
       />
+      <div>
+        <ColorOverrideField
+          label="카카오톡 버튼 색"
+          value={content.kakaoButtonColor}
+          fallback={accentColor}
+          resetLabel="테마 강조색 따르기"
+          onChange={(kakaoButtonColor) => patch({ kakaoButtonColor })}
+        />
+        <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+          버튼 위 글자·심볼 색은 고른 색의 밝기에 맞춰 자동으로 정해집니다. 카카오 브랜드 노랑을
+          쓰려면 #FEE500을 고르세요.
+        </p>
+      </div>
       <p className="rounded-md bg-tool-bg px-3 py-2.5 text-[12px] leading-[1.6] text-tool-ink-soft">
         {kakaoReady
           ? "링크 복사와 카카오톡 공유 버튼이 게스트 화면에 표시됩니다. 두 버튼은 발행된 페이지에서만 눌립니다."

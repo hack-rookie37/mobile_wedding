@@ -89,3 +89,43 @@ test("음악 업로드: 지원하지 않는 형식은 거부 안내", async ({ p
     page.getByRole("alert").filter({ hasText: "지원하지 않는 음악 파일 형식" }),
   ).toBeVisible();
 });
+
+test("배경음악: 음량·속도·자동재생 설정이 게스트 화면의 audio에 그대로 얹힌다", async ({
+  page,
+  browser,
+}) => {
+  await signUpFresh(page);
+  await createSample(page);
+  await page.getByRole("button", { name: "테마", exact: true }).click();
+  await page
+    .locator('input[type="file"][accept*="audio"]')
+    .setInputFiles({ name: "우리노래.mp3", mimeType: "audio/mpeg", buffer: TINY_MP3 });
+  await expect(page.getByText("우리노래.mp3")).toBeVisible();
+
+  // 재생 설정은 파일이 올라온 뒤에만 나온다 — 틀 것이 없으면 고를 것도 없다
+  await page.getByLabel("음량", { exact: true }).fill("40");
+  await page.getByLabel("재생 속도", { exact: true }).fill("120");
+  await page.getByLabel("자동 재생", { exact: true }).check();
+  await expect(page.getByText("저장됨")).toBeVisible({ timeout: 5000 });
+
+  const slug = await publishCurrent(page);
+  const { context, page: guest } = await newGuestPage(browser);
+  await guest.goto(`/i/${slug}`);
+  const audio = guest.locator("[data-music-toggle] + audio");
+  await expect(audio).toHaveJSProperty("volume", 0.4);
+  await expect(audio).toHaveJSProperty("playbackRate", 1.2);
+  // 자동재생을 켜면 미리 받아 둔다 — 첫 동작에 곧바로 소리가 나야 하기 때문
+  await expect(audio).toHaveAttribute("preload", "auto");
+  await context.close();
+});
+
+test("배경음악: 자동재생을 꺼 두면 편집기·게스트 모두 미리 받지 않는다", async ({ page }) => {
+  await signUpFresh(page);
+  await createSample(page);
+  await page.getByRole("button", { name: "테마", exact: true }).click();
+  await page
+    .locator('input[type="file"][accept*="audio"]')
+    .setInputFiles({ name: "우리노래.mp3", mimeType: "audio/mpeg", buffer: TINY_MP3 });
+  await expect(page.getByText("우리노래.mp3")).toBeVisible();
+  await expect(page.locator("[data-music-toggle] + audio")).toHaveAttribute("preload", "none");
+});

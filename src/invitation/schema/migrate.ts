@@ -1,12 +1,14 @@
 import {
   DEFAULT_GALLERY_GAP_PX,
+  DEFAULT_HERO_OVERLAY,
   DEFAULT_SECTION_PAD_X,
+  DEFAULT_TRANSPORT_COLUMNS,
   documentSchema,
   type InvitationDocument,
 } from "./document";
 import { DEFAULT_SECTION_LABELS } from "./sectionDefaults";
 
-export const CURRENT_SCHEMA_VERSION = 10;
+export const CURRENT_SCHEMA_VERSION = 11;
 
 // v6의 글자 크기 3단계 → v7의 pt 값. 기존 배율(0.93·1·1.08)에 가장 가까운 정수 pt다.
 const V6_SCALE_TO_PT: Record<string, number> = { sm: 10, md: 11, lg: 12 };
@@ -280,6 +282,50 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
               "",
           },
         };
+      }),
+    };
+  },
+  // v10 → v11: 메인 사진 위 문구 · 배경음악 재생 설정 · 교통 안내 확장 · 공유 영역 색
+  //  * hero content.overlay 추가 — 빈 문자열이라 아무것도 얹히지 않는다 (기존 모습 그대로).
+  //  * music에 volume·speed·autoplay 추가 — 원본 크기·원래 속도·자동재생 끔이라 동작이 같다.
+  //  * transport 항목에 emoji("" = 수단 기본 그림), content.columns(카드 격자 열 수) 추가.
+  //  * 공유 영역의 카카오 버튼은 이제 테마 강조색을 기본으로 쓴다 — 노란색을 심어 두지 않는다.
+  //    지금까지 카카오 노랑으로 굳어 있던 색이 강조색으로 바뀌는 '요청된 표시 개선'이다
+  //    (되돌리려면 편집기에서 #FEE500을 직접 고른다).
+  10: (raw) => {
+    const doc = raw as {
+      music?: object;
+      sections?: Array<{
+        type?: unknown;
+        content?: { overlay?: unknown; items?: unknown; columns?: unknown };
+      }>;
+    };
+    return {
+      ...(raw as object),
+      schemaVersion: 11,
+      music: { volume: 1, speed: 1, autoplay: false, ...doc.music },
+      sections: (doc.sections ?? []).map((section) => {
+        if (section.type === "hero") {
+          return {
+            ...section,
+            content: {
+              ...section.content,
+              overlay: section.content?.overlay ?? DEFAULT_HERO_OVERLAY,
+            },
+          };
+        }
+        if (section.type === "transportation") {
+          const items = Array.isArray(section.content?.items) ? section.content.items : [];
+          return {
+            ...section,
+            content: {
+              ...section.content,
+              items: items.map((item) => ({ emoji: "", ...(item as object) })),
+              columns: section.content?.columns ?? DEFAULT_TRANSPORT_COLUMNS,
+            },
+          };
+        }
+        return section;
       }),
     };
   },

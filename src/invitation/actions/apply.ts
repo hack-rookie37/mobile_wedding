@@ -266,6 +266,11 @@ function mutate(
       break;
     }
 
+    case "updateMusic": {
+      draft.music = { ...draft.music, ...action.patch };
+      break;
+    }
+
     case "updateTypography": {
       draft.typography = { ...draft.typography, ...action.patch };
       break;

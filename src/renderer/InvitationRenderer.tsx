@@ -143,6 +143,7 @@ export function InvitationRenderer({
         selectedSectionId,
         onSectionSelect: onSectionSelect ?? null,
         theme,
+        accentColor: palette.accent,
         rsvpTarget: rsvpTarget ?? null,
         motionReplay,
         kakaoJsKey,
@@ -157,7 +158,14 @@ export function InvitationRenderer({
         style={canvasVars}
       >
         <CustomFontFaces assetIds={fontAssetIds} resolveFontUrl={resolveFontUrl ?? null} />
-        {musicUrl !== null && <MusicToggle url={musicUrl} />}
+        {musicUrl !== null && (
+          <MusicToggle
+            url={musicUrl}
+            volume={doc.music.volume}
+            speed={doc.music.speed}
+            autoplay={doc.music.autoplay}
+          />
+        )}
         {doc.sections
           .filter((section) => section.visible)
           .map((section, index) => (

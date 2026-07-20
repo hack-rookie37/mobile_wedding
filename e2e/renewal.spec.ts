@@ -478,3 +478,115 @@ test("마음 전하실 곳: 눈썹 라벨이 REGISTRY다", async ({ page }) => {
   await expect(gift.getByText("REGISTRY")).toBeVisible();
   await expect(gift.getByText("GIFT")).toHaveCount(0);
 });
+
+test("메인: 사진 위 문구를 넣고 위치·크기·색을 고른 대로 얹힌다", async ({ page }) => {
+  await signUpFresh(page);
+  await createSample(page);
+  const photoBox = heroSection(page).locator("[data-photo-stage]");
+  const overlay = heroSection(page).locator("[data-hero-overlay] p");
+
+  // 샘플은 사진 아래쪽에 문구를 얹은 채로 시작한다
+  await expect(overlay).toHaveText("we're getting married");
+
+  await selectSection(page, "메인", "내용");
+  await inspector(page).getByLabel("사진 위 문구").fill("우리 결혼합니다");
+  await expect(overlay).toHaveText("우리 결혼합니다");
+
+  // 위치 — 사진 안에서만 움직인다 (사진 밖으로 나가지 않는다)
+  const yOf = async () => (await overlay.boundingBox())!.y;
+  const photoRect = (await photoBox.boundingBox())!;
+  await inspector(page).getByRole("button", { name: "위", exact: true }).click();
+  const top = await yOf();
+  await inspector(page).getByRole("button", { name: "아래", exact: true }).click();
+  const bottom = await yOf();
+  expect(bottom).toBeGreaterThan(top);
+  expect(top).toBeGreaterThanOrEqual(photoRect.y);
+  expect(bottom).toBeLessThan(photoRect.y + photoRect.height);
+
+  // 크기·색 — 고른 값이 그대로 그려진다 (pt는 96/72로 px 환산된다)
+  await inspector(page).getByLabel("글자 크기", { exact: true }).fill("24");
+  await expect
+    .poll(() => overlay.evaluate((el) => getComputedStyle(el).fontSize))
+    .toBe(`${24 * (96 / 72)}px`);
+  await inspector(page).getByLabel("글자색", { exact: true }).fill("#ff0000");
+  await expect
+    .poll(() => overlay.evaluate((el) => getComputedStyle(el).color))
+    .toBe("rgb(255, 0, 0)");
+
+  // 사진을 어둡게 해도 문구는 흐려지지 않는다 — 사진 필터 밖에 있다
+  await selectSection(page, "메인", "레이아웃");
+  await inspector(page).getByLabel("투명도", { exact: true }).fill("30");
+  await expect.poll(() => overlay.evaluate((el) => getComputedStyle(el).opacity)).toBe("1");
+
+  // 문구를 비우면 자리째 사라진다
+  await selectSection(page, "메인", "내용");
+  await inspector(page).getByLabel("사진 위 문구").fill("");
+  await expect(heroSection(page).locator("[data-hero-overlay]")).toHaveCount(0);
+});
+
+test("교통 안내: 그림을 직접 고르고, 카드 열 수와 접이식 레이아웃을 쓸 수 있다", async ({
+  page,
+}) => {
+  await signUpFresh(page);
+  await createSample(page);
+  const transport = canvas(page).locator('section:has-text("교통 안내")').last();
+  const items = transport.locator("[data-transport-item]");
+
+  // 그림을 비워 두면 수단의 기본 이모지 — 샘플의 첫 항목은 지하철이다
+  await expect(items.first()).toContainText("🚇");
+  await selectSection(page, "교통 안내", "내용");
+  await inspector(page).getByLabel("그림").first().fill("🚈");
+  await expect(items.first()).toContainText("🚈");
+  await expect(items.first()).not.toContainText("🚇");
+
+  // 카드 격자 — 열 수를 고른 대로 나뉜다
+  await selectSection(page, "교통 안내", "레이아웃");
+  await inspector(page).getByRole("button", { name: "카드 격자", exact: true }).click();
+  const columnCount = () =>
+    transport
+      .locator("ul")
+      .evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(" ").length);
+  await expect.poll(columnCount).toBe(2);
+  await inspector(page).getByLabel("열 수", { exact: true }).fill("3");
+  await expect.poll(columnCount).toBe(3);
+
+  // 접이식 — 편집 중에는 펼쳐 두고, 게스트 화면에서만 눌러서 여닫는다
+  await inspector(page).getByRole("button", { name: "접이식", exact: true }).click();
+  await expect(items.first().getByRole("button")).toBeDisabled();
+  await expect(items.first()).toContainText("대방역");
+});
+
+test("공유하기: 어두운 판과 카카오 버튼 색을 고를 수 있다", async ({ page }) => {
+  await signUpFresh(page);
+  await createSample(page);
+  const share = canvas(page).locator('section:has-text("청첩장 공유하기")').last();
+
+  const background = () => share.evaluate((el) => getComputedStyle(el).backgroundColor);
+  const titleColor = () =>
+    share.getByRole("heading", { name: "청첩장 공유하기" }).evaluate((el) => {
+      return getComputedStyle(el).color;
+    });
+  expect(await background()).not.toBe("rgb(26, 26, 26)");
+
+  await selectSection(page, "공유하기", "레이아웃");
+  await inspector(page).getByRole("button", { name: "어둡게", exact: true }).click();
+  await expect.poll(background).toBe("rgb(26, 26, 26)");
+  await expect.poll(titleColor).toBe("rgb(255, 255, 255)");
+
+  // 카카오 버튼 색은 기본이 테마 강조색이고(브랜드 노랑이 아니다), 직접 고를 수 있다.
+  // 버튼 자체는 카카오 JS 키가 있는 빌드에서만 나오므로, 없으면 여기서 끝낸다.
+  await selectSection(page, "공유하기", "내용");
+  const kakao = share.getByRole("button", { name: "카카오톡 공유" });
+  if ((await kakao.count()) === 0) return;
+  expect(await kakao.evaluate((el) => getComputedStyle(el).backgroundColor)).not.toBe(
+    "rgb(254, 229, 0)",
+  );
+  await inspector(page).getByLabel("카카오톡 버튼 색", { exact: true }).fill("#fee500");
+  await expect
+    .poll(() => kakao.evaluate((el) => getComputedStyle(el).backgroundColor))
+    .toBe("rgb(254, 229, 0)");
+  // 밝은 버튼 위에는 검은 글자가 얹힌다
+  await expect
+    .poll(() => kakao.evaluate((el) => getComputedStyle(el).color))
+    .toBe("rgb(26, 26, 26)");
+});

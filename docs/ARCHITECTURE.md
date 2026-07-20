@@ -64,9 +64,9 @@ src/
 ## 3. 문서 모델 (ADR-002)
 
 ```ts
-// invitation/schema — 개념 스케치, 현재 v10 (실제는 Zod 스키마가 단일 진실)
+// invitation/schema — 개념 스케치, 현재 v11 (실제는 Zod 스키마가 단일 진실)
 interface InvitationDocument {
-  schemaVersion: 10;
+  schemaVersion: 11;
   wedding: {
     groom: Person;               // { name, familyRole?("아들"…), father?, mother? }
     bride: Person;               //   Parent = { name, deceased: boolean }
@@ -74,7 +74,10 @@ interface InvitationDocument {
     venue: { name; hall?; address; phone? };
   };
   theme: { id: ThemeId };        // 토큰·variant는 THEMES 레지스트리에서 해석 (ADR-014)
-  music: { assetId: string | null };  // 배경음악 — 참조만 (ADR-025)
+  music: { assetId: string | null;    // 배경음악 — 참조만 (ADR-025)
+           volume: number;            // 0~1, 속도·자동재생과 함께 v11에서 추가 (ADR-034)
+           speed: number;             // 0.5~1.5
+           autoplay: boolean };       // '시도'다 — 차단되면 첫 스크롤·터치에 다시 켠다
   typography: {                  // 전역 폰트·크기 (ADR-028: headingPt·bodyPt), 섹션별 override는 style
     headingFont: FontId;         // "theme" | 내장 id | "custom:<assetId>"
     bodyFont: FontId;
@@ -99,7 +102,8 @@ interface Section {
 // Phase 8 content 요약 (전역 wedding 참조 원칙 유지 — 이름·일시·장소는 섹션에 중복 저장하지 않는다)
 //  coupleProfile: { title, groom/bride: {photoAssetId, photoFrame?, intro}, showParents }
 //  calendar:      { title, showDday }                          — 날짜는 wedding.datetime 참조
-//  transportation:{ title, items[]: {icon(subway|bus|car|parking|shuttle|etc), title, body} }
+//  transportation:{ title, columns(1~3), items[]: {icon(subway|…|etc), emoji(""=수단 기본), title, body} }
+//                 — variant: list | cards(열 수 조절) | accordion (ADR-034)
 //  contacts:      { title, entries[]: {side(groom|bride), label, name, phone(sensitive)} }
 //  giftAccount:   { title, groomLabel, brideLabel, accounts[]: {side, bank, holder, number(sensitive)} }
 //  closing:       { title, body, photoAssetId, photoFrame?, showShare }
@@ -108,9 +112,11 @@ interface Section {
 //  venue 추가:    showMapButtons — 네이버·카카오·티맵 열기 (URL·딥링크만, 지도 API 없음 — invitation/lib/mapLinks.ts)
 //  gallery:       { title, label, photos[], photoAspect, photoCorner(sharp|rounded), photoGapPx(0~24) }
 //                 — 모서리·간격은 v9에서 테마가 아니라 문서가 정한다 (ADR-031, 모든 variant 공통)
+//  share:         { title, body, kakaoButtonColor?(미지정=테마 강조색) } — variant: default | dark (ADR-034)
 
 // 모든 섹션 content는 titledContentSchema(title + label)를 확장한다 — 메인(hero)만 예외다.
 // label은 제목 위 눈썹 글자이고, 빈 문자열이면 표시하지 않는다 (v10, ADR-032).
+// hero.content.overlay는 사진 위에 겹치는 문구다 — 위치·크기·글꼴·색을 따로 갖는다 (v11, ADR-034).
 
 // 사진 참조 (ADR-016) — 문서에는 assetId + 표시 metadata만. 원본·base64 금지.
 type GalleryPhoto = { assetId: string; alt?: string; caption?: string; frame?: PhotoFrame };

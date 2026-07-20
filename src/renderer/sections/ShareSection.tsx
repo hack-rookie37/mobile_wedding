@@ -15,10 +15,21 @@ const buttonClass =
   "flex h-12 flex-1 items-center justify-center gap-2 rounded-full px-5 " +
   "text-[length:calc(13.5px*var(--canvas-fs))] font-medium disabled:opacity-60";
 
-// 카카오 심볼 — 말풍선. 브랜드 노란 타일 위에 갈색으로 얹는다.
-function KakaoIcon() {
+// 버튼 색을 고르면 그 위 글자색도 따라 정해져야 한다 — 밝은 색에는 검은 글자, 어두운 색에는 흰 글자.
+// sRGB 상대 휘도(WCAG)로 판단한다: 사람이 느끼는 밝기는 채널마다 가중치가 다르다.
+function readableInk(hex: string): string {
+  const channel = (offset: number) => {
+    const value = parseInt(hex.slice(offset, offset + 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+  return luminance > 0.45 ? "#1A1A1A" : "#FFFFFF";
+}
+
+// 카카오 심볼 — 말풍선. 버튼 색에서 정해진 글자색을 그대로 쓴다.
+function KakaoIcon({ color }: { color: string }) {
   return (
-    <svg viewBox="0 0 24 24" aria-hidden className="size-5 shrink-0" fill="#3C1E1E">
+    <svg viewBox="0 0 24 24" aria-hidden className="size-5 shrink-0" fill={color}>
       <path d="M12 3.6c-4.7 0-8.5 2.96-8.5 6.6 0 2.33 1.56 4.38 3.9 5.55l-.86 3.2a.35.35 0 0 0 .53.38l3.83-2.53c.36.03.73.05 1.1.05 4.7 0 8.5-2.96 8.5-6.65S16.7 3.6 12 3.6z" />
     </svg>
   );
@@ -35,9 +46,13 @@ export function ShareSection({
   wedding: Wedding;
   index: number;
 }) {
-  const { mode, kakaoJsKey, shareImageUrl } = useRenderer();
+  const { mode, kakaoJsKey, shareImageUrl, accentColor } = useRenderer();
   const interactive = mode === "published";
-  const { content } = section;
+  const { content, layout } = section;
+  // 카카오 브랜드 노랑을 기본으로 쓰지 않는다 — 청첩장 한 장에서 혼자 튀는 색이라
+  // 테마 강조색을 따르게 하고, 브랜드 색을 원하면 직접 고르게 한다 (#FEE500).
+  const kakaoColor = content.kakaoButtonColor ?? accentColor;
+  const kakaoInk = readableInk(kakaoColor);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timerRef = useRef<number | null>(null);
@@ -73,7 +88,11 @@ export function ShareSection({
   const showKakao = kakaoJsKey !== null;
 
   return (
-    <SectionShell section={section} index={index}>
+    <SectionShell
+      section={section}
+      index={index}
+      tone={layout.variant === "dark" ? "dark" : "default"}
+    >
       <div className="flex flex-col items-center text-center">
         <SectionHeader label={content.label} title={content.title} index={index} />
         {content.body !== "" && (
@@ -97,10 +116,10 @@ export function ShareSection({
               type="button"
               disabled={!interactive}
               onClick={() => void shareKakao()}
-              className={`${buttonClass} text-[#3C1E1E]`}
-              style={{ backgroundColor: "#FEE500" }}
+              className={buttonClass}
+              style={{ backgroundColor: kakaoColor, color: kakaoInk }}
             >
-              <KakaoIcon />
+              <KakaoIcon color={kakaoInk} />
               카카오톡 공유
             </button>
           )}

@@ -20,7 +20,7 @@ const style = (
 // 실제 한국 청첩장 관례를 따른 샘플 문서 (연락처·계좌만 가상)
 export function createSampleDocument(): InvitationDocument {
   return {
-    schemaVersion: 10,
+    schemaVersion: 11,
     wedding: {
       groom: {
         name: "이정훈",
@@ -43,7 +43,7 @@ export function createSampleDocument(): InvitationDocument {
       },
     },
     theme: { id: "warm-editorial", palette: {} },
-    music: { assetId: null },
+    music: { assetId: null, volume: 1, speed: 1, autoplay: false },
     typography: { headingFont: "theme", bodyFont: "theme", headingPt: 15, bodyPt: 11 },
     sections: [
       {
@@ -54,6 +54,13 @@ export function createSampleDocument(): InvitationDocument {
         style: style("lg", "none", 0),
         content: {
           tagline: "THE MARRIAGE OF",
+          overlay: {
+            text: "we're getting married",
+            position: "center",
+            font: "theme",
+            sizePt: 14,
+            color: "#ffffff",
+          },
           photoAssetId: "hero-main",
           photoAspect: "3/4",
           effects: { fadeBottom: true, sparkle: false, brightness: 1, opacity: 1 },
@@ -153,23 +160,27 @@ export function createSampleDocument(): InvitationDocument {
         content: {
           title: "교통 안내",
           label: "TRANSPORT",
+          columns: 2,
           items: [
             {
               icon: "subway",
+              emoji: "",
               title: "지하철",
               body: "1호선 대방역 5번 출구 (도보 5분)\n신림선 대방역 6번 출구 (도보 5분)\n7호선 보라매역 7번 출구 (도보 15분)\n신림선 서울지방병무청역 2번 출구 (도보 9분)",
             },
             {
               icon: "bus",
+              emoji: "",
               title: "버스",
               body: "간선 : 150, 461, 505, 753\n지선 : 5531, 5534, 5623, 5633, 6514, 6713\n광역 : M5609\n마을 : 영등포07",
             },
             {
               icon: "parking",
+              emoji: "",
               title: "주차",
               body: "공군호텔 내 지하주차장 이용 가능\n(예식 하객 기준 3시간 무료주차 제공)\n주차 가능 대수 600~1,000대",
             },
-            { icon: "etc", title: "예식장 전화", body: "02-844-0336" },
+            { icon: "etc", emoji: "", title: "예식장 전화", body: "02-844-0336" },
           ],
         },
       },

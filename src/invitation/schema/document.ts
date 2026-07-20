@@ -130,6 +130,26 @@ export const photoEffectsSchema = z.object({
   opacity: z.number().min(0.2).max(1), // 1 = 불투명
 });
 
+// 메인 사진 위에 얹는 한 줄 ("we're getting married" 같은 문구).
+// 사진 아래 tagline과 달리 사진 위에 겹치므로 크기·글꼴·색을 따로 고른다 —
+// 전역 typography를 따르게 하면 사진마다 달라지는 균형을 맞출 수 없다.
+export const heroOverlaySchema = z.object({
+  text: z.string(), // 빈 문자열이면 아무것도 얹지 않는다
+  position: z.enum(["top", "center", "bottom"]), // 사진 안에서의 세로 위치 (가로는 항상 가운데)
+  font: fontIdSchema, // "theme" = 제목 글꼴
+  sizePt: fontSizePtSchema,
+  color: hexColorSchema,
+});
+
+// 빈 문구 = 얹지 않음. 흰색은 사진 위에서 가장 자주 읽히는 색이다 (렌더러가 그림자를 함께 깐다).
+export const DEFAULT_HERO_OVERLAY = {
+  text: "",
+  position: "center",
+  font: "theme",
+  sizePt: 14,
+  color: "#ffffff",
+} as const;
+
 // 섹션 제목과 그 위의 눈썹 라벨. 12개 섹션이 공유한다 — 같은 지식을 열두 번 적지 않는다.
 // label은 빈 문자열이면 눈썹 없이 제목만 나온다 (맺음말의 기본값이 그렇다).
 export const SECTION_LABEL_MAX = 24;
@@ -141,6 +161,7 @@ export const titledContentSchema = z.object({
 
 export const heroContentSchema = z.object({
   tagline: z.string(),
+  overlay: heroOverlaySchema,
   photoAssetId: z.string().nullable(),
   photoFrame: photoFrameSchema.optional(),
   photoAspect: photoAspectSchema,
@@ -265,19 +286,30 @@ export const calendarSectionSchema = sectionBase.extend({
 // 교통 안내 — 수단별 항목의 반복 그룹
 export const transportIconSchema = z.enum(["subway", "bus", "car", "parking", "shuttle", "etc"]);
 
+// 항목 앞에 붙는 그림. 여러 글자를 붙인 이모지(🅿️·👨‍👩‍👧)도 있어서 한 글자로 자르지 않는다.
+export const TRANSPORT_EMOJI_MAX = 8;
+
 export const transportItemSchema = z.object({
   icon: transportIconSchema,
+  emoji: z.string().max(TRANSPORT_EMOJI_MAX, `그림은 최대 ${TRANSPORT_EMOJI_MAX}자입니다`), // 빈 문자열 = 수단의 기본 그림
   title: z.string(),
   body: z.string(), // 멀티라인 안내 (개행 보존)
 });
 
+// 카드 격자의 열 수. 리스트·접이식에서는 쓰이지 않는다 (한 줄에 하나씩이라 나눌 것이 없다).
+export const TRANSPORT_COLUMNS_MIN = 1;
+export const TRANSPORT_COLUMNS_MAX = 3;
+export const DEFAULT_TRANSPORT_COLUMNS = 2;
+
 export const transportationContentSchema = titledContentSchema.extend({
   items: z.array(transportItemSchema).max(10, "교통 안내는 최대 10개입니다"),
+  columns: z.number().int().min(TRANSPORT_COLUMNS_MIN).max(TRANSPORT_COLUMNS_MAX),
 });
 
 export const transportationSectionSchema = sectionBase.extend({
   type: z.literal("transportation"),
-  layout: z.object({ variant: z.enum(["list", "cards"]) }),
+  // accordion: 수단만 늘어놓고, 누른 항목의 안내만 아래로 펼친다
+  layout: z.object({ variant: z.enum(["list", "cards", "accordion"]) }),
   content: transportationContentSchema,
 });
 
@@ -368,11 +400,14 @@ export const closingSectionSchema = sectionBase.extend({
 // 링크 복사는 어디서나 되고, 카카오톡 공유는 호스트가 카카오 JS 키를 넘겨줄 때만 나타난다.
 export const shareContentSchema = titledContentSchema.extend({
   body: z.string(),
+  // 카카오톡 버튼 색. 비우면 테마 강조색을 따른다 — 글자·심볼 색은 이 색의 밝기에서 자동으로 정해진다.
+  kakaoButtonColor: hexColorSchema.optional(),
 });
 
 export const shareSectionSchema = sectionBase.extend({
   type: z.literal("share"),
-  layout: z.object({ variant: z.enum(["default"]) }),
+  // dark: 맺음말 전면 사진처럼 어두운 판 위에 밝은 글자로 뒤집는다
+  layout: z.object({ variant: z.enum(["default", "dark"]) }),
   content: shareContentSchema,
 });
 
@@ -425,17 +460,26 @@ export const SECTION_LAYOUT_SCHEMAS = {
   share: shareSectionSchema.shape.layout,
 } as const;
 
-// ── 배경음악 — 문서에는 asset 참조만 (ADR-016). 재생 on/off는 게스트가 화면에서 조작한다.
+// ── 배경음악 — 문서에는 asset 참조와 재생 설정만 (파일은 asset 저장소, ADR-016).
+
+// 재생 속도. 1에서 멀어질수록 음이 함께 높아지거나 낮아진다 — 넓힐수록 노래가 아니게 된다.
+export const MUSIC_SPEED_MIN = 0.5;
+export const MUSIC_SPEED_MAX = 1.5;
 
 export const musicSchema = z.object({
   assetId: z.string().nullable(), // null = 배경음악 없음
+  volume: z.number().min(0).max(1), // 1 = 파일 원본 크기
+  speed: z.number().min(MUSIC_SPEED_MIN).max(MUSIC_SPEED_MAX), // 1 = 원래 속도
+  // 게스트가 누르지 않아도 켜기를 시도한다. 브라우저는 소리 있는 자동재생을 대부분 막으므로
+  // 막히면 첫 스크롤·터치까지 기다렸다 다시 시도한다 — "반드시 켜진다"는 보장은 없다.
+  autoplay: z.boolean(),
 });
 
 // ── 문서
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(10),
+    schemaVersion: z.literal(11),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,
@@ -482,6 +526,7 @@ export type SectionStyle = z.infer<typeof sectionStyleSchema>;
 export type PhotoFrame = z.infer<typeof photoFrameSchema>;
 export type PhotoAspect = z.infer<typeof photoAspectSchema>;
 export type PhotoEffects = z.infer<typeof photoEffectsSchema>;
+export type HeroOverlay = z.infer<typeof heroOverlaySchema>;
 export type GalleryPhoto = z.infer<typeof galleryPhotoSchema>;
 export type HeroSection = z.infer<typeof heroSectionSchema>;
 export type GreetingSection = z.infer<typeof greetingSectionSchema>;

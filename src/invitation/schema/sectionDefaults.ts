@@ -1,4 +1,9 @@
-import { DEFAULT_GALLERY_GAP_PX, DEFAULT_SECTION_PAD_X, type Section } from "./document";
+import {
+  DEFAULT_GALLERY_GAP_PX,
+  DEFAULT_SECTION_PAD_X,
+  DEFAULT_TRANSPORT_COLUMNS,
+  type Section,
+} from "./document";
 
 // addSection이 사용하는 타입별 기본 섹션.
 // hero는 항상 정확히 1개 존재해야 하므로(A-05) 추가 대상이 아니다 —
@@ -125,7 +130,12 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
         ...base,
         type,
         layout: { variant: "list" },
-        content: { title: "교통 안내", label: DEFAULT_SECTION_LABELS[type], items: [] },
+        content: {
+          title: "교통 안내",
+          label: DEFAULT_SECTION_LABELS[type],
+          items: [],
+          columns: DEFAULT_TRANSPORT_COLUMNS,
+        },
       };
     case "contacts":
       return {

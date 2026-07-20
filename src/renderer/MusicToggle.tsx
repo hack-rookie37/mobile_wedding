@@ -1,13 +1,79 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useRenderer } from "./RendererContext";
+
+// 자동재생이 막혔을 때 다시 시도할 계기 — 게스트의 첫 동작이면 무엇이든 좋다.
+const FIRST_GESTURE_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll", "wheel"] as const;
 
 // 배경음악 토글 — 캔버스 우상단 플로팅 버튼.
-// 자동재생하지 않는다: 모바일 브라우저는 소리 있는 자동재생을 차단하므로
-// 환경에 따라 재생 여부가 갈리는 대신, 게스트가 눌러서 켜는 한 가지 동작만 둔다.
-export function MusicToggle({ url }: { url: string }) {
+// 자동재생은 "켜기를 시도한다"는 뜻이지 보장이 아니다: 브라우저는 소리 있는 자동재생을
+// 대부분 막으므로, 막히면 게스트의 첫 동작(스크롤·터치)까지 기다렸다가 한 번 더 시도한다.
+export function MusicToggle({
+  url,
+  volume,
+  speed,
+  autoplay,
+}: {
+  url: string;
+  volume: number;
+  speed: number;
+  autoplay: boolean;
+}) {
+  const { mode } = useRenderer();
   const audioRef = useRef<HTMLAudioElement>(null);
   const [playing, setPlaying] = useState(false);
+
+  // 편집 중에 음악이 저절로 울리면 방해가 된다 — 게스트가 보는 화면에서만 스스로 켠다
+  // (편집기의 '미리보기'도 게스트 화면이므로 여기 포함된다).
+  const autoStart = autoplay && mode === "published";
+
+  // 볼륨·속도는 렌더 결과가 아니라 audio 엘리먼트의 상태다 — 값이 바뀔 때마다 직접 얹는다
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = volume;
+    audio.playbackRate = speed;
+  }, [volume, speed]);
+
+  useEffect(() => {
+    if (!autoStart) return;
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    let cancelled = false;
+    let removeListeners: (() => void) | null = null;
+
+    const start = async () => {
+      try {
+        await audio.play();
+        if (!cancelled) setPlaying(true);
+        return true;
+      } catch {
+        return false; // 자동재생 차단·로드 실패 — 꺼진 상태를 유지한다
+      }
+    };
+
+    void start().then((started) => {
+      if (started || cancelled) return;
+      const retry = () => {
+        removeListeners?.();
+        void start();
+      };
+      removeListeners = () => {
+        for (const event of FIRST_GESTURE_EVENTS) window.removeEventListener(event, retry);
+        removeListeners = null;
+      };
+      for (const event of FIRST_GESTURE_EVENTS) {
+        window.addEventListener(event, retry, { once: true, passive: true });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+      removeListeners?.();
+    };
+  }, [autoStart]);
 
   const toggle = () => {
     const audio = audioRef.current;
@@ -44,7 +110,8 @@ export function MusicToggle({ url }: { url: string }) {
           </span>
         )}
       </button>
-      <audio ref={audioRef} src={url} loop preload="none" />
+      {/* 자동 시작을 시도할 때만 미리 받아 둔다 — 그 외에는 누를 때까지 내려받지 않는다 */}
+      <audio ref={audioRef} src={url} loop preload={autoStart ? "auto" : "none"} />
     </div>
   );
 }

@@ -5,12 +5,15 @@ import {
   GALLERY_GAP_MIN,
   SECTION_PAD_X_MAX,
   SECTION_PAD_X_MIN,
+  TRANSPORT_COLUMNS_MAX,
+  TRANSPORT_COLUMNS_MIN,
   type ClosingSection,
   type FontId,
   type GallerySection,
   type HeroSection,
   type PhotoEffects,
   type Section,
+  type TransportationSection,
 } from "@/invitation/schema/document";
 import { PT_MAX, PT_MIN } from "@/invitation/schema/themes";
 import {
@@ -139,6 +142,25 @@ function GalleryPhotoFields({ section }: { section: GallerySection }) {
   );
 }
 
+// 카드 격자의 열 수 — 리스트·접이식은 한 줄에 하나씩이라 나눌 것이 없다.
+function TransportColumnsField({ section }: { section: TransportationSection }) {
+  const patch = usePatchContent(section.id);
+  if (section.layout.variant !== "cards") {
+    return <InfoNote>열 수는 ‘카드 격자’ 레이아웃에서만 고를 수 있습니다.</InfoNote>;
+  }
+  return (
+    <NumberField
+      label="열 수"
+      value={section.content.columns}
+      min={TRANSPORT_COLUMNS_MIN}
+      max={TRANSPORT_COLUMNS_MAX}
+      step={1}
+      unit="열"
+      onChange={(columns) => patch({ columns })}
+    />
+  );
+}
+
 // 좌우 여백 — 0이면 콘텐츠가 캔버스 가로를 꽉 채운다.
 // v10 전까지 전면 사진과 대형 스트립만 0이었고 나머지는 24px 고정이었다 (ADR-032).
 function PaddingXField({ section }: { section: Section }) {
@@ -192,6 +214,7 @@ export function LayoutForm({ section }: { section: Section }) {
         <InfoNote>이 섹션은 단일 레이아웃을 사용합니다.</InfoNote>
       )}
       {section.type === "gallery" && <GalleryPhotoFields section={section} />}
+      {section.type === "transportation" && <TransportColumnsField section={section} />}
       {section.type === "closing" && section.layout.variant === "photo" && (
         <PhotoEffectsFields section={section} />
       )}

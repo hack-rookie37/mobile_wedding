@@ -7,7 +7,7 @@ import { useRenderer } from "../RendererContext";
 // editorial: 중앙 정렬 + 세리프 / mono: 좌측 번호 라벨 + hairline / film: 손글씨 라벨
 // label을 비우면 눈썹 라벨 없이 제목만 나온다 (맺음말처럼 사진 위에 얹는 자리).
 export function SectionHeader({
-  label,
+  label: rawLabel,
   title,
   index,
 }: {
@@ -17,6 +17,8 @@ export function SectionHeader({
 }) {
   const { theme } = useRenderer();
   const variant = theme.variants.header;
+  // 빈 문구는 "없음"과 같다 — 라벨을 지웠는데 빈 줄과 그 간격만 남으면 지운 것이 아니다
+  const label = rawLabel === "" ? undefined : rawLabel;
 
   if (variant === "mono") {
     return (

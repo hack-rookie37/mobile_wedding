@@ -110,20 +110,26 @@ describe("musicUrlOf (배경음악)", () => {
     height: null,
   };
 
+  // 이 묶음이 보는 것은 assetId → URL 해석뿐이라, 재생 설정은 기본값 한 벌을 돌려 쓴다
+  const MUSIC_PLAYBACK = { volume: 1, speed: 1, autoplay: false };
+
   it("music.assetId와 일치하는 오디오 entry의 URL을 찾는다", () => {
-    const doc = { ...createSampleDocument(), music: { assetId: "bgm-1" } };
+    const doc = { ...createSampleDocument(), music: { ...MUSIC_PLAYBACK, assetId: "bgm-1" } };
     expect(musicUrlOf({ doc, assets: [audioEntry] })).toBe("https://cdn.example/bgm.mp3");
   });
 
   it("assetId가 없거나(null) manifest에 없으면 null", () => {
     const doc = createSampleDocument(); // music.assetId = null
     expect(musicUrlOf({ doc, assets: [audioEntry] })).toBeNull();
-    const pointing = { ...createSampleDocument(), music: { assetId: "missing" } };
+    const pointing = {
+      ...createSampleDocument(),
+      music: { ...MUSIC_PLAYBACK, assetId: "missing" },
+    };
     expect(musicUrlOf({ doc: pointing, assets: [audioEntry] })).toBeNull();
   });
 
   it("이미지 entry는 같은 id여도 음악으로 인정하지 않는다", () => {
-    const doc = { ...createSampleDocument(), music: { assetId: "bgm-1" } };
+    const doc = { ...createSampleDocument(), music: { ...MUSIC_PLAYBACK, assetId: "bgm-1" } };
     const imageEntry = { ...audioEntry, kind: "image" as const, width: 800, height: 600 };
     expect(musicUrlOf({ doc, assets: [imageEntry] })).toBeNull();
   });

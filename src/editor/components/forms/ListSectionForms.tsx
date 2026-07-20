@@ -11,6 +11,7 @@ import type {
   TransportIcon,
   TransportItem,
 } from "@/invitation/schema/document";
+import { TRANSPORT_ICON_GLYPHS } from "@/renderer/sections/TransportationSection";
 import { SelectField, TextAreaField, TextField } from "@/ui/fields";
 import { useEditor } from "../../EditorStoreContext";
 
@@ -110,6 +111,12 @@ export function TransportationForm({ section }: { section: TransportationSection
             onChange={(icon) => patchItem(index, { icon })}
           />
           <TextField
+            label="그림"
+            value={item.emoji}
+            onChange={(emoji) => patchItem(index, { emoji })}
+            placeholder={`비우면 ${TRANSPORT_ICON_GLYPHS[item.icon]}`}
+          />
+          <TextField
             label="제목"
             value={item.title}
             onChange={(title) => patchItem(index, { title })}
@@ -126,7 +133,9 @@ export function TransportationForm({ section }: { section: TransportationSection
       <AddButton
         label="+ 교통 안내 추가"
         disabled={content.items.length >= MAX_TRANSPORT_ITEMS}
-        onClick={() => setItems([...content.items, { icon: "subway", title: "", body: "" }])}
+        onClick={() =>
+          setItems([...content.items, { icon: "subway", emoji: "", title: "", body: "" }])
+        }
       />
     </div>
   );

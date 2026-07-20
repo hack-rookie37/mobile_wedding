@@ -12,18 +12,33 @@ function prefersReducedMotion(): boolean {
   );
 }
 
+// 어두운 판 — 캔버스 색 변수를 이 섹션에서만 뒤집으면 헤더·본문·버튼이 손대지 않고 따라온다.
+// 테마 색을 그대로 뒤집지 않고 고정값을 쓴다: 모던 모노크롬의 강조색은 #141414라
+// 어두운 판 위에서 사라지고, 같은 요소에서 var(--canvas-ink)를 참조하면 순환이 된다.
+const DARK_TONE_VARS = {
+  backgroundColor: "#1A1A1A",
+  "--canvas-paper": "#1A1A1A",
+  "--canvas-ink": "#FFFFFF",
+  "--canvas-ink-soft": "rgba(255,255,255,0.72)",
+  "--canvas-accent": "rgba(255,255,255,0.88)",
+  "--canvas-line": "rgba(255,255,255,0.28)",
+} as CSSProperties;
+
 export function SectionShell({
   section,
   index,
   children,
   flushTop = false,
   flushBottom = false,
+  tone = "default",
 }: {
   section: Section;
   index: number;
   children: ReactNode;
   flushTop?: boolean; // 상단 패딩 해제 — 콘텐츠가 캔버스 맨 위에 붙는다 (전면 사진 히어로)
   flushBottom?: boolean; // 하단 패딩 해제 — 콘텐츠가 캔버스 맨 아래에 붙는다 (전면 사진 맺음말)
+  // "dark": 어두운 판 위 밝은 글자. 섹션 좌우 여백 밖까지 색이 차야 해서 shell이 칠한다.
+  tone?: "default" | "dark";
 }) {
   const { mode, selectedSectionId, onSectionSelect, theme, motionReplay } = useRenderer();
   const editing = mode === "editor-edit";
@@ -107,6 +122,8 @@ export function SectionShell({
         // 좌우 여백은 섹션 설정값 하나로 정해진다. 변수로 내려 두면 구분선과 섹션 내부
         // (갤러리 헤더 등)가 같은 값을 따라간다 — 24px을 여러 곳에 다시 적지 않는다.
         ...({ "--canvas-pad-x": `${section.style.paddingX}px` } as CSSProperties),
+        // 어두운 판보다 직접 고른 색이 우선한다 — 아래 override들이 뒤에서 덮어쓴다
+        ...(tone === "dark" ? DARK_TONE_VARS : {}),
         ...(section.style.background ? { backgroundColor: section.style.background } : {}),
         // 섹션별 폰트·크기 override — CSS 변수를 지역 재정의하면 하위 텍스트가 전부 따라온다
         ...(section.style.fontFamily !== undefined && fontCssOf(section.style.fontFamily) !== null

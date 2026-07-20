@@ -24,6 +24,9 @@ export interface RendererContextValue {
   selectedSectionId: string | null;
   onSectionSelect: ((sectionId: string) => void) | null;
   theme: ThemeDefinition; // 해석된 테마 정의 (토큰 + variant) — ADR-014
+  // 문서 override까지 반영한 강조색(hex). CSS는 --canvas-accent로 충분하지만, 그 색 위에
+  // 얹을 글자색을 밝기로 골라야 하는 자리(공유 버튼)는 값 자체를 알아야 한다.
+  accentColor: string;
   // RSVP 제출 대상. null이면(편집기·비공개 미리보기) 폼은 제출 불가 상태로 렌더된다.
   rsvpTarget: RsvpTarget | null;
   // 편집기에서 진입 애니메이션을 고른 순간 그 섹션을 다시 재생시키는 신호 (토큰이 바뀔 때마다)

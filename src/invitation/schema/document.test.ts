@@ -199,7 +199,9 @@ describe("migrateDocument", () => {
     const rsvp = migrated.sections.find((s) => s.type === "rsvp");
     if (rsvp?.type !== "rsvp") throw new Error("rsvp가 없습니다");
     expect(rsvp.layout.variant).toBe("sheet"); // default → sheet 개명
-    expect(migrated.music).toEqual({ assetId: null }); // 배경음악 슬롯 신설
+    // 배경음악 슬롯 신설(v6) → v11에서 재생 설정이 붙는다. 원본 크기·원래 속도·자동재생 끔이라
+    // 이 값들이 채워져도 v6 문서의 실제 동작은 달라지지 않는다.
+    expect(migrated.music).toEqual({ assetId: null, volume: 1, speed: 1, autoplay: false });
     // 폰트는 테마 그대로, 크기는 v6의 '보통' → 11pt로 환산된 뒤 v8에서 제목·본문으로 갈린다.
     // 제목 14.5pt는 기존 화면 크기(19.6px)를 지키는 값이다 — 새 문서 기본값(15pt = 20px)과는 다르다.
     expect(migrated.typography).toEqual({
@@ -357,6 +359,54 @@ describe("migrateDocument", () => {
     expect(find("gallery").style.paddingX).toBe(0); // 위에서 strip으로 바꿔 두었다
     expect(greeting.style.paddingX).toBe(24);
     expect(find("venue").style.paddingX).toBe(24);
+  });
+
+  it("v10 → v11: 새 값이 들어와도 v10 문서가 보이고 들리던 대로 남는다", () => {
+    const base = createSampleDocument();
+    const strip = (key: string) => (k: string) => k !== key;
+    const v10 = {
+      ...base,
+      schemaVersion: 10,
+      music: { assetId: "bgm-1" }, // v10의 music에는 재생 설정이 없었다
+      sections: base.sections.map((s) => {
+        if (s.type === "hero") {
+          return {
+            ...s,
+            content: Object.fromEntries(
+              Object.entries(s.content).filter(([k]) => strip("overlay")(k)),
+            ),
+          };
+        }
+        if (s.type === "transportation") {
+          return {
+            ...s,
+            content: {
+              ...Object.fromEntries(Object.entries(s.content).filter(([k]) => strip("columns")(k))),
+              items: s.content.items.map((item) =>
+                Object.fromEntries(Object.entries(item).filter(([k]) => strip("emoji")(k))),
+              ),
+            },
+          };
+        }
+        return s;
+      }),
+    };
+    const migrated = migrateDocument(v10);
+
+    // 배경음악: 원본 크기·원래 속도·자동재생 끔 — v10에서 나던 소리 그대로다
+    expect(migrated.music).toEqual({ assetId: "bgm-1", volume: 1, speed: 1, autoplay: false });
+
+    const hero = migrated.sections.find((s) => s.type === "hero");
+    if (hero?.type !== "hero") throw new Error("hero가 없습니다");
+    expect(hero.content.overlay.text).toBe(""); // 빈 문구 = 사진 위에 아무것도 얹지 않는다
+    expect(hero.content.tagline).toBe("THE MARRIAGE OF"); // 콘텐츠 보존
+
+    const transport = migrated.sections.find((s) => s.type === "transportation");
+    if (transport?.type !== "transportation") throw new Error("transportation이 없습니다");
+    expect(transport.content.columns).toBe(2);
+    // 그림을 비워 두면 수단의 기본 이모지를 쓴다 — v10에서 보이던 것과 같다
+    expect(transport.content.items.every((item) => item.emoji === "")).toBe(true);
+    expect(transport.content.items[0].body).toContain("대방역"); // 콘텐츠 보존
   });
 
   it("마이그레이션은 이미 현재 모양인 값을 기본값으로 되돌리지 않는다", () => {
