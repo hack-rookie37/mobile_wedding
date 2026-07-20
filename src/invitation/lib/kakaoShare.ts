@@ -1,5 +1,5 @@
 import type { Wedding } from "../schema/document";
-import { formatWeddingDate } from "./format";
+import { coupleNames, formatWeddingDate } from "./format";
 
 // 카카오톡 공유 카드에 담을 내용 — 순수 함수라 SDK 없이도 검증할 수 있다.
 // 사진이 있으면 feed(큰 이미지 카드), 없으면 text로 보낸다.
@@ -24,8 +24,8 @@ export type KakaoSharePayload =
   | { objectType: "text"; text: string; link: KakaoLink };
 
 export function kakaoShareTitle(wedding: Wedding): string {
-  const names = [wedding.groom.name, wedding.bride.name].filter((n) => n !== "");
-  return names.length === 2 ? `${names[0]} ♥ ${names[1]} 결혼합니다` : "결혼합니다";
+  const couple = coupleNames(wedding);
+  return couple !== null ? `${couple} 결혼합니다` : "결혼합니다";
 }
 
 export function kakaoShareDescription(wedding: Wedding): string {

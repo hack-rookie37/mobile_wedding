@@ -1,7 +1,7 @@
 // '일정 저장' 버튼용 iCalendar(.ics) 생성 — 순수 문자열 조립.
 // 시간은 UTC로 변환해 기록한다(TZID 배포 없이 모든 캘린더 앱에서 동일하게 해석).
 
-import { formatWeddingDate } from "./format";
+import { coupleNames, formatWeddingDate } from "./format";
 import type { Wedding } from "../schema/document";
 
 export interface IcsEventInput {
@@ -55,9 +55,10 @@ const WEDDING_EVENT_MINUTES = 120;
 // 청첩장 문서 → 캘린더 이벤트. 서버 라우트와 테스트가 이 하나를 공유한다.
 export function weddingIcsEvent(wedding: Wedding): IcsEventInput {
   const { groom, bride, venue } = wedding;
+  const couple = coupleNames(wedding);
   return {
     uid: `${wedding.datetime}-${groom.name}-${bride.name}@marriage-invitation`,
-    title: `${groom.name} ♥ ${bride.name} 결혼식`,
+    title: couple !== null ? `${couple} 결혼식` : "결혼식",
     startIso: wedding.datetime,
     durationMinutes: WEDDING_EVENT_MINUTES,
     location: [venue.name, venue.hall, venue.address].filter(Boolean).join(" "),

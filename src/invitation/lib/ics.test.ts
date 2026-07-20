@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildIcs } from "./ics";
+import { createSampleDocument } from "../fixtures/sample";
+import { buildIcs, weddingIcsEvent } from "./ics";
 
 describe("buildIcs", () => {
   const event = {
     uid: "2026-11-14T14:00:00+09:00-김민준-이서연@marriage-invitation",
-    title: "김민준 ♥ 이서연 결혼식",
+    title: "김민준♥이서연 결혼식",
     startIso: "2026-11-14T14:00:00+09:00",
     durationMinutes: 120,
     location: "라온컨벤션 3층 그랜드볼룸 서울특별시 강남구 테헤란로 132",
@@ -34,5 +35,17 @@ describe("buildIcs", () => {
     });
     expect(ics).toContain("LOCATION:라온컨벤션\\, 3층\\; 그랜드볼룸");
     expect(ics).toContain("DESCRIPTION:첫 줄\\n둘째 줄");
+  });
+});
+
+describe("weddingIcsEvent", () => {
+  it("신랑·신부 이름을 하트로 붙인다", () => {
+    expect(weddingIcsEvent(createSampleDocument().wedding).title).toBe("이정훈♥양은진 결혼식");
+  });
+
+  it("이름이 비면 하트만 남은 제목을 만들지 않는다", () => {
+    const wedding = createSampleDocument().wedding;
+    const event = weddingIcsEvent({ ...wedding, groom: { ...wedding.groom, name: "" } });
+    expect(event.title).toBe("결혼식");
   });
 });

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { ResolveAsset } from "./assets/assetTypes";
-import { formatWeddingDate } from "./lib/format";
+import { coupleNames, formatWeddingDate } from "./lib/format";
 import { migrateDocument } from "./schema/migrate";
 import type { InvitationDocument } from "./schema/document";
 
@@ -95,8 +95,8 @@ export interface PublicPageMeta {
 
 export function publicPageMeta(payload: PublicInvitationPayload): PublicPageMeta {
   const { wedding, sections } = payload.doc;
-  const names = [wedding.groom.name, wedding.bride.name].filter((n) => n !== "");
-  const title = names.length === 2 ? `${names[0]} ♥ ${names[1]} 결혼합니다` : "모바일 청첩장";
+  const couple = coupleNames(wedding);
+  const title = couple !== null ? `${couple} 결혼합니다` : "모바일 청첩장";
 
   const venueLine = [wedding.venue.name, wedding.venue.hall].filter(Boolean).join(" ");
   const description = [formatWeddingDate(wedding.datetime), venueLine]

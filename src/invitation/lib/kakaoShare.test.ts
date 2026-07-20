@@ -9,7 +9,7 @@ describe("kakaoSharePayload", () => {
   it("사진이 있으면 큰 이미지 카드(feed)로 보낸다", () => {
     const payload = kakaoSharePayload(wedding, PAGE, "https://cdn.example.com/hero.jpg");
     if (payload.objectType !== "feed") throw new Error("feed가 아닙니다");
-    expect(payload.content.title).toBe("이정훈 ♥ 양은진 결혼합니다");
+    expect(payload.content.title).toBe("이정훈♥양은진 결혼합니다");
     expect(payload.content.description).toContain("공군호텔");
     expect(payload.content.imageUrl).toBe("https://cdn.example.com/hero.jpg");
     expect(payload.content.link).toEqual({ mobileWebUrl: PAGE, webUrl: PAGE });
@@ -19,7 +19,7 @@ describe("kakaoSharePayload", () => {
   it("사진이 없으면 text로 보낸다 — feed는 imageUrl이 필수라 카카오가 거부한다", () => {
     const payload = kakaoSharePayload(wedding, PAGE, null);
     if (payload.objectType !== "text") throw new Error("text가 아닙니다");
-    expect(payload.text).toContain("이정훈 ♥ 양은진 결혼합니다");
+    expect(payload.text).toContain("이정훈♥양은진 결혼합니다");
     expect(payload.link.mobileWebUrl).toBe(PAGE);
   });
 

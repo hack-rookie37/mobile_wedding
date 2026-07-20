@@ -1,4 +1,4 @@
-import type { Person } from "../schema/document";
+import type { Person, Wedding } from "../schema/document";
 
 // 표기 헬퍼 — 순수 함수 (renderer와 public metadata가 공유)
 
@@ -49,4 +49,11 @@ export function parentsLineOf(person: Person): ParentsLineParts | null {
     relation: person.familyRole ?? "",
     name: person.name,
   };
+}
+
+// "이정훈♥양은진" — 하트 양옆은 붙인다. 이름이 둘 다 있어야 의미가 있으므로
+// 하나라도 비면 null을 돌려주고, 무엇으로 대체할지는 호출자가 정한다.
+export function coupleNames(wedding: Wedding): string | null {
+  const names = [wedding.groom.name, wedding.bride.name].filter((name) => name !== "");
+  return names.length === 2 ? `${names[0]}♥${names[1]}` : null;
 }

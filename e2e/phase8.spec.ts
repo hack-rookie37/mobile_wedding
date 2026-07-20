@@ -215,7 +215,7 @@ test("공개 페이지: 복사·전화/문자·지도 링크·일정 저장·D-d
   const ics = await icsRes.text();
   expect(ics).toContain("BEGIN:VEVENT");
   expect(ics).toContain("DTSTART:20260919T032000Z"); // 서울 12:20 → UTC 03:20
-  expect(ics).toContain("SUMMARY:이정훈 ♥ 양은진 결혼식");
+  expect(ics).toContain("SUMMARY:이정훈♥양은진 결혼식");
   expect(ics).toContain("LOCATION:공군호텔 3층 그랜드볼룸 서울 영등포구 여의대방로 259");
 
   // ── 공유하기: 링크 복사 (맺음말이 아니라 전용 영역에 있다)
