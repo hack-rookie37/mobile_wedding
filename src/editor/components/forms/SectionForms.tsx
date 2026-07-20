@@ -2,16 +2,18 @@
 
 import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import { parseVideoUrl } from "@/invitation/lib/videoEmbed";
-import type {
-  CalendarSection,
-  ClosingSection,
-  ShareSection,
-  GreetingSection,
-  HeroSection,
-  RsvpCollect,
-  RsvpSection,
-  VenueSection,
-  VideoSection,
+import {
+  SECTION_LABEL_MAX,
+  type CalendarSection,
+  type ClosingSection,
+  type ShareSection,
+  type GreetingSection,
+  type HeroSection,
+  type RsvpCollect,
+  type RsvpSection,
+  type VenueSection,
+  type TitledSection,
+  type VideoSection,
 } from "@/invitation/schema/document";
 import { PHOTO_ASPECT_CSS } from "@/renderer/primitives/PhotoFrame";
 import { FieldLabel, SegmentedField, TextAreaField, TextField, ToggleField } from "@/ui/fields";
@@ -24,6 +26,26 @@ function usePatchContent(sectionId: string) {
   const dispatch = useEditor((s) => s.dispatch);
   return (patch: Record<string, unknown>) =>
     dispatch({ type: "updateSectionContent", sectionId, patch });
+}
+
+// 눈썹 라벨 — 제목 위에 작게 붙는 글자("INVITATION" 등). 모든 섹션이 공유하므로
+// 타입별 폼마다 두지 않고 '내용' 탭 맨 위에서 한 번만 그린다 (캔버스 순서와도 같다).
+export function SectionLabelField({ section }: { section: TitledSection }) {
+  const patch = usePatchContent(section.id);
+  return (
+    <div>
+      <TextField
+        label="눈썹 라벨"
+        value={section.content.label}
+        placeholder="비우면 표시하지 않습니다"
+        onChange={(label) => patch({ label })}
+      />
+      <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+        제목 위에 붙는 작은 글자입니다. 테마에 따라 대문자·소문자로 그려집니다. 최대{" "}
+        {SECTION_LABEL_MAX}자.
+      </p>
+    </div>
+  );
 }
 
 export function PhaseNote({ children }: { children: string }) {

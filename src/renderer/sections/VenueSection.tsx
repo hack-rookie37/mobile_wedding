@@ -88,7 +88,7 @@ export function VenueSection({
   if (variant === "mono") {
     return (
       <SectionShell section={section} index={index}>
-        <SectionHeader label="LOCATION" title={content.title} index={index} />
+        <SectionHeader label={content.label} title={content.title} index={index} />
         <VenueMap assetId={content.mapImageAssetId} />
         <div className="mt-7">
           <MetaList>
@@ -124,7 +124,7 @@ export function VenueSection({
   if (variant === "film") {
     return (
       <SectionShell section={section} index={index}>
-        <SectionHeader label="LOCATION" title={content.title} index={index} />
+        <SectionHeader label={content.label} title={content.title} index={index} />
         <VenueMap assetId={content.mapImageAssetId} />
         <div className="mt-7 space-y-1">
           <p className="font-(family-name:--canvas-font-heading) text-[length:calc(18px*var(--canvas-fs-heading))] leading-[1.5] font-semibold text-(--canvas-ink)">
@@ -176,7 +176,7 @@ export function VenueSection({
   return (
     <SectionShell section={section} index={index}>
       <div className="flex flex-col items-center text-center">
-        <SectionHeader label="LOCATION" title={content.title} index={index} />
+        <SectionHeader label={content.label} title={content.title} index={index} />
         <VenueMap assetId={content.mapImageAssetId} />
         <div className="mt-8">
           <p className="font-(family-name:--canvas-font-heading) text-[length:calc(19px*var(--canvas-fs-heading))] leading-[1.5] font-semibold text-(--canvas-ink)">

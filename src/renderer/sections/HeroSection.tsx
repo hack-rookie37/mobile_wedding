@@ -22,7 +22,7 @@ export function HeroSection({
   const venueLine = [wedding.venue.name, wedding.venue.hall].filter(Boolean).join(" ");
 
   return (
-    <SectionShell section={section} index={index} bleed flushTop>
+    <SectionShell section={section} index={index} flushTop>
       <FullBleedPhoto
         asset={content.photoAssetId !== null ? resolveAsset(content.photoAssetId) : null}
         alt="대표 사진"

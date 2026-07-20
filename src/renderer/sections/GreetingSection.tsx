@@ -48,7 +48,7 @@ export function GreetingSection({
   if (variant === "mono") {
     return (
       <SectionShell section={section} index={index}>
-        <SectionHeader label="INVITATION" title={content.title} index={index} />
+        <SectionHeader label={content.label} title={content.title} index={index} />
         <div className="mt-7">
           <BodyText text={content.body} align={content.align} />
         </div>
@@ -83,7 +83,7 @@ export function GreetingSection({
   if (variant === "film") {
     return (
       <SectionShell section={section} index={index}>
-        <SectionHeader label="INVITATION" title={content.title} index={index} />
+        <SectionHeader label={content.label} title={content.title} index={index} />
         <div className="mt-6">
           <BodyText text={content.body} align={content.align} />
         </div>
@@ -107,7 +107,7 @@ export function GreetingSection({
   return (
     <SectionShell section={section} index={index}>
       <div className="flex flex-col items-center">
-        <SectionHeader label="INVITATION" title={content.title} index={index} />
+        <SectionHeader label={content.label} title={content.title} index={index} />
         <div className="mt-8 w-full">
           <BodyText text={content.body} align={content.align} />
         </div>

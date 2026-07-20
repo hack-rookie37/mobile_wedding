@@ -321,6 +321,44 @@ describe("migrateDocument", () => {
     expect(strip.content.photoGapPx).toBe(2);
   });
 
+  it("v9 → v10: 눈썹 라벨과 좌우 여백이 그때까지 보이던 값 그대로 심긴다", () => {
+    const base = createSampleDocument();
+    const strip = (v10Section: (typeof base.sections)[number]) =>
+      v10Section.type === "gallery" ? { ...v10Section, layout: { variant: "strip" } } : v10Section;
+    const v9 = {
+      ...base,
+      schemaVersion: 9,
+      // v9 섹션에는 content.label도 style.paddingX도 없었다
+      sections: base.sections.map(strip).map((s) => ({
+        ...s,
+        style: Object.fromEntries(Object.entries(s.style).filter(([k]) => k !== "paddingX")),
+        content: Object.fromEntries(Object.entries(s.content).filter(([k]) => k !== "label")),
+      })),
+    };
+    const migrated = migrateDocument(v9);
+    const find = (type: string) => {
+      const section = migrated.sections.find((s) => s.type === type);
+      if (section === undefined) throw new Error(`${type}이(가) 없습니다`);
+      return section;
+    };
+
+    // 라벨: 렌더러가 박아 두었던 값 그대로. 맺음말만 눈썹이 없었다.
+    const greeting = find("greeting");
+    if (greeting.type !== "greeting") throw new Error("greeting이 아닙니다");
+    expect(greeting.content.label).toBe("INVITATION");
+    expect(greeting.content.body).toContain("서로가 마주 보며"); // 콘텐츠 보존
+    const closing = find("closing");
+    if (closing.type !== "closing") throw new Error("closing이 아닙니다");
+    expect(closing.content.label).toBe("");
+
+    // 좌우 여백: 전면 사진(메인·맺음말 photo)과 대형 스트립만 0이었다
+    expect(find("hero").style.paddingX).toBe(0);
+    expect(closing.style.paddingX).toBe(0); // 샘플의 맺음말은 photo variant다
+    expect(find("gallery").style.paddingX).toBe(0); // 위에서 strip으로 바꿔 두었다
+    expect(greeting.style.paddingX).toBe(24);
+    expect(find("venue").style.paddingX).toBe(24);
+  });
+
   it("마이그레이션은 이미 현재 모양인 값을 기본값으로 되돌리지 않는다", () => {
     // 옛 버전 번호가 찍혔지만 내용은 이미 최신 모양인 문서 — 두 번 태워도 결과가 같아야 한다.
     // 덮어쓰면 사용자가 맞춰 둔 사진 밝기·페이드가 조용히 초기화된다.
@@ -382,7 +420,13 @@ describe("rsvp 섹션", () => {
     const rsvp = doc.sections.find((s) => s.type === "rsvp");
     if (rsvp?.type !== "rsvp") throw new Error("rsvp가 없습니다");
     // 응답을 담을 자리가 없다 — 공개 스냅샷·AI projection에 응답이 실릴 수 없는 구조적 근거
-    expect(Object.keys(rsvp.content).sort()).toEqual(["body", "collect", "deadline", "title"]);
+    expect(Object.keys(rsvp.content).sort()).toEqual([
+      "body",
+      "collect",
+      "deadline",
+      "label",
+      "title",
+    ]);
   });
 
   it("rsvp 섹션이 2개면 거부한다 (A-06)", () => {
@@ -431,8 +475,8 @@ describe("video 섹션", () => {
       type: "video",
       visible: true,
       layout: { variant: "facade" },
-      style: { paddingY: "md", animation: "none" },
-      content: { title: "우리의 영상", url: "" },
+      style: { paddingY: "md", paddingX: 24, animation: "none" },
+      content: { title: "우리의 영상", label: "VIDEO", url: "" },
     });
     expect(documentSchema.safeParse(doc).success).toBe(true);
   });

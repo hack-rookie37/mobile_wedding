@@ -83,8 +83,15 @@ export const typographySchema = z.object({
   bodyPt: fontSizePtSchema, // 본문 글자 크기 — 그 외 전체
 });
 
+// 좌우 여백(px). 0이면 콘텐츠가 캔버스 가로를 꽉 채운다 — v10 전까지 전면 사진과
+// 대형 스트립만 누리던 모습이고, 나머지는 24px로 고정이었다.
+export const SECTION_PAD_X_MIN = 0;
+export const SECTION_PAD_X_MAX = 48;
+export const DEFAULT_SECTION_PAD_X = 24;
+
 export const sectionStyleSchema = z.object({
   paddingY: z.enum(["sm", "md", "lg"]),
+  paddingX: z.number().int().min(SECTION_PAD_X_MIN).max(SECTION_PAD_X_MAX),
   background: hexColorSchema.optional(), // 섹션 배경색
   color: hexColorSchema.optional(), // 섹션 글자색
   animation: z.enum(["none", "fade", "rise"]),
@@ -123,6 +130,15 @@ export const photoEffectsSchema = z.object({
   opacity: z.number().min(0.2).max(1), // 1 = 불투명
 });
 
+// 섹션 제목과 그 위의 눈썹 라벨. 12개 섹션이 공유한다 — 같은 지식을 열두 번 적지 않는다.
+// label은 빈 문자열이면 눈썹 없이 제목만 나온다 (맺음말의 기본값이 그렇다).
+export const SECTION_LABEL_MAX = 24;
+
+export const titledContentSchema = z.object({
+  title: z.string(),
+  label: z.string().max(SECTION_LABEL_MAX, `눈썹 라벨은 최대 ${SECTION_LABEL_MAX}자입니다`),
+});
+
 export const heroContentSchema = z.object({
   tagline: z.string(),
   photoAssetId: z.string().nullable(),
@@ -140,8 +156,7 @@ export const heroSectionSchema = sectionBase.extend({
   content: heroContentSchema,
 });
 
-export const greetingContentSchema = z.object({
-  title: z.string(),
+export const greetingContentSchema = titledContentSchema.extend({
   body: z.string(),
   showParents: z.boolean(),
   align: z.enum(["center", "left"]),
@@ -170,8 +185,7 @@ export const GALLERY_GAP_MIN = 0;
 export const GALLERY_GAP_MAX = 24;
 export const DEFAULT_GALLERY_GAP_PX = 6;
 
-export const galleryContentSchema = z.object({
-  title: z.string(),
+export const galleryContentSchema = titledContentSchema.extend({
   photos: z.array(galleryPhotoSchema).max(30, "갤러리 사진은 최대 30장입니다"),
   // 한 장씩 크게 보여주는 레이아웃(strip·slider)의 세로 비율 — 격자형은 고정 비율을 쓴다
   photoAspect: photoAspectSchema,
@@ -188,8 +202,7 @@ export const gallerySectionSchema = sectionBase.extend({
   content: galleryContentSchema,
 });
 
-export const venueContentSchema = z.object({
-  title: z.string(),
+export const venueContentSchema = titledContentSchema.extend({
   note: z.string(), // 주차·안내 등 자유 문구 (빈 문자열 허용)
   // 약도 이미지 (예식장 안내도 캡처 등) — 원본 비율 그대로 표시, crop 없음
   mapImageAssetId: z.string().nullable(),
@@ -204,8 +217,7 @@ export const venueSectionSchema = sectionBase.extend({
 });
 
 // MVP 동영상: YouTube·Vimeo 외부 URL만 저장한다 — 직접 업로드·트랜스코딩 없음 (ADR-017)
-export const videoContentSchema = z.object({
-  title: z.string(),
+export const videoContentSchema = titledContentSchema.extend({
   url: z.string(), // 빈 문자열 허용(작성 중) — 임베드 가능 여부는 videoEmbed.ts가 판별
 });
 
@@ -225,8 +237,7 @@ export const profileEntrySchema = z.object({
   intro: z.string(),
 });
 
-export const coupleProfileContentSchema = z.object({
-  title: z.string(),
+export const coupleProfileContentSchema = titledContentSchema.extend({
   groom: profileEntrySchema,
   bride: profileEntrySchema,
   showParents: z.boolean(),
@@ -239,8 +250,7 @@ export const coupleProfileSectionSchema = sectionBase.extend({
 });
 
 // 예식 캘린더 — 날짜·시간은 wedding.datetime 참조 (양력만, A-15)
-export const calendarContentSchema = z.object({
-  title: z.string(),
+export const calendarContentSchema = titledContentSchema.extend({
   showDday: z.boolean(),
   // badge: "D-N" 텍스트 / countdown: 일:시:분:초 실시간 (showDday가 켜져 있을 때만 의미)
   ddayStyle: z.enum(["badge", "countdown"]),
@@ -261,8 +271,7 @@ export const transportItemSchema = z.object({
   body: z.string(), // 멀티라인 안내 (개행 보존)
 });
 
-export const transportationContentSchema = z.object({
-  title: z.string(),
+export const transportationContentSchema = titledContentSchema.extend({
   items: z.array(transportItemSchema).max(10, "교통 안내는 최대 10개입니다"),
 });
 
@@ -283,8 +292,7 @@ export const contactEntrySchema = z.object({
   phone: z.string().meta({ sensitive: true }),
 });
 
-export const contactsContentSchema = z.object({
-  title: z.string(),
+export const contactsContentSchema = titledContentSchema.extend({
   entries: z.array(contactEntrySchema).max(12, "연락처는 최대 12개입니다"),
 });
 
@@ -302,8 +310,7 @@ export const giftAccountSchema = z.object({
   number: z.string().meta({ sensitive: true }),
 });
 
-export const giftAccountContentSchema = z.object({
-  title: z.string(),
+export const giftAccountContentSchema = titledContentSchema.extend({
   groomLabel: z.string(),
   brideLabel: z.string(),
   accounts: z.array(giftAccountSchema).max(8, "계좌는 최대 8개입니다"),
@@ -327,8 +334,7 @@ export const rsvpCollectSchema = z.object({
   message: z.boolean(), // 전하고 싶은 말
 });
 
-export const rsvpContentSchema = z.object({
-  title: z.string(),
+export const rsvpContentSchema = titledContentSchema.extend({
   body: z.string(), // 안내 문구
   deadline: z.iso.datetime({ offset: true }).nullable(), // null = 마감 없음
   collect: rsvpCollectSchema, // 성명·참석 여부·개인정보 동의는 항상 수집한다 (A-16)
@@ -343,8 +349,7 @@ export const rsvpSectionSchema = sectionBase.extend({
 });
 
 // 맺음말 — 마무리 문구 + 선택 사진 + 링크 공유 버튼
-export const closingContentSchema = z.object({
-  title: z.string(),
+export const closingContentSchema = titledContentSchema.extend({
   body: z.string(),
   photoAssetId: z.string().nullable(),
   photoFrame: photoFrameSchema.optional(),
@@ -361,8 +366,7 @@ export const closingSectionSchema = sectionBase.extend({
 
 // 공유하기 — 맺음말 아래에 따로 두는 마지막 영역.
 // 링크 복사는 어디서나 되고, 카카오톡 공유는 호스트가 카카오 JS 키를 넘겨줄 때만 나타난다.
-export const shareContentSchema = z.object({
-  title: z.string(),
+export const shareContentSchema = titledContentSchema.extend({
   body: z.string(),
 });
 
@@ -431,7 +435,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(9),
+    schemaVersion: z.literal(10),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,
@@ -501,4 +505,6 @@ export type ClosingSection = z.infer<typeof closingSectionSchema>;
 export type ShareSection = z.infer<typeof shareSectionSchema>;
 export type Section = z.infer<typeof sectionSchema>;
 export type SectionType = Section["type"];
+// 제목과 눈썹 라벨을 가진 섹션 — 메인만 빠진다 (전면 사진이라 제목 자리가 없다)
+export type TitledSection = Exclude<Section, HeroSection>;
 export type InvitationDocument = z.infer<typeof documentSchema>;

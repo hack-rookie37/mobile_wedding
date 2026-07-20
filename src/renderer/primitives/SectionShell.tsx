@@ -16,14 +16,12 @@ export function SectionShell({
   section,
   index,
   children,
-  bleed = false,
   flushTop = false,
   flushBottom = false,
 }: {
   section: Section;
   index: number;
   children: ReactNode;
-  bleed?: boolean; // 좌우 패딩 해제 — 콘텐츠가 캔버스 가로를 꽉 채운다 (자체 패딩은 섹션이 관리)
   flushTop?: boolean; // 상단 패딩 해제 — 콘텐츠가 캔버스 맨 위에 붙는다 (전면 사진 히어로)
   flushBottom?: boolean; // 하단 패딩 해제 — 콘텐츠가 캔버스 맨 아래에 붙는다 (전면 사진 맺음말)
 }) {
@@ -106,6 +104,9 @@ export function SectionShell({
         // 축약형이 나중에 적용돼 flushTop이 풀린다 — 항상 개별 속성으로만 쓴다
         paddingTop: flushTop ? 0 : `var(--canvas-pad-${section.style.paddingY})`,
         paddingBottom: flushBottom ? 0 : `var(--canvas-pad-${section.style.paddingY})`,
+        // 좌우 여백은 섹션 설정값 하나로 정해진다. 변수로 내려 두면 구분선과 섹션 내부
+        // (갤러리 헤더 등)가 같은 값을 따라간다 — 24px을 여러 곳에 다시 적지 않는다.
+        ...({ "--canvas-pad-x": `${section.style.paddingX}px` } as CSSProperties),
         ...(section.style.background ? { backgroundColor: section.style.background } : {}),
         // 섹션별 폰트·크기 override — CSS 변수를 지역 재정의하면 하위 텍스트가 전부 따라온다
         ...(section.style.fontFamily !== undefined && fontCssOf(section.style.fontFamily) !== null
@@ -137,15 +138,17 @@ export function SectionShell({
       {theme.variants.sectionDivider && index > 0 && (
         <div
           aria-hidden
-          className="absolute inset-x-6 top-0 h-px"
-          style={{ backgroundColor: "var(--canvas-line)" }}
+          className="absolute top-0 h-px"
+          style={{
+            insetInline: "var(--canvas-pad-x)",
+            backgroundColor: "var(--canvas-line)",
+          }}
         />
       )}
       <div
         ref={bodyRef}
         data-section-body
-        className={bleed ? undefined : "px-6"}
-        style={motionStyle}
+        style={{ paddingInline: "var(--canvas-pad-x)", ...motionStyle }}
       >
         {children}
       </div>

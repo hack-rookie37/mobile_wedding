@@ -83,7 +83,13 @@ describe("AI projection 경계 (RSVP raw data 미전달)", () => {
     const rsvp = redacted.sections.find((s) => s.type === "rsvp");
     if (rsvp?.type !== "rsvp") throw new Error("rsvp가 없습니다");
     // rsvp content는 폼 구성만 그대로 통과한다 — 응답 필드 자체가 없다
-    expect(Object.keys(rsvp.content).sort()).toEqual(["body", "collect", "deadline", "title"]);
+    expect(Object.keys(rsvp.content).sort()).toEqual([
+      "body",
+      "collect",
+      "deadline",
+      "label",
+      "title",
+    ]);
     const original = doc.sections.find((s) => s.id === rsvp.id);
     expect(rsvp).toEqual(original);
   });

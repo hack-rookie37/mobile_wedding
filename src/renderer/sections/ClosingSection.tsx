@@ -28,7 +28,7 @@ export function ClosingSection({ section, index }: { section: ClosingSectionData
 
   const text = (
     <>
-      <SectionHeader title={content.title} index={index} />
+      <SectionHeader label={content.label} title={content.title} index={index} />
       {content.body !== "" && (
         <div className="mt-8 w-full">
           <BodyText text={content.body} />
@@ -39,7 +39,7 @@ export function ClosingSection({ section, index }: { section: ClosingSectionData
 
   if (withPhoto && content.photoAssetId !== null) {
     return (
-      <SectionShell section={section} index={index} bleed flushTop flushBottom>
+      <SectionShell section={section} index={index} flushTop flushBottom>
         {/* 사진과 글자를 같은 grid 칸에 겹친다 — 글이 길어지면 칸이 늘어나므로 사진 밖으로 넘치지 않는다 */}
         <div className="grid">
           <div className="col-start-1 row-start-1">

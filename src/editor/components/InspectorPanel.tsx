@@ -15,6 +15,7 @@ import {
   GreetingForm,
   HeroForm,
   RsvpForm,
+  SectionLabelField,
   VenueForm,
   VideoForm,
 } from "./forms/SectionForms";
@@ -80,7 +81,9 @@ export function InspectorPanel() {
         )}
 
         {section && tab === "content" && (
-          <>
+          <div className="space-y-4">
+            {/* 눈썹 라벨은 모든 섹션이 같은 모양으로 갖는다 — 타입별 폼 위에서 한 번만 그린다 */}
+            {section.type !== "hero" && <SectionLabelField section={section} />}
             {section.type === "hero" && <HeroForm section={section} />}
             {section.type === "greeting" && <GreetingForm section={section} />}
             {section.type === "coupleProfile" && <CoupleProfileForm section={section} />}
@@ -96,7 +99,7 @@ export function InspectorPanel() {
             {section.type === "rsvp" && <RsvpForm section={section} />}
             {section.type === "closing" && <ClosingForm section={section} />}
             {section.type === "share" && <ShareForm section={section} />}
-          </>
+          </div>
         )}
         {section && tab === "layout" && <LayoutForm section={section} />}
         {section && tab === "style" && <StyleForm section={section} />}

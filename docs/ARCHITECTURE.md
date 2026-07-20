@@ -64,9 +64,9 @@ src/
 ## 3. 문서 모델 (ADR-002)
 
 ```ts
-// invitation/schema — 개념 스케치, 현재 v9 (실제는 Zod 스키마가 단일 진실)
+// invitation/schema — 개념 스케치, 현재 v10 (실제는 Zod 스키마가 단일 진실)
 interface InvitationDocument {
-  schemaVersion: 9;
+  schemaVersion: 10;
   wedding: {
     groom: Person;               // { name, familyRole?("아들"…), father?, mother? }
     bride: Person;               //   Parent = { name, deceased: boolean }
@@ -92,7 +92,8 @@ interface Section {
   visible: boolean;              // 숨기면 공개 projection에서 내용째 제거된다 (§8)
   content: SectionContent;       // 타입별 zod discriminated union
   layout: { variant: string };   // 타입별 enum — Phase 8 섹션은 모두 2개 이상 (예: contacts: inline|accordion)
-  style: { paddingY: "sm"|"md"|"lg"; background?: string; animation: "none"|"fade"|"rise" };
+  style: { paddingY: "sm"|"md"|"lg"; paddingX: number /*0~48px, 0=풀블리드*/;
+           background?: string; animation: "none"|"fade"|"rise" };
 }
 
 // Phase 8 content 요약 (전역 wedding 참조 원칙 유지 — 이름·일시·장소는 섹션에 중복 저장하지 않는다)
@@ -105,8 +106,11 @@ interface Section {
 //  rsvp (Phase 9): { title, body, deadline(nullable), collect: {side, companions, meal, phone, message} }
 //                 — 폼 구성만 저장. 게스트 응답은 문서가 아니라 rsvp_responses 테이블에 있다 (§9, ADR-021)
 //  venue 추가:    showMapButtons — 네이버·카카오·티맵 열기 (URL·딥링크만, 지도 API 없음 — invitation/lib/mapLinks.ts)
-//  gallery:       { title, photos[], photoAspect, photoCorner(sharp|rounded), photoGapPx(0~24) }
+//  gallery:       { title, label, photos[], photoAspect, photoCorner(sharp|rounded), photoGapPx(0~24) }
 //                 — 모서리·간격은 v9에서 테마가 아니라 문서가 정한다 (ADR-031, 모든 variant 공통)
+
+// 모든 섹션 content는 titledContentSchema(title + label)를 확장한다 — 메인(hero)만 예외다.
+// label은 제목 위 눈썹 글자이고, 빈 문자열이면 표시하지 않는다 (v10, ADR-032).
 
 // 사진 참조 (ADR-016) — 문서에는 assetId + 표시 metadata만. 원본·base64 금지.
 type GalleryPhoto = { assetId: string; alt?: string; caption?: string; frame?: PhotoFrame };

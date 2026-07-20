@@ -114,6 +114,35 @@ test("갤러리: 사진 모서리와 간격을 직접 고르면 미리보기에 
   await expect(page.getByText("저장됨")).toBeVisible({ timeout: 5000 });
 });
 
+test("섹션 눈썹 라벨과 좌우 여백을 직접 고칠 수 있다", async ({ page }) => {
+  await signUpFresh(page);
+  await createSample(page);
+
+  const greeting = canvas(page).locator('section:has-text("소중한 분들을 초대합니다")').last();
+
+  // 눈썹 라벨: 기본값은 렌더러가 박아 두었던 INVITATION이고, 고치면 곧바로 바뀐다
+  await selectSection(page, "인사말", "내용");
+  await expect(greeting.getByText("INVITATION")).toBeVisible();
+  await inspector(page).getByLabel("눈썹 라벨", { exact: true }).fill("우리의 초대");
+  await expect(greeting.getByText("우리의 초대")).toBeVisible();
+
+  // 비우면 눈썹 없이 제목만 남는다
+  await inspector(page).getByLabel("눈썹 라벨", { exact: true }).fill("");
+  await expect(greeting.getByText("우리의 초대")).toHaveCount(0);
+  await expect(greeting.getByText("소중한 분들을 초대합니다")).toBeVisible();
+
+  // 좌우 여백: 기본 24px, 0으로 두면 가로를 꽉 채운다
+  const body = greeting.locator("[data-section-body]");
+  const padding = () => body.evaluate((el) => getComputedStyle(el).paddingLeft);
+  expect(await padding()).toBe("24px");
+
+  await inspector(page).getByRole("button", { name: "레이아웃", exact: true }).click();
+  await inspector(page).getByLabel("좌우 여백", { exact: true }).fill("0");
+  await expect.poll(padding).toBe("0px");
+
+  await expect(page.getByText("저장됨")).toBeVisible({ timeout: 5000 });
+});
+
 test("오시는 길: 약도 이미지는 제목 바로 아래에 온다", async ({ page }) => {
   await signUpFresh(page);
   await createSample(page);

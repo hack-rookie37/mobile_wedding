@@ -2,7 +2,10 @@
 
 import clsx from "clsx";
 import { useState, type CSSProperties } from "react";
-import type { GallerySection as GallerySectionData } from "@/invitation/schema/document";
+import {
+  DEFAULT_SECTION_PAD_X,
+  type GallerySection as GallerySectionData,
+} from "@/invitation/schema/document";
 import { PHOTO_ASPECT_CSS, PhotoFrame } from "../primitives/PhotoFrame";
 import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
@@ -145,12 +148,13 @@ export function GallerySection({ section, index }: { section: GallerySectionData
     </div>
   );
 
-  // strip은 풀블리드 — 섹션 패딩을 해제하고 헤더·캡션만 자체 패딩을 준다
-  const bleed = kind === "strip";
+  // 좌우 여백을 0으로 두면 사진은 캔버스를 꽉 채우지만 제목까지 가장자리에 붙으면
+  // 읽기 어렵다 — 헤더에만 기본 여백을 돌려준다 (대형 스트립의 기본 모습이다).
+  const edgeToEdge = section.style.paddingX === 0;
   return (
-    <SectionShell section={section} index={index} bleed={bleed}>
-      <div className={bleed ? "px-6" : undefined}>
-        <SectionHeader label="GALLERY" title={content.title} index={index} />
+    <SectionShell section={section} index={index}>
+      <div style={edgeToEdge ? { paddingInline: `${DEFAULT_SECTION_PAD_X}px` } : undefined}>
+        <SectionHeader label={content.label} title={content.title} index={index} />
       </div>
       <div className="mt-8">{body}</div>
       {lightboxIndex !== null && (

@@ -1,20 +1,26 @@
 import { nanoid } from "nanoid";
-import type { InvitationDocument, SectionStyle } from "../schema/document";
+import {
+  DEFAULT_SECTION_PAD_X,
+  type InvitationDocument,
+  type SectionStyle,
+} from "../schema/document";
 
 export const SAMPLE_PROJECT_TITLE = "정훈 · 은진 결혼식";
 
 const style = (
   paddingY: SectionStyle["paddingY"],
   animation: SectionStyle["animation"] = "none",
+  paddingX: number = DEFAULT_SECTION_PAD_X, // 0 = 좌우를 꽉 채운다 (전면 사진)
 ): SectionStyle => ({
   paddingY,
+  paddingX,
   animation,
 });
 
 // 실제 한국 청첩장 관례를 따른 샘플 문서 (연락처·계좌만 가상)
 export function createSampleDocument(): InvitationDocument {
   return {
-    schemaVersion: 9,
+    schemaVersion: 10,
     wedding: {
       groom: {
         name: "이정훈",
@@ -45,7 +51,7 @@ export function createSampleDocument(): InvitationDocument {
         type: "hero",
         visible: true,
         layout: { variant: "photoFull" },
-        style: style("lg"),
+        style: style("lg", "none", 0),
         content: {
           tagline: "THE MARRIAGE OF",
           photoAssetId: "hero-main",
@@ -63,6 +69,7 @@ export function createSampleDocument(): InvitationDocument {
         style: style("md", "rise"),
         content: {
           title: "소중한 분들을 초대합니다",
+          label: "INVITATION",
           body: "서로가 마주 보며 다져온 사랑을\n이제 함께 한곳을 바라보며\n걸어갈 수 있는 큰 사랑으로 키우고자 합니다.\n\n저희 두 사람이 사랑의 이름으로\n지켜나갈 수 있도록\n앞날을 축복해 주시면 감사하겠습니다.",
           showParents: true,
           align: "center",
@@ -76,6 +83,7 @@ export function createSampleDocument(): InvitationDocument {
         style: style("md", "rise"),
         content: {
           title: "신랑과 신부를 소개합니다",
+          label: "COUPLE",
           groom: {
             photoAssetId: "gallery-04",
             intro: "웃음이 많은 사람입니다.\n은진이의 하루를 가장 재밌게 만들어 주고 싶습니다.",
@@ -93,7 +101,12 @@ export function createSampleDocument(): InvitationDocument {
         visible: true,
         layout: { variant: "grid" },
         style: style("md", "fade"),
-        content: { title: "그날을 기다립니다", showDday: true, ddayStyle: "countdown" },
+        content: {
+          title: "그날을 기다립니다",
+          label: "CALENDAR",
+          showDday: true,
+          ddayStyle: "countdown",
+        },
       },
       {
         id: nanoid(),
@@ -103,6 +116,7 @@ export function createSampleDocument(): InvitationDocument {
         style: style("md", "rise"),
         content: {
           title: "우리의 순간들",
+          label: "GALLERY",
           photoAspect: "3/4",
           photoCorner: "rounded",
           photoGapPx: 6,
@@ -124,6 +138,7 @@ export function createSampleDocument(): InvitationDocument {
         style: style("lg", "fade"),
         content: {
           title: "오시는 길",
+          label: "LOCATION",
           note: "식장 입구가 협소하니 안내 직원의 안내를 따라주세요.",
           mapImageAssetId: null,
           showMapButtons: true,
@@ -137,6 +152,7 @@ export function createSampleDocument(): InvitationDocument {
         style: style("md", "rise"),
         content: {
           title: "교통 안내",
+          label: "TRANSPORT",
           items: [
             {
               icon: "subway",
@@ -165,6 +181,7 @@ export function createSampleDocument(): InvitationDocument {
         style: style("md", "rise"),
         content: {
           title: "연락하기",
+          label: "CONTACT",
           entries: [
             { side: "groom", label: "신랑", name: "이정훈", phone: "010-1234-5678" },
             { side: "groom", label: "아버지", name: "이길재", phone: "010-2345-6789" },
@@ -181,6 +198,7 @@ export function createSampleDocument(): InvitationDocument {
         style: style("md", "rise"),
         content: {
           title: "마음 전하실 곳",
+          label: "REGISTRY",
           groomLabel: "신랑측",
           brideLabel: "신부측",
           accounts: [
@@ -198,6 +216,7 @@ export function createSampleDocument(): InvitationDocument {
         style: style("md", "rise"),
         content: {
           title: "참석 의사 전달",
+          label: "RSVP",
           body: "한 분 한 분 소중히 모실 수 있도록\n참석 의사를 미리 전해 주시면 감사하겠습니다.",
           deadline: null,
           collect: { side: true, companions: true, meal: true, phone: true, message: true },
@@ -208,9 +227,10 @@ export function createSampleDocument(): InvitationDocument {
         type: "closing",
         visible: true,
         layout: { variant: "photo" },
-        style: style("lg", "fade"),
+        style: style("lg", "fade", 0),
         content: {
           title: "감사합니다",
+          label: "",
           body: "저희 두 사람의 시작을 함께해 주셔서 감사합니다.\n주신 마음 오래 간직하며 예쁘게 살겠습니다.",
           photoAssetId: "gallery-06",
           photoAspect: "4/5",
@@ -227,6 +247,7 @@ export function createSampleDocument(): InvitationDocument {
         style: style("md", "fade"),
         content: {
           title: "청첩장 공유하기",
+          label: "SHARE",
           body: "이 청첩장을 소중한 분들께 전해 주세요.",
         },
       },

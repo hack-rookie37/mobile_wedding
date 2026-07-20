@@ -531,7 +531,7 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
 
   return (
     <SectionShell section={section} index={index}>
-      <SectionHeader label="RSVP" title={content.title} index={index} />
+      <SectionHeader label={content.label} title={content.title} index={index} />
       {content.body !== "" && (
         <p className="mt-5 text-center text-[length:calc(14px*var(--canvas-fs))] leading-[1.85] whitespace-pre-line text-(--canvas-ink-soft)">
           {content.body}

@@ -1,6 +1,12 @@
-import { DEFAULT_GALLERY_GAP_PX, documentSchema, type InvitationDocument } from "./document";
+import {
+  DEFAULT_GALLERY_GAP_PX,
+  DEFAULT_SECTION_PAD_X,
+  documentSchema,
+  type InvitationDocument,
+} from "./document";
+import { DEFAULT_SECTION_LABELS } from "./sectionDefaults";
 
-export const CURRENT_SCHEMA_VERSION = 9;
+export const CURRENT_SCHEMA_VERSION = 10;
 
 // v6의 글자 크기 3단계 → v7의 pt 값. 기존 배율(0.93·1·1.08)에 가장 가까운 정수 pt다.
 const V6_SCALE_TO_PT: Record<string, number> = { sm: 10, md: 11, lg: 12 };
@@ -238,7 +244,54 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
       }),
     };
   },
+  // v9 → v10: 섹션 눈썹 라벨과 좌우 여백을 편집 가능한 값으로 승격 (요청된 표시 개선)
+  //  * 눈썹 라벨("GALLERY" 등)은 렌더러가 타입별로 박아 두고 있었다 — 섹션 이름과
+  //    영문 라벨이 어긋나던 자리(인사말 = INVITATION)도 이제 직접 고칠 수 있다.
+  //  * 좌우 여백은 24px 고정이거나 전면 사진·대형 스트립만 0이었다 — 숫자 하나로 합쳤다.
+  //  두 값 모두 그때까지 화면에 보이던 값을 그대로 심으므로 기존 문서의 모습은 그대로다.
+  9: (raw) => {
+    const doc = raw as {
+      sections?: Array<{
+        type?: unknown;
+        layout?: { variant?: unknown };
+        style?: { paddingX?: unknown };
+        content?: { label?: unknown };
+      }>;
+    };
+    return {
+      ...(raw as object),
+      schemaVersion: 10,
+      sections: (doc.sections ?? []).map((section) => {
+        const type = String(section.type);
+        const style = {
+          ...section.style,
+          paddingX: section.style?.paddingX ?? (wasEdgeToEdge(section) ? 0 : DEFAULT_SECTION_PAD_X),
+        };
+        // 메인만 눈썹 라벨이 없다 — 제목 자리 자체가 없는 전면 사진이다
+        if (type === "hero") return { ...section, style };
+        return {
+          ...section,
+          style,
+          content: {
+            ...section.content,
+            label:
+              section.content?.label ??
+              DEFAULT_SECTION_LABELS[type as keyof typeof DEFAULT_SECTION_LABELS] ??
+              "",
+          },
+        };
+      }),
+    };
+  },
 };
+
+// v9까지 좌우 여백이 0이던 자리: 전면 사진(메인·맺음말 photo)과 갤러리 대형 스트립.
+function wasEdgeToEdge(section: { type?: unknown; layout?: { variant?: unknown } }): boolean {
+  if (section.type === "hero") return true;
+  if (section.type === "closing") return section.layout?.variant === "photo";
+  if (section.type === "gallery") return section.layout?.variant === "strip";
+  return false;
+}
 
 // v8까지 레이아웃별로 굳어 있던 간격(px) — 웜 에디토리얼 기준이다
 const V8_GALLERY_GAP: Record<string, number> = {

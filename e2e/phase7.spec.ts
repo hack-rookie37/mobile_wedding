@@ -268,7 +268,10 @@ test("공개 페이지 스크린샷: 360/390/430 + 데스크톱 중앙 정렬", 
     await anonPage.goto(`/i/${slug}`);
     await expect(anonPage.getByText("스크린샷 검증 문구")).toBeVisible();
     // reduced motion: 뷰포트 밖 섹션도 즉시 완전 표시된 뒤에 촬영 (SSR hydration 포함 검증)
-    await expect(anonPage.locator("[data-section-id] > div.px-6").last()).toHaveCSS("opacity", "1");
+    await expect(anonPage.locator("[data-section-id] > [data-section-body]").last()).toHaveCSS(
+      "opacity",
+      "1",
+    );
     await anonPage.screenshot({
       path: `screenshots/publish/public-${width}.png`,
       fullPage: true,

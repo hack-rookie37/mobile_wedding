@@ -26,7 +26,7 @@ test.describe("테마 스크린샷 (reduced motion)", () => {
         await page.goto(`/fixture/${theme}/base`);
         await expect(page.getByText("서울 영등포구 여의대방로 259")).toBeVisible();
         // reduced motion: 뷰포트 밖 마지막 섹션 본문도 즉시 완전 표시 (모션 스킵)
-        const lastBody = page.locator("[data-section-id] > div.px-6").last();
+        const lastBody = page.locator("[data-section-id] > [data-section-body]").last();
         await expect(lastBody).toHaveCSS("opacity", "1");
         await page.screenshot({
           path: `screenshots/themes/${theme}-${width}.png`,
@@ -90,7 +90,7 @@ test.describe("진입 모션 (일반 모드)", () => {
     await page.goto("/fixture/film-diary/base");
     await expect(page.getByText("서울 영등포구 여의대방로 259")).toBeAttached();
 
-    const lastBody = page.locator("[data-section-id] > div.px-6").last();
+    const lastBody = page.locator("[data-section-id] > [data-section-body]").last();
     await expect(lastBody).toHaveCSS("opacity", "0"); // 아직 미진입 — 숨김 상태
     await lastBody.scrollIntoViewIfNeeded();
     await expect(lastBody).toHaveCSS("opacity", "1", { timeout: 3000 }); // 진입 후 표시
@@ -100,7 +100,7 @@ test.describe("진입 모션 (일반 모드)", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/fixture/modern-monochrome/base");
     await expect(page.locator("[data-invitation-root]")).toBeVisible();
-    const lastBody = page.locator("[data-section-id] > div.px-6").last();
+    const lastBody = page.locator("[data-section-id] > [data-section-body]").last();
     await expect(lastBody).toHaveCSS("opacity", "1");
   });
 });

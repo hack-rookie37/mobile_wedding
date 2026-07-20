@@ -39,7 +39,7 @@ export function TransportationSection({
 
   return (
     <SectionShell section={section} index={index}>
-      <SectionHeader label="TRANSPORT" title={content.title} index={index} />
+      <SectionHeader label={content.label} title={content.title} index={index} />
       {content.items.length === 0 && mode === "editor-edit" && (
         <p className="mt-6 text-center text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)">
           오른쪽 패널에서 교통 안내 항목을 추가하세요.

@@ -3,6 +3,8 @@
 import {
   GALLERY_GAP_MAX,
   GALLERY_GAP_MIN,
+  SECTION_PAD_X_MAX,
+  SECTION_PAD_X_MIN,
   type ClosingSection,
   type FontId,
   type GallerySection,
@@ -131,6 +133,30 @@ function GalleryPhotoFields({ section }: { section: GallerySection }) {
   );
 }
 
+// 좌우 여백 — 0이면 콘텐츠가 캔버스 가로를 꽉 채운다.
+// v10 전까지 전면 사진과 대형 스트립만 0이었고 나머지는 24px 고정이었다 (ADR-032).
+function PaddingXField({ section }: { section: Section }) {
+  const dispatch = useEditor((s) => s.dispatch);
+  return (
+    <div>
+      <NumberField
+        label="좌우 여백"
+        value={section.style.paddingX}
+        min={SECTION_PAD_X_MIN}
+        max={SECTION_PAD_X_MAX}
+        step={1}
+        unit="px"
+        onChange={(paddingX) =>
+          dispatch({ type: "updateSectionSettings", sectionId: section.id, patch: { paddingX } })
+        }
+      />
+      <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+        0으로 두면 화면 가로를 꽉 채웁니다.
+      </p>
+    </div>
+  );
+}
+
 // '레이아웃' 탭 — setSectionVariant (content·asset은 엔진이 보존을 보장)
 export function LayoutForm({ section }: { section: Section }) {
   const dispatch = useEditor((s) => s.dispatch);
@@ -138,26 +164,35 @@ export function LayoutForm({ section }: { section: Section }) {
 
   // 메인은 레이아웃이 하나뿐이다 — 이 탭에서는 전면 사진 연출을 고른다
   if (section.type === "hero") {
-    return <PhotoEffectsFields section={section} />;
-  }
-  if (options.length === 0) {
-    return <InfoNote>이 섹션은 단일 레이아웃을 사용합니다.</InfoNote>;
+    return (
+      <div className="space-y-4">
+        <PhotoEffectsFields section={section} />
+        <PaddingXField section={section} />
+      </div>
+    );
   }
   return (
     <div className="space-y-4">
-      <SegmentedField
-        label="레이아웃"
-        value={section.layout.variant}
-        options={options}
-        onChange={(variant) =>
-          dispatch({ type: "setSectionVariant", sectionId: section.id, variant })
-        }
-      />
+      {options.length > 0 ? (
+        <SegmentedField
+          label="레이아웃"
+          value={section.layout.variant}
+          options={options}
+          onChange={(variant) =>
+            dispatch({ type: "setSectionVariant", sectionId: section.id, variant })
+          }
+        />
+      ) : (
+        <InfoNote>이 섹션은 단일 레이아웃을 사용합니다.</InfoNote>
+      )}
       {section.type === "gallery" && <GalleryPhotoFields section={section} />}
       {section.type === "closing" && section.layout.variant === "photo" && (
         <PhotoEffectsFields section={section} />
       )}
-      <InfoNote>레이아웃을 바꿔도 입력한 내용과 사진은 그대로 유지됩니다.</InfoNote>
+      <PaddingXField section={section} />
+      {options.length > 0 && (
+        <InfoNote>레이아웃을 바꿔도 입력한 내용과 사진은 그대로 유지됩니다.</InfoNote>
+      )}
     </div>
   );
 }

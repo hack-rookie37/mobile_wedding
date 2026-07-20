@@ -87,7 +87,7 @@ export function VideoSection({ section, index }: { section: VideoSectionData; in
 
   return (
     <SectionShell section={section} index={index}>
-      <SectionHeader label="VIDEO" title={content.title} index={index} />
+      <SectionHeader label={content.label} title={content.title} index={index} />
       <div
         className="mt-8 overflow-hidden"
         style={{ aspectRatio: "16 / 9", borderRadius: "var(--canvas-radius-photo)" }}

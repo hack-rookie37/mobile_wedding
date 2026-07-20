@@ -110,7 +110,7 @@ export function ContactsSection({
 
   return (
     <SectionShell section={section} index={index}>
-      <SectionHeader label="CONTACT" title={content.title} index={index} />
+      <SectionHeader label={content.label} title={content.title} index={index} />
       {content.entries.length === 0 && mode === "editor-edit" && (
         <p className="mt-6 text-center text-[length:calc(12px*var(--canvas-fs))] text-(--canvas-ink-soft)">
           오른쪽 패널에서 연락처를 추가하세요.

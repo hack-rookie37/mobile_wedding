@@ -75,7 +75,7 @@ export function ShareSection({
   return (
     <SectionShell section={section} index={index}>
       <div className="flex flex-col items-center text-center">
-        <SectionHeader label="SHARE" title={content.title} index={index} />
+        <SectionHeader label={content.label} title={content.title} index={index} />
         {content.body !== "" && (
           <div className="mt-6 w-full">
             <BodyText text={content.body} />

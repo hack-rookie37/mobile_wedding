@@ -31,7 +31,13 @@ describe("buildAiProjection — sanitized project projection (PRODUCT_SPEC §9)"
     const projection = buildAiProjection(createSampleDocument(), []);
     const rsvp = projection.doc.sections.find((s) => s.type === "rsvp");
     if (rsvp?.type !== "rsvp") throw new Error("rsvp가 없습니다");
-    expect(Object.keys(rsvp.content).sort()).toEqual(["body", "collect", "deadline", "title"]);
+    expect(Object.keys(rsvp.content).sort()).toEqual([
+      "body",
+      "collect",
+      "deadline",
+      "label",
+      "title",
+    ]);
   });
 
   it("원본 문서를 변경하지 않는다", () => {

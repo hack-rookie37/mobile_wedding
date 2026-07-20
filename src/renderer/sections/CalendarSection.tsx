@@ -179,7 +179,7 @@ export function CalendarSection({
 
   return (
     <SectionShell section={section} index={index}>
-      <SectionHeader label="CALENDAR" title={content.title} index={index} />
+      <SectionHeader label={content.label} title={content.title} index={index} />
       <div className="mt-8">
         {layout.variant === "grid" ? (
           <>

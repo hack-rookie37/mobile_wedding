@@ -78,7 +78,7 @@ export function CoupleProfileSection({
 
   return (
     <SectionShell section={section} index={index}>
-      <SectionHeader label="COUPLE" title={content.title} index={index} />
+      <SectionHeader label={content.label} title={content.title} index={index} />
       <div className={clsx("mt-8", stacked ? "space-y-8" : "flex gap-5")}>
         <ProfileCard
           roleLabel="신랑"
