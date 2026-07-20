@@ -13,7 +13,13 @@ import {
   type Section,
 } from "@/invitation/schema/document";
 import { PT_MAX, PT_MIN } from "@/invitation/schema/themes";
-import { FieldLabel, NumberField, SegmentedField, ToggleField } from "@/ui/fields";
+import {
+  ColorOverrideField,
+  FieldLabel,
+  NumberField,
+  SegmentedField,
+  ToggleField,
+} from "@/ui/fields";
 import { useEditor } from "../../EditorStoreContext";
 import { SECTION_VARIANT_OPTIONS } from "../../sectionMeta";
 import { useFontOptions } from "./FontFields";
@@ -233,39 +239,6 @@ function SectionOverride({
   );
 }
 
-function ColorOverride({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string | undefined;
-  onChange: (value: string | undefined) => void;
-}) {
-  return (
-    <div>
-      <FieldLabel>{label}</FieldLabel>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          aria-label={label}
-          value={value ?? "#222222"}
-          onChange={(e) => onChange(e.target.value)}
-          className="h-8 w-10 shrink-0 cursor-pointer rounded-md border border-tool-border bg-white p-0.5"
-        />
-        <button
-          type="button"
-          disabled={value === undefined}
-          onClick={() => onChange(undefined)}
-          className="text-[12px] text-tool-ink-soft underline underline-offset-2 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40"
-        >
-          전체 설정 따르기
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // '스타일' 탭 — updateSectionSettings (여백·진입 애니메이션·섹션별 글꼴·색)
 export function StyleForm({ section }: { section: Section }) {
   const dispatch = useEditor((s) => s.dispatch);
@@ -321,9 +294,11 @@ export function StyleForm({ section }: { section: Section }) {
         fallback={typography.bodyPt}
         onChange={(bodyPt) => patch({ bodyPt })}
       />
-      <ColorOverride
+      <ColorOverrideField
         label="글자색 (이 섹션만)"
         value={section.style.color}
+        fallback="#222222"
+        resetLabel="전체 설정 따르기"
         onChange={(color) => patch({ color })}
       />
       <InfoNote>모던 모노크롬 테마는 모션을 사용하지 않아 애니메이션이 적용되지 않습니다.</InfoNote>
@@ -339,38 +314,19 @@ export function AdvancedForm({ section }: { section: Section }) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <FieldLabel>배경색 (테마 배경 대신 사용)</FieldLabel>
-        <div className="flex items-center gap-2">
-          <input
-            type="color"
-            aria-label="배경색 선택"
-            value={background ?? "#ffffff"}
-            onChange={(e) =>
-              dispatch({
-                type: "updateSectionSettings",
-                sectionId: section.id,
-                patch: { background: e.target.value },
-              })
-            }
-            className="h-8 w-10 cursor-pointer rounded-md border border-tool-border bg-white p-0.5"
-          />
-          <button
-            type="button"
-            disabled={background === undefined}
-            onClick={() =>
-              dispatch({
-                type: "updateSectionSettings",
-                sectionId: section.id,
-                patch: { background: undefined },
-              })
-            }
-            className="text-[12px] text-tool-ink-soft underline underline-offset-2 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40"
-          >
-            테마 기본값으로
-          </button>
-        </div>
-      </div>
+      <ColorOverrideField
+        label="배경색 (테마 배경 대신 사용)"
+        value={background}
+        fallback="#ffffff"
+        resetLabel="테마 기본값으로"
+        onChange={(value) =>
+          dispatch({
+            type: "updateSectionSettings",
+            sectionId: section.id,
+            patch: { background: value },
+          })
+        }
+      />
 
       {isHero ? (
         <InfoNote>메인 섹션은 항상 표시됩니다.</InfoNote>

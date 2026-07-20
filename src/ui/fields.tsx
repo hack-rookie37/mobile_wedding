@@ -73,6 +73,73 @@ export function TextAreaField({
   );
 }
 
+const swatchClass =
+  "h-8 w-10 shrink-0 cursor-pointer rounded-md border border-tool-border bg-white p-0.5";
+
+// 색 고르기 — 반드시 값이 있는 자리 (비우는 뜻이 없는 색)
+export function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const id = useId();
+  return (
+    <div>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <input
+        id={id}
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={swatchClass}
+      />
+    </div>
+  );
+}
+
+// 색 덮어쓰기 — 비우면 상위 설정(테마·전체)을 따른다.
+// fallback은 '따르는 중'일 때 스와치에 보여 줄 색이고, resetLabel은 무엇을 따르게 되는지 말한다.
+export function ColorOverrideField({
+  label,
+  value,
+  fallback,
+  resetLabel,
+  onChange,
+}: {
+  label: string;
+  value: string | undefined;
+  fallback: string;
+  resetLabel: string;
+  onChange: (value: string | undefined) => void;
+}) {
+  return (
+    <div>
+      <FieldLabel>{label}</FieldLabel>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          aria-label={label}
+          value={value ?? fallback}
+          onChange={(e) => onChange(e.target.value)}
+          className={swatchClass}
+        />
+        <button
+          type="button"
+          disabled={value === undefined}
+          onClick={() => onChange(undefined)}
+          className="text-[12px] text-tool-ink-soft underline underline-offset-2 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-40"
+        >
+          {resetLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function ToggleField({
   label,
   checked,
