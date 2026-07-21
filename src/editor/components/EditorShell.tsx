@@ -67,12 +67,14 @@ function EditorChrome({
   initialRev,
   persistence,
   ai,
+  onPublishChange,
 }: {
   projectId: string;
   title: string;
   initialRev: number;
   persistence: ProjectPersistence;
   ai: AiAssistantPort;
+  onPublishChange?: (slug: string | null) => Promise<void>;
 }) {
   const store = useEditorStoreHandle();
   const [revisionsOpen, setRevisionsOpen] = useState(false);
@@ -160,6 +162,7 @@ function EditorChrome({
           projectId={projectId}
           currentRev={publishOpenRev}
           onClose={() => setPublishOpenRev(null)}
+          onPublishChange={onPublishChange}
         />
       )}
       {aiOpen && (
@@ -200,11 +203,14 @@ export function EditorShell({
   persistence,
   assetStore,
   ai,
+  onPublishChange,
 }: {
   projectId: string;
   persistence: ProjectPersistence;
   assetStore: AssetStore;
   ai: AiAssistantPort;
+  // 발행 상태가 바뀔 때 app이 발행 캐시를 무효화하도록 주입받는 콜백 (ADR-040)
+  onPublishChange?: (slug: string | null) => Promise<void>;
 }) {
   const load = useCallback(async (): Promise<LoadedEditor | null> => {
     const loaded = await persistence.load(projectId);
@@ -236,6 +242,7 @@ export function EditorShell({
               initialRev={state.value.initialRev}
               persistence={persistence}
               ai={ai}
+              onPublishChange={onPublishChange}
             />
           </AssetLibraryProvider>
         </EditorStoreProvider>

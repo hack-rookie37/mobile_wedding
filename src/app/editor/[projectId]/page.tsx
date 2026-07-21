@@ -7,6 +7,7 @@ import { HttpAiAssistant } from "@/server/ai/httpAssistant";
 import { SupabaseAssetStore } from "@/server/supabase/assetStore";
 import { getBrowserSupabase } from "@/server/supabase/browserClient";
 import { SupabasePersistence } from "@/server/supabase/persistence";
+import { revalidatePublished } from "@/app/_shared/revalidatePublished";
 
 // Supabase 구현체는 여기(app)에서 조립해 주입한다 — editor 모듈은 Supabase를 모른다 (ADR-018)
 export default function EditorPage({ params }: { params: Promise<{ projectId: string }> }) {
@@ -27,6 +28,7 @@ export default function EditorPage({ params }: { params: Promise<{ projectId: st
       persistence={deps.persistence}
       assetStore={deps.assetStore}
       ai={deps.ai}
+      onPublishChange={revalidatePublished}
     />
   );
 }

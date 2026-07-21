@@ -59,11 +59,15 @@ export function PublishPanel({
   projectId,
   currentRev,
   onClose,
+  onPublishChange,
 }: {
   persistence: ProjectPersistence;
   projectId: string;
   currentRev: number; // 현재 draft의 rev — 발행본과 다르면 '재발행 필요' 안내
   onClose: () => void;
+  // 발행/재발행/중단 직후 호출 — app 계층이 발행 스냅샷 캐시를 무효화한다 (ADR-040).
+  // editor는 app을 import할 수 없어 콜백으로 주입받는다 (경계 규칙).
+  onPublishChange?: (slug: string | null) => Promise<void>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [previewLink, setPreviewLink] = useState<PreviewLink | null>(null);
@@ -285,6 +289,8 @@ export function PublishPanel({
                       );
                       return;
                     }
+                    // 발행 스냅샷 캐시를 즉시 새로고침 — 안 하면 하객에게 옛 내용이 남는다
+                    await onPublishChange?.(outcome.slug);
                     await refresh();
                   })
                 }
@@ -299,6 +305,8 @@ export function PublishPanel({
                   onClick={() =>
                     run(async () => {
                       await persistence.unpublish(projectId);
+                      // 발행 중단도 캐시 무효화 — 안 하면 내린 뒤에도 잠시 열린다
+                      await onPublishChange?.(publishState?.slug ?? null);
                       await refresh();
                     })
                   }

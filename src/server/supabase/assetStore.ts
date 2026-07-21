@@ -143,7 +143,15 @@ export class SupabaseAssetStore implements AssetStore {
     const storagePath = `projects/${this.projectId}/${contentHash}.${EXTENSIONS[contentType]}`;
     const bucket = this.client.storage.from(PHOTOS_BUCKET);
 
-    const originalUpload = await bucket.upload(storagePath, stored, { contentType, upsert: true });
+    // cacheControl 1년 — 경로가 content-hash라 내용이 바뀌면 경로도 바뀐다(immutable 안전).
+    // 미설정 시 Supabase 기본이 1시간이라, 프록시가 없는 소유자 미리보기·발행 스냅샷 재요청도
+    // 별도 캐시 egress 버킷으로 흘러 무료 한도를 덜 먹는다.
+    const CACHE_ONE_YEAR = "31536000";
+    const originalUpload = await bucket.upload(storagePath, stored, {
+      contentType,
+      upsert: true,
+      cacheControl: CACHE_ONE_YEAR,
+    });
     if (originalUpload.error) {
       throw new AssetStorageError(`업로드 실패: ${originalUpload.error.message}`);
     }
@@ -155,6 +163,7 @@ export class SupabaseAssetStore implements AssetStore {
       const thumbUpload = await bucket.upload(thumbPath, thumbnail, {
         contentType: thumbnail.type,
         upsert: true,
+        cacheControl: CACHE_ONE_YEAR,
       });
       if (thumbUpload.error) {
         throw new AssetStorageError(`썸네일 업로드 실패: ${thumbUpload.error.message}`);

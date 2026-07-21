@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { buildPublicPayload } from "@/invitation/publicPayload";
 import { manifestFromPreviewAssets } from "@/server/supabase/assetManifest";
+import { proxyManifest } from "@/server/supabase/assetProxy";
 import { getServerSupabase } from "@/server/supabase/serverClient";
 import { PublicInvitationView } from "../../_shared/PublicInvitationView";
 
@@ -41,7 +42,7 @@ export default async function PreviewByTokenPage({
   return (
     <PublicInvitationView
       doc={payload.doc}
-      manifest={payload.assets}
+      manifest={proxyManifest(payload.assets)}
       previewBadge
       calendarIcsUrl={`/p/${encodeURIComponent(token)}/wedding.ics`}
     />
