@@ -64,9 +64,9 @@ src/
 ## 3. 문서 모델 (ADR-002)
 
 ```ts
-// invitation/schema — 개념 스케치, 현재 v14 (실제는 Zod 스키마가 단일 진실)
+// invitation/schema — 개념 스케치, 현재 v15 (실제는 Zod 스키마가 단일 진실)
 interface InvitationDocument {
-  schemaVersion: 14;
+  schemaVersion: 15;
   wedding: {
     groom: Person;               // { name, familyRole?("아들"…), father?, mother? }
     bride: Person;               //   Parent = { name, deceased: boolean }
@@ -140,6 +140,12 @@ type PhotoFrame = { zoom: number /*1~3*/; focalX: number /*0~1*/; focalY: number
   거치지 않는다. *옛 모양 그대로의 문서*를 만들어 열어 봐야 한다.
   값을 계산해 심는 마이그레이션은 **입력 범위 전체**에서 결과가 스키마 범위 안인지 확인한다
   (곱셈으로 파생된 pt·비율이 min/max를 벗어나기 쉽다 — v12에서 실제로 문서가 열리지 않았다).
+- **필드 이름·타입을 한 버전 안에서 바꾸지 않는다 (v14에서 실제로 문서가 열리지 않았다, ADR-039).**
+  dev 서버가 이 저장소 위에서 돌기 때문에, 개발 중 어떤 중간 모양이든 **현재 버전 번호로**
+  디스크에 저장될 수 있다. 그러면 저장 버전 == 최신이라 forward-only 마이그레이션이 통째로
+  건너뛰어(그 문서를 고칠 마이그레이션이 돌지 않는다) 전이 상태가 그대로 검증에 도달한다.
+  새 필드는 **추가만** 하고, 모양을 바꿔야 하면 한 번에 최종 모양으로 짓는다. 이미 굳었다면
+  **버전을 한 칸 올려** 정규화 마이그레이션으로 복구하는 것이 유일한 길이다.
 - **마이그레이션**: `schemaVersion` 정수 증가. `migrations: Record<number, (doc) => doc>`를 로드 시 순차 적용(forward-only), 저장은 항상 최신 버전. publication에도 `schema_version` 저장 — 공개 렌더도 같은 마이그레이터를 통과시켜 오래된 스냅샷을 계속 렌더할 수 있게 한다.
 - **sensitive 마킹 (Phase 8 구현)**: 민감 필드(contacts.phone·giftAccount.number)는 zod `.meta({ sensitive: true })`로 스키마에 선언한다 — §10 redaction의 데이터 원천. projection 구현은 `invitation/sensitive.ts`의 `redactForAi`이며, 선언·구현의 일치는 단위 테스트가 고정한다.
 

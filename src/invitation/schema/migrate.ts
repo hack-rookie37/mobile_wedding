@@ -16,7 +16,10 @@ import {
   PT_MIN,
 } from "./themes";
 
-export const CURRENT_SCHEMA_VERSION = 14;
+export const CURRENT_SCHEMA_VERSION = 15;
+
+// 사진 위 문구의 등장 효과로 쓸 수 있는 값. 마이그레이션이 잘못된 값을 여기 기준으로 되돌린다.
+const OVERLAY_ANIMATIONS = new Set(["none", "fade", "rise", "typing", "letterFade", "writing"]);
 
 // v6의 글자 크기 3단계 → v7의 pt 값. 기존 배율(0.93·1·1.08)에 가장 가까운 정수 pt다.
 const V6_SCALE_TO_PT: Record<string, number> = { sm: 10, md: 11, lg: 12 };
@@ -487,6 +490,37 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
               },
             },
       ),
+    };
+  },
+  // v14 → v15: 사진 위 문구의 등장 효과 값을 정규화한다.
+  //
+  // 왜 필요한가: v14 개발 도중 이 필드의 이름·타입이 typewriter(boolean) → animation(enum)으로
+  // 바뀌었다. 그 사이에 저장된 문서는 animation이 없거나 옛 값을 갖고 schemaVersion만 14로
+  // 찍혔다. 버전이 이미 최신이라 forward-only 마이그레이션 루프가 통째로 건너뛰어(현재 버전
+  // == 저장 버전) 전이 상태 overlay가 그대로 검증에 도달했고, 문서가 열리지 않았다.
+  //
+  // 여기서 valid하지 않은 animation은 전부 "none"으로 되돌린다(옛 typewriter가 켜져 있었다면
+  // 그 의도를 살려 "typing"). 빠진 overlay 칸도 기본값으로 채워, 어느 지점에서 굳었든 열리게 한다.
+  14: (raw) => {
+    const doc = raw as {
+      sections?: Array<{ type?: unknown; content?: { overlay?: Record<string, unknown> } }>;
+    };
+    return {
+      ...(raw as object),
+      schemaVersion: 15,
+      sections: (doc.sections ?? []).map((section) => {
+        if (section.type !== "hero") return section;
+        const stored = section.content?.overlay ?? {};
+        const overlay: Record<string, unknown> = { ...DEFAULT_HERO_OVERLAY, ...stored };
+        // 병합본이 아니라 '저장돼 있던' 값으로 판단한다 — DEFAULT가 이미 "none"을 채우므로
+        // 병합본을 보면 '빠졌다'와 '없음으로 골랐다'를 구별하지 못한다.
+        const storedAnim = stored.animation;
+        if (typeof storedAnim !== "string" || !OVERLAY_ANIMATIONS.has(storedAnim)) {
+          overlay.animation = stored.typewriter === true ? "typing" : "none";
+        }
+        delete overlay.typewriter; // 사라진 옛 이름 흔적 제거 (zod도 떼지만 명시적으로)
+        return { ...section, content: { ...section.content, overlay } };
+      }),
     };
   },
 };

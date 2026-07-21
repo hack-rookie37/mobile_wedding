@@ -96,6 +96,17 @@ const v12Document = () =>
 // v13: 그림자는 갖췄지만 타자 효과·글 내리기가 없었다.
 const v13Document = () => heroWithout(13, { overlay: ["animation"], content: ["contentOffsetPx"] });
 
+// v14 전이 상태 — 이 사고가 실제로 났다. 개발 중 이 필드가 typewriter(boolean) →
+// animation(enum)으로 바뀌었고, 그 사이에 dev 서버가 문서를 저장하면서 schemaVersion만 14로
+// 찍혔다. 버전이 이미 최신이라 마이그레이션이 손대지 못해 열리지 않았다.
+function transitionalV14(overlayExtra: Record<string, unknown>) {
+  const base = heroWithout(14, { overlay: ["animation"] }) as {
+    sections: Array<{ type: string; content: { overlay: Record<string, unknown> } }>;
+  };
+  base.sections[0].content.overlay = { ...base.sections[0].content.overlay, ...overlayExtra };
+  return base;
+}
+
 describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
   it("v11 문서가 열리고, 그때 보이던 자리·설정이 이어진다", () => {
     const opened = migrateDocument(v11Document());
@@ -143,6 +154,30 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
     expect(calendar.content.buttonColor).toBeUndefined();
   });
 
+  // 실제로 열리지 않았던 모양: 필드 이름이 한 버전 안에서 바뀌어, 저장 버전은 최신인데
+  // overlay는 옛 모양(typewriter 있고 animation 없음)으로 굳었다.
+  it("v14 전이 상태(typewriter만 있고 animation 없음)가 열린다", () => {
+    const opened = migrateDocument(transitionalV14({ typewriter: false }));
+    const hero = opened.sections[0];
+    if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    expect(hero.content.overlay.animation).toBe("none"); // 없으면 '없음'으로
+    expect("typewriter" in hero.content.overlay).toBe(false); // 옛 이름은 사라진다
+  });
+
+  it("옛 typewriter가 켜져 있었다면 그 의도를 살려 '한 글자씩'으로 연다", () => {
+    const opened = migrateDocument(transitionalV14({ typewriter: true }));
+    const hero = opened.sections[0];
+    if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    expect(hero.content.overlay.animation).toBe("typing");
+  });
+
+  it("animation에 스키마 밖 값이 들어와 있어도 '없음'으로 되돌려 연다", () => {
+    const opened = migrateDocument(transitionalV14({ animation: "sparkle" }));
+    const hero = opened.sections[0];
+    if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    expect(hero.content.overlay.animation).toBe("none");
+  });
+
   // 파생 pt(눈썹 = 제목 × 0.55, 항목 제목 = 본문 × 0.9)는 원본이 작으면 최솟값 아래로
   // 떨어진다. 자르지 않으면 "글자를 작게 해 둔 사람만" 문서가 열리지 않는다.
   it("어떤 글자 크기로 저장돼 있어도 열린다", () => {
@@ -165,7 +200,12 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
 
   // 마이그레이션을 두 번 태워도 같은 문서가 나와야 한다 — 저장·재로드가 반복되는 자리다
   it("이미 열린 문서를 다시 태워도 그대로다", () => {
-    for (const stored of [v11Document(), v12Document(), v13Document()]) {
+    for (const stored of [
+      v11Document(),
+      v12Document(),
+      v13Document(),
+      transitionalV14({ typewriter: false }),
+    ]) {
       const opened = migrateDocument(stored);
       expect(migrateDocument(opened)).toEqual(opened);
       expect(documentSchema.safeParse(opened).success).toBe(true);

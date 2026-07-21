@@ -569,7 +569,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(14),
+    schemaVersion: z.literal(15),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,
