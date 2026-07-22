@@ -22,12 +22,24 @@ function textShadowOf(overlay: HeroOverlay): string | undefined {
   return `0 1px ${overlay.shadowStrength / 4}px ${overlay.shadowColor}${alpha}`;
 }
 
-// 발광 — 글자를 한 층 더 그려 블러로 번지게 한다("블러 효과처럼"). 세기 하나가
-// 번짐(blur)과 진하기(불투명도)를 함께 움직인다 — 그림자 세기와 같은 규칙이다.
+// 발광 — 글자를 두 층 더 그려 블러로 번지게 한다("블러 효과처럼"). 한 층만 크게 흐리면
+// 빛이 넓게 퍼지며 묽어져 세기를 올려도 뚜렷해지지 않았다 — 글자에 붙는 촘촘한 심과
+// 넓게 퍼지는 무리를 겹쳐야 세기가 올라간 만큼 실제로 환해진다.
+// 세기 하나가 두 층의 번짐과 진하기를 함께 움직인다(그림자 세기와 같은 규칙).
 // 숨쉬는 깜빡임은 바깥 상자의 opacity 애니메이션(canvas-glow-breathe)이 맡는다:
-// 안쪽 상자의 고정 불투명도와 곱해지므로 세기를 유지한 채 은은하게 오르내린다.
-const glowBlurPx = (strength: number) => 2 + strength * 0.14; // 5 → 2.7px, 100 → 16px
-const glowOpacity = (strength: number) => 0.4 + strength / 250; // 5 → 0.42, 100 → 0.8
+// 안쪽 층들의 고정 불투명도와 곱해지므로 세기를 유지한 채 은은하게 오르내린다.
+const GLOW_LAYERS = [
+  // 심 — 글자 가장자리에 붙어 빛나는 촘촘한 층
+  {
+    blurPx: (s: number) => 1.5 + s * 0.09, // 5 → 2px, 100 → 10.5px
+    opacity: (s: number) => Math.min(1, 0.55 + s / 120), // 55부터는 완전 불투명
+  },
+  // 무리 — 주변으로 넓게 번지는 층
+  {
+    blurPx: (s: number) => 4 + s * 0.26, // 5 → 5.3px, 100 → 30px
+    opacity: (s: number) => 0.35 + s / 160, // 5 → 0.38, 100 → 0.98
+  },
+];
 
 // 등장 효과는 전부 CSS 애니메이션의 지연만으로 그린다 — JS 타이머가 없으므로 서버 렌더
 // 결과에 글자가 전부 들어 있고, 스크립트가 죽어도 문구는 그대로 읽힌다.
@@ -144,7 +156,7 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
                   }
             }
           >
-            {/* 발광 층 — 같은 글자를 블러로 한 번 더 그려 뒤에 깐다. 글꼴·자간·등장 효과를
+            {/* 발광 층 — 같은 글자를 블러로 두 번 더 그려 뒤에 깐다. 글꼴·자간·등장 효과를
                 전부 물려받아 본문과 겹쳐 움직이고, 숨쉬는 밝기만 바깥 상자에서 오르내린다.
                 모션 최소화 설정에서는 숨쉬기가 꺼져 일정한 밝기로 남는다 (globals.css). */}
             {overlay.glow && (
@@ -153,20 +165,28 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
                 className="absolute inset-0 block"
                 style={{ animation: "canvas-glow-breathe 4s ease-in-out infinite" }}
               >
-                <span
-                  className="block"
-                  style={{
-                    filter: `blur(${glowBlurPx(overlay.glowStrength)}px)`,
-                    opacity: glowOpacity(overlay.glowStrength),
-                    // 그림자는 상속된다 — 끊지 않으면 어두운 그림자까지 블러에 섞여 후광이 탁해진다
-                    textShadow: "none",
-                  }}
-                >
-                  <OverlayText overlay={overlay} />
-                </span>
+                {GLOW_LAYERS.map((layer, i) => (
+                  <span
+                    key={i}
+                    className="absolute inset-0 block"
+                    style={{
+                      filter: `blur(${layer.blurPx(overlay.glowStrength)}px)`,
+                      opacity: layer.opacity(overlay.glowStrength),
+                      // 그림자는 상속된다 — 끊지 않으면 어두운 그림자까지 블러에 섞여 후광이 탁해진다
+                      textShadow: "none",
+                    }}
+                  >
+                    <OverlayText overlay={overlay} />
+                  </span>
+                ))}
               </span>
             )}
-            <span className="relative block">
+            <span
+              className="relative block"
+              style={
+                overlay.edgeBlurPx === 0 ? undefined : { filter: `blur(${overlay.edgeBlurPx}px)` }
+              }
+            >
               <OverlayText overlay={overlay} />
             </span>
           </span>

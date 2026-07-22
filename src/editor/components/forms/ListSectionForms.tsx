@@ -25,6 +25,7 @@ const TRANSPORT_ICON_OPTIONS: { value: TransportIcon; label: string }[] = [
   { value: "car", label: "자가용" },
   { value: "parking", label: "주차" },
   { value: "shuttle", label: "셔틀" },
+  { value: "phone", label: "전화" },
   { value: "etc", label: "기타" },
 ];
 

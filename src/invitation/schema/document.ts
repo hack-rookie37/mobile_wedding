@@ -174,11 +174,21 @@ export const photoFrameSchema = z.object({
 // 430px 캔버스에서 9/20이면 956px라 세로 844px짜리 화면을 넘긴다.
 export const photoAspectSchema = z.enum(["1/1", "4/5", "3/4", "9/16", "9/20", "9/24"]);
 
+// 꽃잎 양·투명도의 허용 범위. 개수는 '심어 둔 자리' 수의 상한이다 — 화면에는 낙하 주기에
+// 따라 평균 절반쯤이 동시에 보인다.
+export const PETAL_COUNT_MIN = 1;
+export const PETAL_COUNT_MAX = 20;
+export const PETAL_OPACITY_MIN = 0.2;
+
 // 전면 사진(메인·맺음말)이 공유하는 표시 효과. 레이아웃이 아니라 사진 자체의 연출이다.
 export const photoEffectsSchema = z.object({
   fadeBottom: z.boolean(), // 사진 하단을 배경색으로 녹인다
   sparkle: z.boolean(), // 은은한 반짝임 오버레이
-  petals: z.boolean(), // 꽃잎이 잔잔히 떨어지는 오버레이
+  petals: z.boolean(), // 꽃잎이 흩날리며 떨어지는 오버레이
+  // 꽃잎의 바탕색 — 장마다 흰색을 섞은 밝은 변주가 자동으로 만들어진다 (색 하나로 세 톤).
+  petalColor: hexColorSchema,
+  petalCount: z.number().int().min(PETAL_COUNT_MIN).max(PETAL_COUNT_MAX),
+  petalOpacity: z.number().min(PETAL_OPACITY_MIN).max(1),
   brightness: z.number().min(0.3).max(1.5), // 1 = 원본
   opacity: z.number().min(0.2).max(1), // 1 = 불투명
 });
@@ -207,6 +217,10 @@ export const GLOW_STRENGTH_MAX = 100;
 export const OVERLAY_SPEED_MIN = 0.5;
 export const OVERLAY_SPEED_MAX = 2;
 
+// 글자 외곽 흐림(px). 0 = 또렷(끄기)이라 별도 스위치를 두지 않는다.
+// 6을 넘기면 부드러운 가장자리가 아니라 초점 나간 글자가 된다.
+export const EDGE_BLUR_MAX = 6;
+
 export const heroOverlaySchema = z.object({
   text: z.string(), // 빈 문자열이면 아무것도 얹지 않는다
   // 사진 안에서의 세로 위치(%). 0이면 위쪽 끝, 100이면 아래쪽 끝에 붙는다 (가로는 항상 가운데).
@@ -219,6 +233,8 @@ export const heroOverlaySchema = z.object({
   // 글자 크기·기울기에 따라 어울리는 간격이 달라서 사진 위 문구만 따로 고른다.
   letterSpacing: z.number().min(LETTER_SPACING_MIN).max(LETTER_SPACING_MAX),
   lineHeight: z.number().min(LINE_HEIGHT_MIN).max(LINE_HEIGHT_MAX),
+  // 글자 자체의 외곽을 부드럽게 번지게 한다 — 발광(뒤에 깔리는 후광)과 별개의 효과다.
+  edgeBlurPx: z.number().min(0).max(EDGE_BLUR_MAX),
   // 글자 주변이 은은하게 빛나는 후광 — 세기 하나가 번짐과 진하기를 함께 움직이고,
   // 켜져 있는 동안 천천히 숨쉬듯 밝아졌다 어두워진다. 빛 색은 글자색을 따른다.
   glow: z.boolean(),
@@ -248,6 +264,7 @@ export const DEFAULT_HERO_OVERLAY = {
   // 자간 0 · 행간 1.45는 v15까지 렌더러에 못박혀 있던 값 — 기본값이 그대로라 모습이 변하지 않는다
   letterSpacing: 0,
   lineHeight: 1.45,
+  edgeBlurPx: 0,
   glow: false,
   glowStrength: 40,
   animation: "none",
@@ -397,7 +414,15 @@ export const calendarSectionSchema = sectionBase.extend({
 });
 
 // 교통 안내 — 수단별 항목의 반복 그룹
-export const transportIconSchema = z.enum(["subway", "bus", "car", "parking", "shuttle", "etc"]);
+export const transportIconSchema = z.enum([
+  "subway",
+  "bus",
+  "car",
+  "parking",
+  "shuttle",
+  "phone", // 예식장 전화 안내 — 이모지 대신 수단으로 고르면 다른 그림과 크기가 맞는다 (ADR-043)
+  "etc",
+]);
 
 // 항목 앞에 붙는 그림. 여러 글자를 붙인 이모지(🅿️·👨‍👩‍👧)도 있어서 한 글자로 자르지 않는다.
 export const TRANSPORT_EMOJI_MAX = 8;
@@ -595,7 +620,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(16),
+    schemaVersion: z.literal(17),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,

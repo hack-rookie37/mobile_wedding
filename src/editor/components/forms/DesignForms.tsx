@@ -4,6 +4,9 @@ import {
   GALLERY_GAP_MAX,
   GALLERY_GAP_MIN,
   HERO_OFFSET_MAX,
+  PETAL_COUNT_MAX,
+  PETAL_COUNT_MIN,
+  PETAL_OPACITY_MIN,
   SECTION_PAD_X_MAX,
   SECTION_PAD_X_MIN,
   TRANSPORT_COLUMNS_MAX,
@@ -16,6 +19,7 @@ import {
   type TransportationSection,
 } from "@/invitation/schema/document";
 import {
+  ColorField,
   ColorOverrideField,
   FieldLabel,
   NumberField,
@@ -84,6 +88,38 @@ function PhotoEffectsFields({ section }: { section: HeroSection | ClosingSection
           />
         </div>
       </div>
+      {/* 꺼진 효과의 손잡이는 아무 일도 하지 않는다 — 켰을 때만 보인다 (그림자 색과 같은 규칙) */}
+      {effects.petals && (
+        <div className="space-y-4 rounded-md border border-tool-border p-3">
+          <ColorField
+            label="꽃잎 색"
+            value={effects.petalColor}
+            onChange={(petalColor) => patchEffects({ petalColor })}
+          />
+          <NumberField
+            label="꽃잎 양"
+            value={effects.petalCount}
+            min={PETAL_COUNT_MIN}
+            max={PETAL_COUNT_MAX}
+            step={1}
+            unit="장"
+            onChange={(petalCount) => patchEffects({ petalCount })}
+          />
+          <NumberField
+            label="꽃잎 투명도"
+            value={Math.round(effects.petalOpacity * 100)}
+            min={PETAL_OPACITY_MIN * 100}
+            max={100}
+            step={5}
+            unit="%"
+            onChange={(percent) => patchEffects({ petalOpacity: percent / 100 })}
+          />
+          <p className="text-[11px] leading-[1.5] text-tool-ink-faint">
+            고른 색에 흰색을 섞은 밝은 꽃잎이 함께 섞여 내립니다. 모양과 흩날리는 길은 장마다 조금씩
+            다릅니다.
+          </p>
+        </div>
+      )}
       <NumberField
         label="밝기"
         value={Math.round(effects.brightness * 100)}

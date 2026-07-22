@@ -23,7 +23,7 @@ const style = (
 // 실제 한국 청첩장 관례를 따른 샘플 문서 (연락처·계좌만 가상)
 export function createSampleDocument(): InvitationDocument {
   return {
-    schemaVersion: 16,
+    schemaVersion: 17,
     wedding: {
       groom: {
         name: "이정훈",
@@ -73,6 +73,7 @@ export function createSampleDocument(): InvitationDocument {
             color: "#ffffff",
             letterSpacing: 0,
             lineHeight: 1.45,
+            edgeBlurPx: 0,
             glow: false,
             glowStrength: 40,
             animation: "none",
@@ -84,7 +85,16 @@ export function createSampleDocument(): InvitationDocument {
           contentOffsetPx: 0,
           photoAssetId: "hero-main",
           photoAspect: "3/4",
-          effects: { fadeBottom: true, sparkle: false, petals: false, brightness: 1, opacity: 1 },
+          effects: {
+            fadeBottom: true,
+            sparkle: false,
+            petals: false,
+            petalColor: "#ffd6e0",
+            petalCount: 9,
+            petalOpacity: 0.9,
+            brightness: 1,
+            opacity: 1,
+          },
           showDate: true,
           showVenue: true,
         },
@@ -272,6 +282,9 @@ export function createSampleDocument(): InvitationDocument {
             fadeBottom: false,
             sparkle: false,
             petals: false,
+            petalColor: "#ffd6e0",
+            petalCount: 9,
+            petalOpacity: 0.9,
             brightness: 0.6,
             opacity: 1,
           },

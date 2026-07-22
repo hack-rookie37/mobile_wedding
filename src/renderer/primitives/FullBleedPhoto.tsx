@@ -49,7 +49,13 @@ export function FullBleedPhoto({
         className="w-full"
       />
       {effects.sparkle && <Sparkle />}
-      {effects.petals && <Petals />}
+      {effects.petals && (
+        <Petals
+          color={effects.petalColor}
+          count={effects.petalCount}
+          opacity={effects.petalOpacity}
+        />
+      )}
       {effects.fadeBottom && (
         <div
           aria-hidden
@@ -81,99 +87,379 @@ const STARS = [
 const STAR_PATH =
   "M12 0c0 6.6 5.4 12 12 12-6.6 0-12 5.4-12 12 0-6.6-5.4-12-12-12 6.6 0 12-5.4 12-12z";
 
-// 꽃잎의 자리와 박자도 고정값이다 (별과 같은 이유 — 난수는 서버·클라이언트 렌더를 어긋나게 한다).
-// left는 가로 자리, delay는 음수로 두어 처음부터 하늘에 흩어져 있게 한다 — 0부터 시작하면
-// 첫 몇 초 동안 꽃잎이 하나도 없다가 우르르 떨어진다.
-const PETALS = [
-  { left: "6%", size: 13, fall: "13s", delay: "-4s", sway: 9, swayMs: "2.6s", tilt: -18, tone: 0 },
-  { left: "17%", size: 17, fall: "10s", delay: "-9s", sway: 12, swayMs: "3.1s", tilt: 24, tone: 1 },
-  { left: "29%", size: 11, fall: "15s", delay: "-1s", sway: 8, swayMs: "2.2s", tilt: 8, tone: 2 },
+// 꽃잎의 자리와 박자는 전부 고정값이다 (별과 같은 이유 — 난수는 서버·클라이언트 렌더를
+// 어긋나게 한다). '불규칙함'은 자리마다 낙하·표류·펄럭임의 주기와 지연을 서로 어긋나게
+// 짜서 만든다 — 세 주기가 약수 관계가 아니라 같은 궤적이 다시 나타나지 않는다.
+// delay는 음수로 두어 처음부터 하늘에 흩어져 있게 한다 — 0부터 시작하면 첫 몇 초 동안
+// 꽃잎이 하나도 없다가 우르르 떨어진다.
+//
+// 자리 순서는 가로로 흩뿌려 두었다: '꽃잎 양'이 앞에서부터 N개를 쓰므로,
+// 왼쪽부터 차례로 늘어놓으면 양을 줄였을 때 꽃잎이 한쪽에 몰린다.
+// drift: 좌우 표류 폭(px), rot0→rot1: 펄럭이며 도는 각도, mix: 흰색을 섞는 비율(%),
+// shape: 꽃잎 모양(아래 PETAL_SHAPES), alpha: 장마다 조금씩 다른 기본 투명도.
+const PETAL_SLOTS = [
   {
-    left: "41%",
+    left: "50%",
     size: 15,
-    fall: "11s",
-    delay: "-6s",
-    sway: 11,
-    swayMs: "2.9s",
-    tilt: -30,
-    tone: 0,
-  },
-  { left: "54%", size: 12, fall: "14s", delay: "-11s", sway: 9, swayMs: "2.4s", tilt: 40, tone: 1 },
-  { left: "63%", size: 18, fall: "9s", delay: "-3s", sway: 13, swayMs: "3.4s", tilt: -8, tone: 2 },
-  { left: "74%", size: 13, fall: "12s", delay: "-8s", sway: 10, swayMs: "2.7s", tilt: 16, tone: 0 },
-  {
-    left: "84%",
-    size: 15,
-    fall: "10.5s",
-    delay: "-5s",
-    sway: 11,
-    swayMs: "3.2s",
-    tilt: -24,
-    tone: 1,
+    fall: 12.5,
+    dy: -4.2,
+    drift: 30,
+    dr: 5.1,
+    rot0: -24,
+    rot1: 42,
+    fl: 2.3,
+    shape: 0,
+    mix: 0,
+    alpha: 0.95,
   },
   {
-    left: "93%",
+    left: "12%",
     size: 12,
-    fall: "13.5s",
-    delay: "-12s",
-    sway: 8,
-    swayMs: "2.5s",
-    tilt: 32,
-    tone: 2,
+    fall: 15.0,
+    dy: -9.6,
+    drift: 22,
+    dr: 4.2,
+    rot0: 18,
+    rot1: -35,
+    fl: 2.9,
+    shape: 1,
+    mix: 35,
+    alpha: 0.85,
+  },
+  {
+    left: "82%",
+    size: 17,
+    fall: 10.0,
+    dy: -2.8,
+    drift: 38,
+    dr: 6.3,
+    rot0: -10,
+    rot1: 55,
+    fl: 1.9,
+    shape: 2,
+    mix: 60,
+    alpha: 0.9,
+  },
+  {
+    left: "30%",
+    size: 13,
+    fall: 13.5,
+    dy: -11.4,
+    drift: 26,
+    dr: 3.6,
+    rot0: 40,
+    rot1: -18,
+    fl: 2.6,
+    shape: 1,
+    mix: 0,
+    alpha: 0.8,
+  },
+  {
+    left: "65%",
+    size: 11,
+    fall: 16.0,
+    dy: -6.1,
+    drift: 18,
+    dr: 4.8,
+    rot0: -32,
+    rot1: 20,
+    fl: 3.2,
+    shape: 0,
+    mix: 60,
+    alpha: 0.9,
+  },
+  {
+    left: "5%",
+    size: 16,
+    fall: 9.5,
+    dy: -1.3,
+    drift: 34,
+    dr: 5.7,
+    rot0: 8,
+    rot1: 62,
+    fl: 2.1,
+    shape: 2,
+    mix: 35,
+    alpha: 1,
+  },
+  {
+    left: "92%",
+    size: 12,
+    fall: 14.0,
+    dy: -7.9,
+    drift: 24,
+    dr: 3.9,
+    rot0: -45,
+    rot1: 12,
+    fl: 2.7,
+    shape: 0,
+    mix: 0,
+    alpha: 0.85,
+  },
+  {
+    left: "42%",
+    size: 18,
+    fall: 11.0,
+    dy: -3.4,
+    drift: 42,
+    dr: 6.9,
+    rot0: 25,
+    rot1: -30,
+    fl: 1.8,
+    shape: 1,
+    mix: 60,
+    alpha: 0.9,
+  },
+  {
+    left: "73%",
+    size: 13,
+    fall: 12.0,
+    dy: -10.2,
+    drift: 28,
+    dr: 4.5,
+    rot0: -15,
+    rot1: 48,
+    fl: 2.4,
+    shape: 2,
+    mix: 0,
+    alpha: 0.95,
+  },
+  {
+    left: "20%",
+    size: 14,
+    fall: 15.5,
+    dy: -5.5,
+    drift: 20,
+    dr: 5.4,
+    rot0: 33,
+    rot1: -22,
+    fl: 3.0,
+    shape: 0,
+    mix: 35,
+    alpha: 0.8,
+  },
+  {
+    left: "58%",
+    size: 11,
+    fall: 10.5,
+    dy: -0.7,
+    drift: 32,
+    dr: 4.0,
+    rot0: -28,
+    rot1: 38,
+    fl: 2.2,
+    shape: 2,
+    mix: 35,
+    alpha: 0.9,
+  },
+  {
+    left: "35%",
+    size: 16,
+    fall: 13.0,
+    dy: -8.8,
+    drift: 25,
+    dr: 6.1,
+    rot0: 14,
+    rot1: -42,
+    fl: 2.8,
+    shape: 1,
+    mix: 0,
+    alpha: 1,
+  },
+  {
+    left: "87%",
+    size: 12,
+    fall: 16.5,
+    dy: -12.3,
+    drift: 36,
+    dr: 3.4,
+    rot0: -38,
+    rot1: 25,
+    fl: 2.0,
+    shape: 0,
+    mix: 60,
+    alpha: 0.85,
+  },
+  {
+    left: "8%",
+    size: 15,
+    fall: 11.5,
+    dy: -4.9,
+    drift: 21,
+    dr: 5.9,
+    rot0: 48,
+    rot1: -12,
+    fl: 2.5,
+    shape: 2,
+    mix: 0,
+    alpha: 0.9,
+  },
+  {
+    left: "47%",
+    size: 12,
+    fall: 14.5,
+    dy: -2.1,
+    drift: 40,
+    dr: 4.4,
+    rot0: -20,
+    rot1: 58,
+    fl: 3.1,
+    shape: 1,
+    mix: 35,
+    alpha: 0.8,
+  },
+  {
+    left: "68%",
+    size: 17,
+    fall: 9.8,
+    dy: -6.7,
+    drift: 27,
+    dr: 6.6,
+    rot0: 30,
+    rot1: -25,
+    fl: 1.7,
+    shape: 0,
+    mix: 0,
+    alpha: 0.95,
+  },
+  {
+    left: "25%",
+    size: 11,
+    fall: 12.8,
+    dy: -11.9,
+    drift: 19,
+    dr: 3.8,
+    rot0: -12,
+    rot1: 44,
+    fl: 2.6,
+    shape: 2,
+    mix: 60,
+    alpha: 0.9,
+  },
+  {
+    left: "95%",
+    size: 14,
+    fall: 15.2,
+    dy: -3.9,
+    drift: 33,
+    dr: 5.2,
+    rot0: 22,
+    rot1: -48,
+    fl: 2.3,
+    shape: 1,
+    mix: 35,
+    alpha: 0.85,
+  },
+  {
+    left: "15%",
+    size: 13,
+    fall: 10.8,
+    dy: -8.1,
+    drift: 29,
+    dr: 4.7,
+    rot0: -35,
+    rot1: 15,
+    fl: 2.9,
+    shape: 0,
+    mix: 60,
+    alpha: 0.9,
+  },
+  {
+    left: "60%",
+    size: 16,
+    fall: 13.8,
+    dy: -5.0,
+    drift: 23,
+    dr: 6.0,
+    rot0: 10,
+    rot1: -55,
+    fl: 2.1,
+    shape: 2,
+    mix: 0,
+    alpha: 1,
   },
 ];
 
-// 벚꽃 빛깔 세 톤 — 사진 위에서 하양~분홍이 가장 자연스럽게 읽힌다
-const PETAL_TONES = ["rgba(255,214,224,0.9)", "rgba(255,240,243,0.88)", "rgba(255,189,203,0.85)"];
+// 꽃잎 모양 세 가지 (24×24 기준) — 전부 같은 모양이면 종이 조각처럼 보인다.
+//  0: 벚꽃잎 — 끝이 살짝 갈라진(노치) 둥근 잎
+//  1: 둥근 잎 — 통통한 물방울꼴
+//  2: 갸름한 잎 — 길고 홀쭉해 옆으로 도는 순간 얇아 보인다
+const PETAL_SHAPES = [
+  "M12 22C5.5 17 4.5 9.5 8 4.5c2 3 3 4.5 4 4.5s2-1.5 4-4.5c3.5 5 2.5 12.5-4 17.5z",
+  "M12 2c5.5 3.5 7.5 10 0 20C4.5 12 6.5 5.5 12 2z",
+  "M12 1.5c3.5 4.5 4.5 13 0 21-4.5-8-3.5-16.5 0-21z",
+];
 
-// 꽃잎 한 장 — 끝이 뾰족한 물방울꼴 (24×24 기준)
-const PETAL_PATH = "M12 2c5.5 3.5 7.5 10 0 20C4.5 12 6.5 5.5 12 2z";
-
-// 꽃잎 날림 — 사진 위로 꽃잎이 잔잔히 떨어진다.
-// 세로 낙하는 사진 높이만큼의 보이지 않는 기둥(inset-y-0)을 translateY(-100% → 100%)로
-// 움직여 그린다: 사진 높이가 비율마다 달라도 %가 그 높이를 그대로 따라가고, top을 직접
-// 움직일 때와 달리 합성기(compositor)만으로 굴러간다. 흔들림·회전은 안쪽 상자가 맡는다.
+// 꽃잎 날림 — 사진 위로 꽃잎이 흩날리며 떨어진다. 세 겹의 움직임을 포갠다:
+//  낙하(기둥):  사진 높이만큼의 보이지 않는 기둥(inset-y-0)을 translateY(-100% → 100%)로
+//              내린다. 사진 비율이 달라도 %가 높이를 따라가고 합성기만으로 굴러간다.
+//  표류(중간):  좌우로 크게 밀렸다 돌아온다 — 낙하와 주기가 어긋나 대각선으로 흘러내린다.
+//  펄럭임(svg): 돌면서 옆으로 눕는다(scaleX) — 잎이 뒤집히는 것처럼 보인다.
+// 색은 바탕색(petalColor)에 흰색을 장마다 다르게 섞어 세 톤을 만든다.
 // prefers-reduced-motion에서는 아예 그리지 않는다 — 공중에 멈춘 꽃잎은 별과 달리 얼룩처럼 보인다.
-function Petals() {
+function Petals({ color, count, opacity }: { color: string; count: number; opacity: number }) {
   return (
-    <div data-petals aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+    <div
+      data-petals
+      aria-hidden
+      className="pointer-events-none absolute inset-0 overflow-hidden"
+      style={{ opacity }}
+    >
       <style>{`
         @keyframes canvas-petal-fall {
           from { transform: translateY(-100%); }
           to   { transform: translateY(100%); }
         }
-        @keyframes canvas-petal-sway {
-          from { transform: translateX(calc(-1 * var(--petal-sway))) rotate(var(--petal-tilt)); }
-          to   { transform: translateX(var(--petal-sway)) rotate(calc(var(--petal-tilt) + 50deg)); }
+        @keyframes canvas-petal-drift {
+          from { transform: translateX(calc(-1 * var(--petal-drift))); }
+          to   { transform: translateX(var(--petal-drift)); }
+        }
+        @keyframes canvas-petal-flutter {
+          from { transform: rotate(var(--petal-rot0)) scaleX(1); }
+          to   { transform: rotate(var(--petal-rot1)) scaleX(0.55); }
         }
         @media (prefers-reduced-motion: reduce) {
           [data-petals] { display: none; }
         }
       `}</style>
-      {PETALS.map((petal, i) => (
+      {PETAL_SLOTS.slice(0, count).map((petal, i) => (
         <div
           key={i}
           className="absolute inset-y-0"
           style={{
             left: petal.left,
-            animation: `canvas-petal-fall ${petal.fall} linear ${petal.delay} infinite`,
+            animation: `canvas-petal-fall ${petal.fall}s linear ${petal.dy}s infinite`,
           }}
         >
-          <svg
-            viewBox="0 0 24 24"
+          <div
             style={
               {
-                width: petal.size,
-                height: petal.size,
-                fill: PETAL_TONES[petal.tone],
-                "--petal-sway": `${petal.sway}px`,
-                "--petal-tilt": `${petal.tilt}deg`,
-                animation: `canvas-petal-sway ${petal.swayMs} ease-in-out ${petal.delay} infinite alternate`,
+                "--petal-drift": `${petal.drift}px`,
+                animation: `canvas-petal-drift ${petal.dr}s ease-in-out ${petal.dy}s infinite alternate`,
               } as CSSProperties
             }
           >
-            <path d={PETAL_PATH} />
-          </svg>
+            <svg
+              viewBox="0 0 24 24"
+              style={
+                {
+                  display: "block",
+                  width: petal.size,
+                  height: petal.size,
+                  fill:
+                    petal.mix === 0
+                      ? color
+                      : `color-mix(in srgb, ${color} ${100 - petal.mix}%, white)`,
+                  fillOpacity: petal.alpha,
+                  "--petal-rot0": `${petal.rot0}deg`,
+                  "--petal-rot1": `${petal.rot1}deg`,
+                  animation: `canvas-petal-flutter ${petal.fl}s ease-in-out ${petal.dy * 0.7}s infinite alternate`,
+                } as CSSProperties
+              }
+            >
+              <path d={PETAL_SHAPES[petal.shape]} />
+            </svg>
+          </div>
         </div>
       ))}
     </div>

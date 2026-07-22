@@ -187,7 +187,16 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
           body: "",
           photoAssetId: null,
           photoAspect: "4/5",
-          effects: { fadeBottom: true, sparkle: false, petals: false, brightness: 1, opacity: 1 },
+          effects: {
+            fadeBottom: true,
+            sparkle: false,
+            petals: false,
+            petalColor: "#ffd6e0",
+            petalCount: 9,
+            petalOpacity: 0.9,
+            brightness: 1,
+            opacity: 1,
+          },
         },
       };
     case "share":

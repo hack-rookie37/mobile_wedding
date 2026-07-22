@@ -16,7 +16,7 @@ import {
   PT_MIN,
 } from "./themes";
 
-export const CURRENT_SCHEMA_VERSION = 16;
+export const CURRENT_SCHEMA_VERSION = 17;
 
 // 사진 위 문구의 등장 효과로 쓸 수 있는 값. 마이그레이션이 잘못된 값을 여기 기준으로 되돌린다.
 const OVERLAY_ANIMATIONS = new Set(["none", "fade", "rise", "typing", "letterFade", "writing"]);
@@ -549,6 +549,45 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
           return {
             ...section,
             content: { ...section.content, effects: effectsWithPetals(section.content?.effects) },
+          };
+        }
+        return section;
+      }),
+    };
+  },
+  // v16 → v17: 사진 위 문구에 외곽 흐림, 꽃잎에 색·양·투명도, 교통 수단에 '전화' (ADR-043).
+  // '전화'는 값이 넓어질 뿐이라 변환이 없고, 나머지는 '지금 모습 그대로'인 기본값을 채운다 —
+  // 외곽 흐림 0(끄기), 꽃잎은 v16에 굳어 있던 벚꽃색·9장·90%다.
+  16: (raw) => {
+    const doc = raw as {
+      sections?: Array<{ type?: unknown; content?: { overlay?: object; effects?: object } }>;
+    };
+    const V16_PETALS = { petalColor: "#ffd6e0", petalCount: 9, petalOpacity: 0.9 };
+    const effectsWithPetalOptions = (effects: object | undefined) => ({
+      ...V16_PETALS,
+      ...effects,
+    });
+    return {
+      ...(raw as object),
+      schemaVersion: 17,
+      sections: (doc.sections ?? []).map((section) => {
+        if (section.type === "hero") {
+          return {
+            ...section,
+            content: {
+              ...section.content,
+              overlay: { ...DEFAULT_HERO_OVERLAY, ...section.content?.overlay },
+              effects: effectsWithPetalOptions(section.content?.effects),
+            },
+          };
+        }
+        if (section.type === "closing") {
+          return {
+            ...section,
+            content: {
+              ...section.content,
+              effects: effectsWithPetalOptions(section.content?.effects),
+            },
           };
         }
         return section;

@@ -3,6 +3,7 @@
 import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import { parseVideoUrl } from "@/invitation/lib/videoEmbed";
 import {
+  EDGE_BLUR_MAX,
   GLOW_STRENGTH_MAX,
   GLOW_STRENGTH_MIN,
   LETTER_SPACING_MAX,
@@ -160,6 +161,20 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
             unit="%"
             onChange={(percent) => patchOverlay({ lineHeight: percent / 100 })}
           />
+          <div>
+            <NumberField
+              label="외곽 흐림"
+              value={overlay.edgeBlurPx}
+              min={0}
+              max={EDGE_BLUR_MAX}
+              step={0.5}
+              unit="px"
+              onChange={(edgeBlurPx) => patchOverlay({ edgeBlurPx })}
+            />
+            <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+              글자 가장자리가 부드럽게 번집니다. 0이면 또렷합니다.
+            </p>
+          </div>
           <div>
             <ToggleField
               label="은은한 발광"

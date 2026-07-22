@@ -47,6 +47,9 @@ export function createCaseDocument(kind: FixtureCase): InvitationDocument {
         fadeBottom: true,
         sparkle: true,
         petals: true,
+        petalColor: "#ffd6e0",
+        petalCount: 14,
+        petalOpacity: 0.85,
         brightness: 0.8,
         opacity: 0.9,
       };

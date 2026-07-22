@@ -18,15 +18,19 @@ export const TRANSPORT_ICON_LABELS: Record<TransportIcon, string> = {
   car: "자가용",
   parking: "주차",
   shuttle: "셔틀",
+  phone: "전화",
   etc: "기타",
 };
 
+// 전화는 ☎️가 아니라 📞다 — ☎️는 플랫폼 그림이 다른 교통 이모지보다 잘아서
+// 나란히 두면 혼자 작아 보인다 (실사용 피드백, ADR-043).
 export const TRANSPORT_ICON_GLYPHS: Record<TransportIcon, string> = {
   subway: "🚇",
   bus: "🚌",
   car: "🚗",
   parking: "🅿️",
   shuttle: "🚐",
+  phone: "📞",
   etc: "📍",
 };
 
