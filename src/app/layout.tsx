@@ -9,12 +9,15 @@ import {
 import "./globals.css";
 
 // 청첩장 canvas 테마용 서체. 본문 sans는 시스템 스택(globals.css).
+// display "block": fallback 글꼴이 먼저 보였다가 바뀌는 것(FOUT)이 '깨졌다 로딩되는' 인상을
+// 줬다 — 청첩장은 속도보다 모습이다. 짧게 비웠다가 고른 글꼴로 바로 그린다 (ADR-046).
+// 한글은 유니코드 슬라이스가 100개가 넘어 preload로는 첫 페인트를 못 맞춘다(latin만 실림).
 // TODO(VS6): Pretendard 서브셋 self-host로 전환 (DESIGN_SYSTEM.md §4)
 const notoSerifKr = Noto_Serif_KR({
   weight: ["400", "600"],
   subsets: ["latin"],
   preload: false,
-  display: "swap",
+  display: "block",
   variable: "--font-noto-serif-kr",
 });
 
@@ -23,7 +26,7 @@ const nanumMyeongjo = Nanum_Myeongjo({
   weight: ["400", "700"],
   subsets: ["latin"],
   preload: false,
-  display: "swap",
+  display: "block",
   variable: "--font-nanum-myeongjo",
 });
 
@@ -31,7 +34,7 @@ const gowunBatang = Gowun_Batang({
   weight: ["400", "700"],
   subsets: ["latin"],
   preload: false,
-  display: "swap",
+  display: "block",
   variable: "--font-gowun-batang",
 });
 
@@ -39,7 +42,7 @@ const gowunDodum = Gowun_Dodum({
   weight: "400",
   subsets: ["latin"],
   preload: false,
-  display: "swap",
+  display: "block",
   variable: "--font-gowun-dodum",
 });
 
@@ -48,7 +51,7 @@ const nanumPen = Nanum_Pen_Script({
   weight: "400",
   subsets: ["latin"],
   preload: false,
-  display: "swap",
+  display: "block",
   variable: "--font-nanum-pen",
 });
 

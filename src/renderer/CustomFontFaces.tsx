@@ -25,8 +25,9 @@ export function CustomFontFaces({
     .filter((entry): entry is { assetId: string; url: string } => entry.url !== null)
     // JSON.stringify로 url을 따옴표 문자열로 만든다 — 따옴표·역슬래시가 이스케이프된다
     .map(
+      // font-display block — 내장 폰트와 같은 이유(FOUT가 '깨졌다 로딩되는' 인상, ADR-046)
       ({ assetId, url }) =>
-        `@font-face{font-family:"${customFontFamily(assetId)}";src:url(${JSON.stringify(url)});font-display:swap;}`,
+        `@font-face{font-family:"${customFontFamily(assetId)}";src:url(${JSON.stringify(url)});font-display:block;}`,
     );
 
   if (faces.length === 0) return null;

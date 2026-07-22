@@ -114,7 +114,8 @@ test("배경음악: 음량·속도·자동재생 설정이 게스트 화면의 a
   const { context, page: guest } = await newGuestPage(browser);
   await guest.goto(`/i/${slug}`);
   const audio = guest.locator("[data-music-toggle] + audio");
-  await expect(audio).toHaveJSProperty("volume", 0.4);
+  // 저장값 0.4 → 세제곱 곡선(ADR-047)으로 얹힌다 — 선형은 상단 절반이 다 비슷하게 들렸다
+  await expect(audio).toHaveJSProperty("volume", 0.4 ** 3);
   await expect(audio).toHaveJSProperty("playbackRate", 1.2);
   // 자동재생을 켜면 미리 받아 둔다 — 첫 동작에 곧바로 소리가 나야 하기 때문
   await expect(audio).toHaveAttribute("preload", "auto");

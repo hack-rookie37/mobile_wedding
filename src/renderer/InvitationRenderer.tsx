@@ -151,6 +151,19 @@ export function InvitationRenderer({
         className="w-full bg-(--canvas-paper) antialiased"
         style={{ ...canvasVars, ...INHERITED_BODY_STYLE }}
       >
+        {/* 폰트 게이트 — 글꼴이 도착하기 전에는 사진 위 문구의 등장 효과를 멈춰 둔다
+            (globals.css의 [data-fonts-loading] 규칙). fallback 글꼴로 재생을 시작했다가
+            도중에 진짜 글꼴로 바뀌면 줄 폭이 틀어져 효과가 어긋난다 (ADR-046).
+            이 스크립트는 서버 렌더 HTML에서만 실행된다 — 클라이언트 렌더(편집기 미리보기)로
+            주입된 script는 브라우저가 실행하지 않으므로 편집기는 게이트 없이 즉시 재생한다.
+            JS가 죽은 환경에서는 속성이 아예 붙지 않아 효과가 그냥 재생된다(글자가 숨은 채
+            남는 일은 없다). 3초 안전장치: 폰트가 끝내 안 오면 fallback으로라도 재생한다. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){var s=document.currentScript,r=s&&s.parentElement;if(!r||!document.fonts||document.fonts.status==="loaded")return;r.setAttribute("data-fonts-loading","");var done=function(){r.removeAttribute("data-fonts-loading")};document.fonts.ready.then(done);setTimeout(done,3000);})()',
+          }}
+        />
         <CustomFontFaces assetIds={fontAssetIds} resolveFontUrl={resolveFontUrl ?? null} />
         {musicUrl !== null && (
           <MusicToggle

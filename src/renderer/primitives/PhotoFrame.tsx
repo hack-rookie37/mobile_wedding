@@ -76,7 +76,13 @@ export function PhotoFrame({
           srcSet={asset.srcSet}
           sizes={asset.srcSet !== undefined ? sizes : undefined}
           alt={alt}
-          loading={eager ? "eager" : "lazy"}
+          // 전부 처음부터 받아 둔다 — lazy면 갤러리를 넘길 때마다 그 자리에서 받아와
+          // 로딩이 보인다. 첫 화면(eager=메인 사진)만 높은 우선순위, 나머지는 낮은
+          // 우선순위로 뒤에서 조용히 채운다: 첫 페인트를 방해하지 않으면서 하객이
+          // 사진에 닿을 때는 이미 와 있다 (ADR-048). 하객 사진은 /a/ 프록시(CDN)라
+          // 미리 받아도 Supabase egress가 늘지 않고, 크기도 표시 폭 변형이라 가볍다.
+          loading="eager"
+          fetchPriority={eager ? "high" : "low"}
           decoding="async"
           onError={() => setFailedSrc(asset.src)}
           className="h-full w-full object-cover"

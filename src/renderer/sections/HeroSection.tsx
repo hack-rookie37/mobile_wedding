@@ -78,7 +78,15 @@ const WRITE_CLIP_ROOM = 40;
 // 쓸고 지나간다. 줄마다 inline-block으로 감싸면 상자가 글자에 딱 붙어서 잉크가 나오는
 // 순간과 쓸리는 속도가 맞는다. vertical-align: top — overflow가 있는 inline-block은
 // 기준선이 글자가 아니라 상자 아래 모서리가 되어 줄이 위로 들리는 것을 막는다.
-function WrittenText({ text, speed }: { text: string; speed: number }) {
+function WrittenText({
+  text,
+  speed,
+  edgeFilter,
+}: {
+  text: string;
+  speed: number;
+  edgeFilter?: string;
+}) {
   const lines = text.split("\n");
   const durations = lines.map(
     (line) => (Math.max([...line].length, 1) * WRITE_MS_PER_CHAR) / speed,
@@ -96,6 +104,7 @@ function WrittenText({ text, speed }: { text: string; speed: number }) {
             className="inline-block overflow-hidden align-top"
             style={{
               ...room,
+              willChange: "transform", // 줄이 시작되는 순간의 레이어 승격 래스터를 미리 치른다
               animation: `canvas-write-window ${durations[i]}ms linear ${delayOf(i)}ms backwards`,
             }}
           >
@@ -104,6 +113,9 @@ function WrittenText({ text, speed }: { text: string; speed: number }) {
               className="inline-block"
               style={{
                 ...room,
+                // 외곽 흐림은 잉크(정지 픽셀)에 — 조상에 걸면 매 프레임 재블러 (ADR-045)
+                filter: edgeFilter,
+                willChange: "transform",
                 animation: `canvas-write-ink ${durations[i]}ms linear ${delayOf(i)}ms backwards`,
               }}
             >
@@ -116,11 +128,32 @@ function WrittenText({ text, speed }: { text: string; speed: number }) {
   );
 }
 
+// 등장 효과가 다 나타나기까지 걸리는 시간(ms) — 발광 층이 이 시간에 맞춰 차오른다.
+function totalEntranceMs(overlay: HeroOverlay): number {
+  const speed = overlay.animationSpeed;
+  if (overlay.animation === "fade" || overlay.animation === "rise") return BLOCK_MS / speed;
+  if (overlay.animation === "writing") {
+    return overlay.text
+      .split("\n")
+      .reduce((sum, line) => sum + (Math.max([...line].length, 1) * WRITE_MS_PER_CHAR) / speed, 0);
+  }
+  const effect = CHAR_EFFECTS[overlay.animation];
+  if (effect === undefined) return 0; // "none"
+  const count = [...overlay.text].length;
+  return (Math.max(count - 1, 0) * effect.stepMs + effect.durationMs) / speed;
+}
+
 // 코드포인트 단위로 쪼갠다 — split("")은 이모지를 반쪽씩 잘라 깨뜨린다.
 // 줄바꿈(\n)도 한 글자로 취급되며, 부모의 whitespace-pre-line이 그대로 줄을 넘긴다.
+// 외곽 흐림은 여기(움직이는 잎사귀 요소 자체)에 건다 — 내용이 정지된 요소에 blur를 걸면
+// 브라우저가 한 번만 흐리고 그 결과를 합성기로 움직인다. 반대로 blur 걸린 조상 '안'에서
+// 글자가 움직이면 매 프레임 재블러가 돌아 모바일이 끊긴다 (ADR-045).
 function OverlayText({ overlay }: { overlay: HeroOverlay }) {
   const speed = overlay.animationSpeed;
-  if (overlay.animation === "writing") return <WrittenText text={overlay.text} speed={speed} />;
+  const edgeFilter = overlay.edgeBlurPx === 0 ? undefined : `blur(${overlay.edgeBlurPx}px)`;
+  if (overlay.animation === "writing") {
+    return <WrittenText text={overlay.text} speed={speed} edgeFilter={edgeFilter} />;
+  }
 
   const effect = CHAR_EFFECTS[overlay.animation];
   if (effect === undefined) return <>{overlay.text}</>;
@@ -131,6 +164,8 @@ function OverlayText({ overlay }: { overlay: HeroOverlay }) {
           key={i}
           data-canvas-anim
           style={{
+            // 글자 하나는 정지 픽셀이다 — blur는 1회, 등장은 불투명도라 전부 합성기에서 돈다
+            filter: edgeFilter,
             animation: `canvas-fade-in ${effect.durationMs / speed}ms ${effect.ease} ${(i * effect.stepMs) / speed}ms backwards`,
           }}
         >
@@ -186,14 +221,23 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
                   }
             }
           >
-            {/* 발광 층 — 같은 글자를 블러로 두 번 더 그려 뒤에 깐다. 글꼴·자간·등장 효과를
-                전부 물려받아 본문과 겹쳐 움직이고, 숨쉬는 밝기만 바깥 상자에서 오르내린다.
-                모션 최소화 설정에서는 숨쉬기가 꺼져 일정한 밝기로 남는다 (globals.css). */}
+            {/* 발광 층 — 같은 글자를 블러로 두 번 더 그려 뒤에 깐다. 글꼴·자간을 물려받는다.
+                블러 안의 글자는 '정지 상태'로 그린다(등장 효과 없음): blur 필터는 내용이
+                바뀔 때마다 처음부터 다시 계산되는데, 사본 안에서 쓰기·타자 효과가 돌면
+                모바일이 매 프레임 재블러하느라 뚝뚝 끊긴다 (ADR-045). 대신 층 전체가 등장
+                시간에 맞춰 불투명도로 차오른다 — 글자가 써지는 동안 후광이 함께 번져 온다.
+                숨쉬는 밝기는 바깥 상자의 무한 애니메이션이 맡고(차오르기가 도는 동안은 뒤에
+                적힌 차오르기가 이긴다), 모션 최소화 설정에서는 둘 다 꺼져 일정한 밝기로 남는다. */}
             {overlay.glow && (
               <span
                 aria-hidden
                 className="absolute inset-0 block"
-                style={{ animation: "canvas-glow-breathe 4s ease-in-out infinite" }}
+                style={{
+                  animation:
+                    totalEntranceMs(overlay) === 0
+                      ? "canvas-glow-breathe 4s ease-in-out infinite"
+                      : `canvas-glow-breathe 4s ease-in-out infinite, canvas-fade-in ${totalEntranceMs(overlay)}ms ease-out backwards`,
+                }}
               >
                 {GLOW_LAYERS.map((layer, i) => (
                   <span
@@ -206,15 +250,22 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
                       textShadow: "none",
                     }}
                   >
-                    <OverlayText overlay={overlay} />
+                    <OverlayText overlay={{ ...overlay, animation: "none", edgeBlurPx: 0 }} />
                   </span>
                 ))}
               </span>
             )}
+            {/* 외곽 흐림: 정지 상태(none·fade·rise — 글자 픽셀이 안 바뀌는 모드)에서만 여기에
+                건다. 글자가 안에서 움직이는 모드(타자·쓰기)는 OverlayText가 움직이는 요소
+                자체에 걸어 blur를 1회 계산으로 끝낸다 (ADR-045). */}
             <span
               className="relative block"
               style={
-                overlay.edgeBlurPx === 0 ? undefined : { filter: `blur(${overlay.edgeBlurPx}px)` }
+                overlay.edgeBlurPx === 0 ||
+                CHAR_EFFECTS[overlay.animation] !== undefined ||
+                overlay.animation === "writing"
+                  ? undefined
+                  : { filter: `blur(${overlay.edgeBlurPx}px)` }
               }
             >
               <OverlayText overlay={overlay} />

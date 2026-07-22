@@ -18,7 +18,9 @@ export function FloatingShare({ wedding }: { wedding: Wedding }) {
   const { accentColor } = useRenderer();
   const { interactive, copied, copyLink, showKakao, shareKakao, error } = useShareActions(wedding);
   const [open, setOpen] = useState(false);
-  const kakaoInk = readableInk(accentColor);
+  // 알약 버튼·카카오 버튼 모두 테마 강조색을 입는다 — "한 청첩장에서 버튼은 한 색"
+  // (buttonColorSchema의 규칙). 글자·심볼 색은 강조색의 밝기에서 자동으로 정해진다.
+  const ink = readableInk(accentColor);
 
   const actionClass =
     "flex h-11 w-full items-center justify-center gap-2 rounded-xl " +
@@ -49,9 +51,9 @@ export function FloatingShare({ wedding }: { wedding: Wedding }) {
                 disabled={!interactive}
                 onClick={() => void shareKakao()}
                 className={actionClass}
-                style={{ backgroundColor: accentColor, color: kakaoInk }}
+                style={{ backgroundColor: accentColor, color: ink }}
               >
-                <KakaoIcon color={kakaoInk} />
+                <KakaoIcon color={ink} />
                 카카오톡 공유
               </button>
             )}
@@ -69,7 +71,8 @@ export function FloatingShare({ wedding }: { wedding: Wedding }) {
           type="button"
           aria-expanded={open}
           onClick={() => setOpen((value) => !value)}
-          className="pointer-events-auto flex h-11 items-center gap-2 rounded-full bg-black/75 px-5 text-[length:calc(13px*var(--canvas-fs))] font-medium text-white shadow-[0_4px_16px_rgba(0,0,0,0.25)] backdrop-blur transition-colors hover:bg-black/85"
+          className="pointer-events-auto flex h-11 items-center gap-2 rounded-full px-5 text-[length:calc(13px*var(--canvas-fs))] font-medium shadow-[0_4px_16px_rgba(0,0,0,0.25)]"
+          style={{ backgroundColor: accentColor, color: ink }}
         >
           청첩장 공유하기
         </button>

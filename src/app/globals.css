@@ -93,6 +93,14 @@
   }
 }
 
+/* 폰트 게이트 (ADR-046) — 글꼴이 도착하기 전에는 사진 위 문구의 등장 효과를 시작하지
+   않는다. fallback 글꼴로 시작했다가 도중에 바뀌면 줄 폭이 틀어져 쓰기 효과가 어긋나고,
+   '깨졌다가 로딩되는' 인상을 준다. 속성은 InvitationRenderer의 인라인 스크립트가 폰트
+   준비(document.fonts.ready) 시 제거한다 — 일시정지는 지연 시간까지 통째로 멈춘다. */
+[data-invitation-root][data-fonts-loading] [data-hero-overlay] * {
+  animation-play-state: paused !important;
+}
+
 /* 모션을 줄이기로 한 사람에게는 효과 없이 즉시 보여 준다.
    렌더러 안에서는 뷰포트 미디어 쿼리를 금지하지만(편집기 미리보기 = 게스트 화면),
    prefers-reduced-motion은 화면 크기가 아니라 사람의 설정이라 이 규칙 밖이다.

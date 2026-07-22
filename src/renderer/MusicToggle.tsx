@@ -28,11 +28,14 @@ export function MusicToggle({
   // (편집기의 '미리보기'도 게스트 화면이므로 여기 포함된다).
   const autoStart = autoplay && mode === "published";
 
-  // 볼륨·속도는 렌더 결과가 아니라 audio 엘리먼트의 상태다 — 값이 바뀔 때마다 직접 얹는다
+  // 볼륨·속도는 렌더 결과가 아니라 audio 엘리먼트의 상태다 — 값이 바뀔 때마다 직접 얹는다.
+  // 세제곱: audio.volume은 선형 진폭인데 사람 귀는 로그라, 선형으로는 70%와 100%가
+  // 거의 같게 들린다(-3dB). 세제곱이면 70%≈-9dB·50%≈-18dB·30%는 희미 — 슬라이더 눈금마다
+  // 차이가 실제로 들린다 (ADR-047). 문서에는 슬라이더 값(0~1)이 그대로 저장된다.
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    audio.volume = volume;
+    audio.volume = volume ** 3;
     audio.playbackRate = speed;
   }, [volume, speed]);
 
