@@ -164,6 +164,23 @@ function v18Document() {
   };
 }
 
+// v19 전이 상태 — 이 사고가 실제로 났다(두 번째). ornamentHeightPx가 v19가 저장된 '뒤에'
+// v19에 합쳐졌고, 그 사이 로컬 DB에 저장된 v19 문서(ornamentAssetId만 있음)는 버전이 이미
+// 최신이라 마이그레이션이 손대지 못해 열리지 않았다. '나간 버전'에는 로컬 DB도 포함된다 —
+// 필드를 늦게 추가하려면 무조건 버전을 올린다 (v19→v20이 이 모양을 치유한다).
+function transitionalV19() {
+  const doc = createSampleDocument();
+  return {
+    ...doc,
+    schemaVersion: 19,
+    sections: doc.sections.map((section) => {
+      if (section.type !== "greeting") return section;
+      const { ornamentHeightPx: _oh, ...content } = section.content;
+      return { ...section, content };
+    }),
+  };
+}
+
 // v14 전이 상태 — 이 사고가 실제로 났다. 개발 중 이 필드가 typewriter(boolean) →
 // animation(enum)으로 바뀌었고, 그 사이에 dev 서버가 문서를 저장하면서 schemaVersion만 14로
 // 찍혔다. 버전이 이미 최신이라 마이그레이션이 손대지 못해 열리지 않았다.
@@ -267,6 +284,15 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
     if (hero.type !== "hero") throw new Error("hero가 없습니다");
     expect(hero.content.overlay.rotateDeg).toBe(0); // 열었더니 글자가 기울면 안 된다
     expect(hero.content.overlay.text).toBe("we're getting married"); // 저장돼 있던 값 보존
+  });
+
+  it("v19 전이 상태(ornamentAssetId만 있고 높이 없음)가 열리고, 높이는 기본값으로 들어온다", () => {
+    const opened = migrateDocument(transitionalV19());
+    expect(opened.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    const greeting = opened.sections.find((s) => s.type === "greeting");
+    if (greeting?.type !== "greeting") throw new Error("greeting이 없습니다");
+    expect(greeting.content.ornamentHeightPx).toBe(56); // 열었더니 검증 실패가 나면 안 된다
+    expect(greeting.content.ornamentAssetId).toBeNull(); // 저장돼 있던 값 보존
   });
 
   it("v18 문서가 열리고, 라벨 위 장식 이미지는 비어 들어온다", () => {

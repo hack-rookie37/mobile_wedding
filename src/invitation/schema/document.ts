@@ -643,7 +643,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(19),
+    schemaVersion: z.literal(20),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,

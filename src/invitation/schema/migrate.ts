@@ -17,7 +17,7 @@ import {
   PT_MIN,
 } from "./themes";
 
-export const CURRENT_SCHEMA_VERSION = 19;
+export const CURRENT_SCHEMA_VERSION = 20;
 
 // 사진 위 문구의 등장 효과로 쓸 수 있는 값. 마이그레이션이 잘못된 값을 여기 기준으로 되돌린다.
 const OVERLAY_ANIMATIONS = new Set(["none", "fade", "rise", "typing", "letterFade", "writing"]);
@@ -625,6 +625,29 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
     return {
       ...(raw as object),
       schemaVersion: 19,
+      sections: (doc.sections ?? []).map((section) =>
+        section.type !== "greeting"
+          ? section
+          : {
+              ...section,
+              content: {
+                ornamentAssetId: null,
+                ornamentHeightPx: DEFAULT_ORNAMENT_HEIGHT,
+                ...section.content,
+              },
+            },
+      ),
+    };
+  },
+  // v19 → v20: 전이 상태 치유. ornamentHeightPx는 v19가 나간 뒤에 v19에 합쳐졌다 —
+  // 그 사이에 저장된 v19 문서(ornamentAssetId만 있음)는 버전이 이미 최신이라 마이그레이션이
+  // 손대지 못해 검증에서 열리지 않았다(v14 사고와 같은 패턴 — '나간 버전'에는 로컬 DB도
+  // 포함된다는 교훈). 빠진 칸만 기본값으로 채운다 — 있는 값은 spread가 보존한다.
+  19: (raw) => {
+    const doc = raw as { sections?: Array<{ type?: unknown; content?: object }> };
+    return {
+      ...(raw as object),
+      schemaVersion: 20,
       sections: (doc.sections ?? []).map((section) =>
         section.type !== "greeting"
           ? section
