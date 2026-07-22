@@ -1,4 +1,5 @@
 import {
+  DEFAULT_ORNAMENT_HEIGHT,
   EMPTY_SECTION_TEXT,
   DEFAULT_GALLERY_GAP_PX,
   DEFAULT_SECTION_PAD_X,
@@ -70,6 +71,8 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
           body: "",
           showParents: true,
           align: "center",
+          ornamentAssetId: null,
+          ornamentHeightPx: DEFAULT_ORNAMENT_HEIGHT,
         },
       };
     case "coupleProfile":

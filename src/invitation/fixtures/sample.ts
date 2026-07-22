@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import {
+  DEFAULT_ORNAMENT_HEIGHT,
   DEFAULT_SECTION_PAD_X,
   EMPTY_SECTION_TEXT,
   type InvitationDocument,
@@ -23,7 +24,7 @@ const style = (
 // 실제 한국 청첩장 관례를 따른 샘플 문서 (연락처·계좌만 가상)
 export function createSampleDocument(): InvitationDocument {
   return {
-    schemaVersion: 18,
+    schemaVersion: 19,
     wedding: {
       groom: {
         name: "이정훈",
@@ -112,6 +113,8 @@ export function createSampleDocument(): InvitationDocument {
           body: "서로가 마주 보며 다져온 사랑을\n이제 함께 한곳을 바라보며\n걸어갈 수 있는 큰 사랑으로 키우고자 합니다.\n\n저희 두 사람이 사랑의 이름으로\n지켜나갈 수 있도록\n앞날을 축복해 주시면 감사하겠습니다.",
           showParents: true,
           align: "center",
+          ornamentAssetId: null,
+          ornamentHeightPx: DEFAULT_ORNAMENT_HEIGHT,
         },
       },
       {

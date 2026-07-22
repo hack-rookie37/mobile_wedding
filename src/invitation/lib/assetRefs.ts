@@ -46,6 +46,9 @@ export function referencedAssetIds(doc: InvitationDocument): Set<string> {
     if (section.type === "venue") {
       add(section.content.mapImageAssetId);
     }
+    if (section.type === "greeting") {
+      add(section.content.ornamentAssetId); // 눈썹 라벨 위 장식 이미지
+    }
   }
   return ids;
 }

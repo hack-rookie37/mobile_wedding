@@ -1,6 +1,6 @@
 # CURRENT_STATE — 프로젝트 현재 상태
 
-- 최종 갱신: 2026-07-23 (codex 리뷰 후속 3건 — ADR-053 / 음악 WebAudio 철회·자동재생 수정 — ADR-051 / iOS filter 매 프레임 문제 — ADR-052 / 준비 게이트 — ADR-049 / 갤러리 선로딩 — ADR-048 / 음량 곡선·버튼 강조색 — ADR-047 / 폰트 FOUT — ADR-046 / 모바일 끊김 — ADR-045 / 피드백 1~3차 — ADR-042~044, 스키마 v16~18)
+- 최종 갱신: 2026-07-23 (쓰기 효과 글자별 페이드 재구현 — ADR-054 / RSVP 동의 체크박스 제거 — ADR-055, DB 마이그레이션 대기 / 공유 버튼 스크롤 표시 — ADR-056 / 인사말 라벨 위 장식 이미지 — ADR-057, 스키마 v19 / 이전: codex 리뷰 후속 — ADR-053, 음악 원복 — ADR-051, iOS filter — ADR-052, 준비 게이트 — ADR-049)
 - 갱신 규칙: **각 vertical slice 완료 시, 그리고 중요한 결정·환경 변화 시 이 파일을 갱신한다.** 이 파일은 "지금 어디까지 왔고 다음이 무엇인지"의 단일 소스다.
 
 ## 1. 한 줄 요약
@@ -9,6 +9,14 @@
 7개 영역(architecture·security·data integrity·accessibility·responsive·performance·e2e)을 감사해 실제 결함 **14건을 수정**했고(핵심: anon이 `publish_records` 직접 조회로 public projection을 우회해 숨긴 계좌·연락처 열람 + 발행 목록 열거가 가능했던 취약점 — RPC 단일 경로로 봉쇄, ADR-023), 배포 문서(README·DEPLOYMENT·.env.example)를 완성했다. 전 검사 green: format·lint·typecheck·renderer-units / 단위 216 / 통합 29 / build / e2e 59. 남은 조건은 §3.
 
 **Phase 11 이후 변경**: 아직 서비스로 열지 않으므로 **공개 가입을 닫았다**(ADR-024) — 로그인 화면에서 회원가입 모드 제거, 계정은 Supabase 대시보드에서 직접 생성, 운영 `enable_signup = false`가 실제 경계(§3-2). admin role은 도입하지 않았다(소유권 모델로 충분, YAGNI). e2e 헬퍼는 가입 UI 대신 anon API로 계정을 만들고 로그인만 UI로 수행한다 — 전 검사 재실행 green(§4).
+
+**쓰기 효과 재구현 — 글자별 opacity 페이드 (ADR-054)**: 모바일에서만 남던 "글자 테두리가 로딩 안 됐다가 다 써질 때쯤 버벅대며 완성"의 구조적 원인 = 창·잉크 상쇄 트릭. 브라우저는 클립 밖 픽셀을 미리 칠하지 않아, 드러나는 순간에야 비동기로 칠했다. 글자(자소)별 opacity 페이드(60ms 간격·150ms ease-out, 줄 순차)로 재구현 — 픽셀이 움직이지 않고, 늦은 칠은 투명한 페이드 초입에 숨는다. 발광 사본도 같은 시차로 펜을 따라오고(ADR-045 타협 해소), 창·잉크 keyframe·클립 여유 40px·totalEntranceMs 삭제. 자소 분해는 Intl.Segmenter로 통일(ZWJ·FE0F 안 깨짐).
+
+**RSVP 동의 체크박스 제거 (ADR-055)**: 필수 동의 체크가 제출 문턱이라 제거 — 목적은 많은 응답. 폼·zod·API에서 consent 삭제, DB는 `consented_at` not null 해제 + `submit_rsvp`를 같은 시그니처(`p_consent default null`, 무시)로 교체해 **DB 먼저 밀어도 구버전 폼이 계속 접수되는 무중단 순서**. ⚠️ **프로덕션: `supabase db push` 먼저, 그 다음 배포** (마이그레이션 20260723030000, 로컬은 적용 완료).
+
+**공유 버튼 스크롤 표시 (ADR-056)**: 알약 버튼이 첫 화면을 가리던 것 → 최상단 숨김, 스크롤 중 + 1.8s 표시 후 페이드아웃, 판 열림 중 유지. document 캡처 리스너 하나로 창·미리보기 칸 스크롤 모두 처리, opacity+visibility 동시 전환으로 숨은 뒤 탭·포커스 차단.
+
+**인사말 라벨 위 장식 이미지 (ADR-057, 스키마 v19)**: 눈썹 라벨 위에 사용자가 올린 리본·문양 이미지를 얹는 기능 — `greeting.content.ornamentAssetId` + `ornamentHeightPx`(16~240px, 기본 56, 편집기 '장식 이미지 높이'), greetingOrnament slot(사진 보관함 재사용·undo), 폭은 원본 비율 따라오고 캔버스 넘치면 contain, referencedAssetIds 합류(발행 payload·삭제 경고·고아 정리). v18→19 마이그레이션은 null·기본 높이 채움 — openability에 v18 케이스 추가. e2e 95(업로드→기본 56px 표시→높이 조절→제거) green.
 
 **codex 리뷰 후속 3건 (ADR-053, ADR-051/052 보강)**: ADR-051/052를 codex로 교차 리뷰(rescue 종합 + ultracode 4각도 병렬 후 실제 코드 대조) → 구조는 건전, 실질 지적 3건 수정. ① **컬러 이모지 발광 회귀**(ADR-052발): `color:transparent`가 컬러 이모지를 못 지워 발광 사본에서 이모지만 조기 노출 → `GlowText`가 이모지 코드포인트만 `opacity:0`으로 감춤(이모지 없는 문구는 DOM 동일). ② **재생 대기 중 취소 시 소리·버튼 불일치**(minor): `start()`가 play 후 cancelled면 `pause()`로 되돌림. ③ **retry↔버튼 click 경쟁**(minor): retry가 버튼 대상 제스처면 물러남(+ `{once}` 버리고 리스너 일괄 관리). codex의 major "detached audio 영원 loop"는 거짓양성(모던 브라우저 DOM 제거 시 자동 pause)으로 반박. 문서·안내문 대비 지적은 지적 범위 밖이라 미수정.
 

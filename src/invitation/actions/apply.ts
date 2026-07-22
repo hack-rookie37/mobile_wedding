@@ -324,6 +324,16 @@ function mutate(
         section.content.mapImageAssetId = action.assetId;
         break;
       }
+      if (action.slot.kind === "greetingOrnament") {
+        if (section.type !== "greeting") {
+          throw new InvalidActionError(
+            "greetingOrnament slot은 greeting 섹션에만 사용할 수 있습니다",
+          );
+        }
+        // 장식도 crop 없이 원본 비율 그대로 — frame이 없다 (venueMap과 같은 결)
+        section.content.ornamentAssetId = action.assetId;
+        break;
+      }
       // galleryItem
       if (section.type !== "gallery") {
         throw new InvalidActionError("galleryItem slot은 gallery 섹션에만 사용할 수 있습니다");
@@ -443,6 +453,15 @@ function mutate(
           throw new InvalidActionError("venueMap slot은 venue 섹션에만 사용할 수 있습니다");
         }
         section.content.mapImageAssetId = null;
+        break;
+      }
+      if (action.slot.kind === "greetingOrnament") {
+        if (section.type !== "greeting") {
+          throw new InvalidActionError(
+            "greetingOrnament slot은 greeting 섹션에만 사용할 수 있습니다",
+          );
+        }
+        section.content.ornamentAssetId = null;
         break;
       }
       if (section.type !== "gallery") {

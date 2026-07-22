@@ -73,7 +73,6 @@ function apiPayload(slug: string, overrides: Record<string, unknown> = {}) {
     meal: null,
     phone: null,
     message: null,
-    consent: true,
     ...overrides,
   };
 }
@@ -86,10 +85,7 @@ test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 960 });
 });
 
-test("게스트: 제출 → 성공 상태 → 소프트 가드 → 수정 제출, 동의 없이는 제출 불가", async ({
-  page,
-  browser,
-}) => {
+test("게스트: 제출 → 성공 상태 → 소프트 가드 → 수정 제출", async ({ page, browser }) => {
   const user = await signUpFresh(page);
   const projectId = await createSample(page);
   const slug = await publishCurrent(page);
@@ -107,12 +103,7 @@ test("게스트: 제출 → 성공 상태 → 소프트 가드 → 수정 제출
   await guest.locator("[data-rsvp-form]").getByLabel("연락처").fill("010-2222-3333");
   await guest.locator("[data-rsvp-form]").getByLabel("전하고 싶은 말").fill("결혼 축하드립니다!");
 
-  // 동의 없이 제출 → native required가 막는다 (성공 패널이 나타나지 않음)
-  await guest.getByRole("button", { name: "참석 의사 전달하기" }).click();
-  await expect(guest.locator("[data-rsvp-done]")).toHaveCount(0);
-
-  // 동의 후 제출 성공
-  await guest.locator("[data-rsvp-consent] input[type=checkbox]").check();
+  // 동의 체크박스 없이 바로 제출된다 (ADR-055 — 문턱 제거)
   await guest.getByRole("button", { name: "참석 의사 전달하기" }).click();
   await expect(guest.locator("[data-rsvp-done]")).toBeVisible();
   await expect(guest.getByText("참석 의사가 전달되었습니다")).toBeVisible();
@@ -125,7 +116,6 @@ test("게스트: 제출 → 성공 상태 → 소프트 가드 → 수정 제출
   // 수정 제출 — 같은 토큰이 재사용되어 서버에서 '수정'으로 처리된다 (중복 제출 처리)
   await guest.getByRole("button", { name: "응답 수정하기" }).click();
   await fillRsvpForm(guest, { name: "김하객", attending: "불참" });
-  await guest.locator("[data-rsvp-consent] input[type=checkbox]").check();
   await guest.getByRole("button", { name: "참석 의사 전달하기" }).click();
   await expect(guest.getByText("응답이 수정되었습니다")).toBeVisible();
 
@@ -233,8 +223,6 @@ test("/api/rsvp: invalid input 400, 잘못된 content-type 415, 허니팟은 저
   const projectId = await createSample(page);
   const slug = await publishCurrent(page);
 
-  // 동의 누락 → 400
-  expect((await postRsvp(page.request, slug, { consent: false })).status()).toBe(400);
   // 초과 길이 → 400
   expect((await postRsvp(page.request, slug, { guestName: "가".repeat(41) })).status()).toBe(400);
   // JSON이 아닌 body → 415 (cross-origin form 제출 벡터 차단)
@@ -342,7 +330,6 @@ test("발행 중단 뒤에는 게스트 제출이 거부된다", async ({ page, 
   await expect(publishDialog(page).getByText("발행 중단됨")).toBeVisible();
 
   await fillRsvpForm(guest, { name: "늦은하객", attending: "참석" });
-  await guest.locator("[data-rsvp-consent] input[type=checkbox]").check();
   await guest.getByRole("button", { name: "참석 의사 전달하기" }).click();
   await expect(guest.locator("[data-rsvp-form] [role=alert]")).toContainText(
     "지금은 접수할 수 없습니다",

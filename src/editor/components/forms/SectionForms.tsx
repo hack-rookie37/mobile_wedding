@@ -12,6 +12,8 @@ import {
   OVERLAY_LINE_HEIGHT_MIN,
   OVERLAY_PT_MAX,
   OVERLAY_ROTATE_MAX,
+  ORNAMENT_HEIGHT_MAX,
+  ORNAMENT_HEIGHT_MIN,
   OVERLAY_SPEED_MAX,
   OVERLAY_SPEED_MIN,
   SECTION_LABEL_MAX,
@@ -360,6 +362,7 @@ export function HeroForm({ section }: { section: HeroSection }) {
 
 export function GreetingForm({ section }: { section: GreetingSection }) {
   const patch = usePatchContent(section.id);
+  const dispatch = useEditor((s) => s.dispatch);
   const { content } = section;
   return (
     <div className="space-y-4">
@@ -384,6 +387,38 @@ export function GreetingForm({ section }: { section: GreetingSection }) {
         checked={content.showParents}
         onChange={(showParents) => patch({ showParents })}
       />
+      <PhotoPickField
+        label="라벨 위 장식 이미지"
+        assetId={content.ornamentAssetId}
+        pickMode={{ kind: "greetingOrnament", sectionId: section.id }}
+        onRemove={() =>
+          dispatch({
+            type: "removeAssetReference",
+            sectionId: section.id,
+            slot: { kind: "greetingOrnament" },
+          })
+        }
+      >
+        <PhaseNote>
+          리본·문양 같은 작은 장식이 눈썹 라벨 위에 올라갑니다. 배경이 투명한 PNG가 잘 어울립니다.
+        </PhaseNote>
+      </PhotoPickField>
+      {content.ornamentAssetId !== null && (
+        <div>
+          <NumberField
+            label="장식 이미지 높이"
+            value={content.ornamentHeightPx}
+            min={ORNAMENT_HEIGHT_MIN}
+            max={ORNAMENT_HEIGHT_MAX}
+            step={2}
+            unit="px"
+            onChange={(ornamentHeightPx) => patch({ ornamentHeightPx })}
+          />
+          <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+            폭은 원본 비율을 따라옵니다. 캔버스보다 넓어지면 폭에 맞춰 줄어듭니다.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

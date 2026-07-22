@@ -57,29 +57,10 @@
   }
 }
 
-/* 펜으로 쓰듯 — 줄마다 왼쪽에서 오른쪽으로 잉크가 드러난다.
-   창(overflow hidden 상자)은 왼쪽에서 오고 잉크(글자)는 오른쪽에서 와서 서로 상쇄된다 —
-   글자는 제자리에 서 있고 보이는 영역만 왼쪽부터 넓어진다.
-   원래는 clip-path inset 애니메이션이었는데, 모바일 WebKit은 clip-path를 합성기로 돌리지
-   못해 매 프레임 메인 스레드에서 다시 그렸고 로딩 직후처럼 바쁜 순간 뚝뚝 끊겼다 (ADR-044).
-   transform은 합성기 전용이라 메인 스레드가 바빠도 부드럽다. */
-@keyframes canvas-write-window {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: none;
-  }
-}
-
-@keyframes canvas-write-ink {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: none;
-  }
-}
+/* 쓰기 효과 전용 키프레임은 없다 — 쓰기도 글자별 canvas-fade-in이다 (ADR-054).
+   clip-path(ADR-044)도, 창·잉크 두 상자의 transform 상쇄도 모바일에서는 끊겼다:
+   잘려 있던 픽셀은 드러나는 순간에야 비동기로 칠해져, 바쁜 순간에는 글자 끝이
+   애니메이션을 뒤늦게 쫓아갔다. opacity 페이드는 늦은 칠이 투명한 초입에 숨는다. */
 
 /* 사진 위 문구의 발광 숨쉬기 — 후광이 천천히 밝아졌다 어두워진다 (ADR-042).
    글자 자체가 아니라 뒤에 깔린 블러 층의 밝기만 오르내린다. */

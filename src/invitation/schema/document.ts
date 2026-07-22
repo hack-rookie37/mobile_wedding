@@ -319,10 +319,20 @@ export const heroSectionSchema = sectionBase.extend({
   content: heroContentSchema,
 });
 
+// 장식 이미지 높이(px) — 작은 문양(16)부터 캔버스 폭을 넉넉히 쓰는 배너(240)까지.
+// 크기는 이 한 손잡이뿐이다: 원본 비율을 따라 폭이 정해지고, 캔버스를 넘치면
+// 폭에 맞춰 줄어든다 (crop이 없어 frame도 없다 — venueMap과 같은 결).
+export const ORNAMENT_HEIGHT_MIN = 16;
+export const ORNAMENT_HEIGHT_MAX = 240;
+export const DEFAULT_ORNAMENT_HEIGHT = 56;
+
 export const greetingContentSchema = titledContentSchema.extend({
   body: z.string(),
   showParents: z.boolean(),
   align: z.enum(["center", "left"]),
+  // 눈썹 라벨 위에 얹는 장식 이미지(리본 등) — null = 없음
+  ornamentAssetId: z.string().nullable(),
+  ornamentHeightPx: z.number().int().min(ORNAMENT_HEIGHT_MIN).max(ORNAMENT_HEIGHT_MAX),
 });
 
 export const greetingSectionSchema = sectionBase.extend({
@@ -633,7 +643,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(18),
+    schemaVersion: z.literal(19),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,

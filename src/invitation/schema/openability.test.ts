@@ -150,6 +150,20 @@ function v17Document() {
   };
 }
 
+// v18에 저장돼 있던 문서 — 인사말에 라벨 위 장식 이미지(ornamentAssetId·높이)가 없었다.
+function v18Document() {
+  const doc = createSampleDocument();
+  return {
+    ...doc,
+    schemaVersion: 18,
+    sections: doc.sections.map((section) => {
+      if (section.type !== "greeting") return section;
+      const { ornamentAssetId: _ornament, ornamentHeightPx: _oh, ...content } = section.content;
+      return { ...section, content };
+    }),
+  };
+}
+
 // v14 전이 상태 — 이 사고가 실제로 났다. 개발 중 이 필드가 typewriter(boolean) →
 // animation(enum)으로 바뀌었고, 그 사이에 dev 서버가 문서를 저장하면서 schemaVersion만 14로
 // 찍혔다. 버전이 이미 최신이라 마이그레이션이 손대지 못해 열리지 않았다.
@@ -253,6 +267,16 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
     if (hero.type !== "hero") throw new Error("hero가 없습니다");
     expect(hero.content.overlay.rotateDeg).toBe(0); // 열었더니 글자가 기울면 안 된다
     expect(hero.content.overlay.text).toBe("we're getting married"); // 저장돼 있던 값 보존
+  });
+
+  it("v18 문서가 열리고, 라벨 위 장식 이미지는 비어 들어온다", () => {
+    const opened = migrateDocument(v18Document());
+    expect(opened.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    const greeting = opened.sections.find((s) => s.type === "greeting");
+    if (greeting?.type !== "greeting") throw new Error("greeting이 없습니다");
+    expect(greeting.content.ornamentAssetId).toBeNull(); // 열었더니 이미지 칸이 생기면 안 된다
+    expect(greeting.content.ornamentHeightPx).toBe(56); // 기본 높이
+    expect(greeting.content.title).toBe("소중한 분들을 초대합니다"); // 저장돼 있던 값 보존
   });
 
   it("v18에서 넓힌 범위의 값(겹치는 자간·행간, 200pt, 기울기)이 담긴 문서가 열린다", () => {

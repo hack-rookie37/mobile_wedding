@@ -142,7 +142,6 @@ function RsvpForm({
   const [meal, setMeal] = useState<RsvpMeal | null>(null);
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
-  const [consent, setConsent] = useState(false);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -164,7 +163,6 @@ function RsvpForm({
           meal: collect.meal ? meal : null,
           phone: collect.phone ? phone : null,
           message: collect.message ? message : null,
-          consent,
           website,
         }),
       });
@@ -297,27 +295,6 @@ function RsvpForm({
           />
         </FieldBlock>
       )}
-
-      <label
-        data-rsvp-consent
-        className="flex cursor-pointer items-start gap-2.5 rounded-lg p-3.5"
-        style={{ border: "1px solid var(--canvas-line)" }}
-      >
-        <input
-          type="checkbox"
-          checked={consent}
-          onChange={(e) => setConsent(e.target.checked)}
-          required
-          disabled={!submittable}
-          className="mt-0.5 size-4 shrink-0 accent-(--canvas-ink)"
-        />
-        <span className="text-[length:calc(12px*var(--canvas-fs))] leading-[1.65] text-(--canvas-ink-soft)">
-          <span className="font-medium text-(--canvas-ink)">개인정보 수집·이용 동의 (필수)</span>
-          <br />
-          입력하신 내용은 참석 확인 목적으로만 수집되며 신랑·신부만 볼 수 있습니다. 응답은
-          신랑·신부가 삭제할 때까지 보관되고, 예식 후 삭제됩니다.
-        </span>
-      </label>
 
       {phase.kind === "error" && (
         <p role="alert" className="text-[length:calc(13px*var(--canvas-fs))] text-[#b3403a]">

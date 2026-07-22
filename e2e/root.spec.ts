@@ -55,7 +55,6 @@ test("공개 주소를 비우고 발행하면 도메인 그대로 열리고, 루
     const form = guest.locator("[data-rsvp-form]");
     await form.getByLabel("성함").fill("루트 하객");
     await form.getByRole("radio", { name: "참석", exact: true }).check({ force: true });
-    await guest.locator("[data-rsvp-consent] input[type=checkbox]").check();
     await guest.getByRole("button", { name: "참석 의사 전달하기" }).click();
     await expect(guest.locator("[data-rsvp-done]")).toBeVisible();
 

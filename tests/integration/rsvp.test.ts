@@ -29,7 +29,6 @@ interface SubmitOverrides {
   meal?: string | null;
   phone?: string | null;
   message?: string | null;
-  consent?: boolean;
 }
 
 async function submit(client: SupabaseClient, slug: string, overrides: SubmitOverrides = {}) {
@@ -43,7 +42,6 @@ async function submit(client: SupabaseClient, slug: string, overrides: SubmitOve
     p_meal: overrides.meal ?? "yes",
     p_phone: overrides.phone ?? "010-9876-5432",
     p_message: overrides.message ?? "결혼 축하드립니다!",
-    p_consent: overrides.consent ?? true,
   });
   if (error) throw new Error(error.message);
   return data as { status: string; result?: string };
@@ -155,7 +153,6 @@ describe("접수 가능 조건 (invalid input 포함)", () => {
   it("잘못된 입력은 DB에서도 invalid로 거부된다 (route 우회 공격 대비)", async () => {
     const { projectId, slug } = await publishedProject();
     const anon = anonClient();
-    expect((await submit(anon, slug, { consent: false })).status).toBe("invalid");
     expect((await submit(anon, slug, { guestName: "가".repeat(41) })).status).toBe("invalid");
     expect((await submit(anon, slug, { guestName: "   " })).status).toBe("invalid");
     expect((await submit(anon, slug, { side: "family" })).status).toBe("invalid");

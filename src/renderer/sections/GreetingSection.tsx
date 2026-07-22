@@ -8,6 +8,35 @@ import { SectionHeader } from "../primitives/SectionHeader";
 import { SectionShell } from "../primitives/SectionShell";
 import { useRenderer } from "../RendererContext";
 
+// 눈썹 라벨 위 장식 이미지 — 사용자가 올린 리본·문양 등을 인사말 머리에 얹는다.
+// 크기는 높이 하나로 고른다: 폭은 원본 비율을 따라오고, 캔버스를 넘치면 max-width가
+// 잡는다 — 그때는 object-contain이 비율을 지킨 채 상자 안에 들어간다(찌그러짐 없음).
+// 높이를 지정하므로 이미지가 도착하기 전에도 칸이 잡혀 아래 글이 밀리지 않는다.
+function GreetingOrnament({
+  assetId,
+  heightPx,
+  className,
+}: {
+  assetId: string | null;
+  heightPx: number;
+  className?: string;
+}) {
+  const { resolveAsset } = useRenderer();
+  if (assetId === null) return null;
+  const asset = resolveAsset(assetId);
+  if (asset === null) return null;
+  return (
+    <img
+      src={asset.src}
+      alt=""
+      width={asset.width}
+      height={asset.height}
+      style={{ height: `${heightPx}px` }}
+      className={clsx("block w-auto max-w-full object-contain", className)}
+    />
+  );
+}
+
 function ParentsLine({ person, className }: { person: Wedding["groom"]; className?: string }) {
   const line = parentsLineOf(person);
   if (!line) return null;
@@ -48,6 +77,11 @@ export function GreetingSection({
   if (variant === "mono") {
     return (
       <SectionShell section={section} index={index}>
+        <GreetingOrnament
+          assetId={content.ornamentAssetId}
+          heightPx={content.ornamentHeightPx}
+          className="mb-5"
+        />
         <SectionHeader label={content.label} title={content.title} index={index} />
         <div className="mt-7">
           <BodyText text={content.body} align={content.align} />
@@ -83,6 +117,11 @@ export function GreetingSection({
   if (variant === "film") {
     return (
       <SectionShell section={section} index={index}>
+        <GreetingOrnament
+          assetId={content.ornamentAssetId}
+          heightPx={content.ornamentHeightPx}
+          className="mb-5"
+        />
         <SectionHeader label={content.label} title={content.title} index={index} />
         <div className="mt-6">
           <BodyText text={content.body} align={content.align} />
@@ -107,6 +146,11 @@ export function GreetingSection({
   return (
     <SectionShell section={section} index={index}>
       <div className="flex flex-col items-center">
+        <GreetingOrnament
+          assetId={content.ornamentAssetId}
+          heightPx={content.ornamentHeightPx}
+          className="mb-5"
+        />
         <SectionHeader label={content.label} title={content.title} index={index} />
         <div className="mt-8 w-full">
           <BodyText text={content.body} align={content.align} />

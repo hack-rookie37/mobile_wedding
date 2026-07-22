@@ -48,7 +48,8 @@ export const rsvpSubmissionSchema = z.object({
     .string()
     .max(RSVP_LIMITS.message, `메시지는 ${RSVP_LIMITS.message}자 이내로 입력해 주세요`)
     .nullable(),
-  consent: z.literal(true, "개인정보 수집·이용 동의가 필요합니다"), // 동의 없이는 접수하지 않는다 (A-16)
+  // 동의 체크박스는 없다 (ADR-055) — 문턱이 응답을 막았다. 개인 청첩장의 소규모 수집이고,
+  // 안내는 폼 문안(신랑·신부에게만 보입니다)이 맡는다.
 });
 
 export type RsvpSubmission = z.infer<typeof rsvpSubmissionSchema>;
@@ -98,6 +99,5 @@ export function parseRsvpSubmission(raw: unknown): RsvpSubmission {
     meal: record.meal,
     phone: optionalLine(record.phone),
     message: message === "" ? null : message,
-    consent: record.consent,
   });
 }

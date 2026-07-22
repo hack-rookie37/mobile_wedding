@@ -25,6 +25,7 @@ export const assignAssetSlotSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("profilePhoto"), side: z.enum(["groom", "bride"]) }),
   z.object({ kind: z.literal("closingPhoto") }),
   z.object({ kind: z.literal("venueMap") }), // 오시는 길 약도 이미지
+  z.object({ kind: z.literal("greetingOrnament") }), // 인사말 눈썹 라벨 위 장식 이미지
 ]);
 
 export const removeAssetSlotSchema = z.discriminatedUnion("kind", [
@@ -33,6 +34,7 @@ export const removeAssetSlotSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("profilePhoto"), side: z.enum(["groom", "bride"]) }),
   z.object({ kind: z.literal("closingPhoto") }),
   z.object({ kind: z.literal("venueMap") }),
+  z.object({ kind: z.literal("greetingOrnament") }),
 ]);
 
 // ── document actions (문서를 변경하며 undo 가능)

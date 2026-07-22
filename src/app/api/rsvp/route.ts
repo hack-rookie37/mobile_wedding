@@ -67,7 +67,6 @@ export async function POST(request: Request) {
     p_meal: submission.meal,
     p_phone: submission.phone,
     p_message: submission.message,
-    p_consent: submission.consent,
   });
   if (error) {
     console.error(rsvpLogLine("submit_failed", error));

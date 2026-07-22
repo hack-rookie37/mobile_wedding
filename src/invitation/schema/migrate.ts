@@ -1,6 +1,7 @@
 import {
   DEFAULT_GALLERY_GAP_PX,
   DEFAULT_HERO_OVERLAY,
+  DEFAULT_ORNAMENT_HEIGHT,
   DEFAULT_SECTION_PAD_X,
   DEFAULT_TRANSPORT_COLUMNS,
   documentSchema,
@@ -16,7 +17,7 @@ import {
   PT_MIN,
 } from "./themes";
 
-export const CURRENT_SCHEMA_VERSION = 18;
+export const CURRENT_SCHEMA_VERSION = 19;
 
 // 사진 위 문구의 등장 효과로 쓸 수 있는 값. 마이그레이션이 잘못된 값을 여기 기준으로 되돌린다.
 const OVERLAY_ANIMATIONS = new Set(["none", "fade", "rise", "typing", "letterFade", "writing"]);
@@ -612,6 +613,27 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
               content: {
                 ...section.content,
                 overlay: { ...DEFAULT_HERO_OVERLAY, ...section.content?.overlay },
+              },
+            },
+      ),
+    };
+  },
+  // v18 → v19: 인사말 눈썹 라벨 위 장식 이미지(ornamentAssetId + 높이) 추가.
+  // 기존 문서는 null(없음)·기본 높이로 채운다 — 열었을 때 모습이 변하지 않는다.
+  18: (raw) => {
+    const doc = raw as { sections?: Array<{ type?: unknown; content?: object }> };
+    return {
+      ...(raw as object),
+      schemaVersion: 19,
+      sections: (doc.sections ?? []).map((section) =>
+        section.type !== "greeting"
+          ? section
+          : {
+              ...section,
+              content: {
+                ornamentAssetId: null,
+                ornamentHeightPx: DEFAULT_ORNAMENT_HEIGHT,
+                ...section.content,
               },
             },
       ),
