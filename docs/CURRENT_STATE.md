@@ -1,6 +1,6 @@
 # CURRENT_STATE — 프로젝트 현재 상태
 
-- 최종 갱신: 2026-07-23 (준비 게이트 — ADR-049 / 모바일 음량 WebAudio — ADR-050 / 갤러리 선로딩 — ADR-048 / 음량 곡선·버튼 강조색 — ADR-047 / 폰트 FOUT — ADR-046 / 모바일 끊김 — ADR-045 / 피드백 1~3차 — ADR-042~044, 스키마 v16~18)
+- 최종 갱신: 2026-07-23 (codex 리뷰 후속 3건 — ADR-053 / 음악 WebAudio 철회·자동재생 수정 — ADR-051 / iOS filter 매 프레임 문제 — ADR-052 / 준비 게이트 — ADR-049 / 갤러리 선로딩 — ADR-048 / 음량 곡선·버튼 강조색 — ADR-047 / 폰트 FOUT — ADR-046 / 모바일 끊김 — ADR-045 / 피드백 1~3차 — ADR-042~044, 스키마 v16~18)
 - 갱신 규칙: **각 vertical slice 완료 시, 그리고 중요한 결정·환경 변화 시 이 파일을 갱신한다.** 이 파일은 "지금 어디까지 왔고 다음이 무엇인지"의 단일 소스다.
 
 ## 1. 한 줄 요약
@@ -9,6 +9,12 @@
 7개 영역(architecture·security·data integrity·accessibility·responsive·performance·e2e)을 감사해 실제 결함 **14건을 수정**했고(핵심: anon이 `publish_records` 직접 조회로 public projection을 우회해 숨긴 계좌·연락처 열람 + 발행 목록 열거가 가능했던 취약점 — RPC 단일 경로로 봉쇄, ADR-023), 배포 문서(README·DEPLOYMENT·.env.example)를 완성했다. 전 검사 green: format·lint·typecheck·renderer-units / 단위 216 / 통합 29 / build / e2e 59. 남은 조건은 §3.
 
 **Phase 11 이후 변경**: 아직 서비스로 열지 않으므로 **공개 가입을 닫았다**(ADR-024) — 로그인 화면에서 회원가입 모드 제거, 계정은 Supabase 대시보드에서 직접 생성, 운영 `enable_signup = false`가 실제 경계(§3-2). admin role은 도입하지 않았다(소유권 모델로 충분, YAGNI). e2e 헬퍼는 가입 UI 대신 anon API로 계정을 만들고 로그인만 UI로 수행한다 — 전 검사 재실행 green(§4).
+
+**codex 리뷰 후속 3건 (ADR-053, ADR-051/052 보강)**: ADR-051/052를 codex로 교차 리뷰(rescue 종합 + ultracode 4각도 병렬 후 실제 코드 대조) → 구조는 건전, 실질 지적 3건 수정. ① **컬러 이모지 발광 회귀**(ADR-052발): `color:transparent`가 컬러 이모지를 못 지워 발광 사본에서 이모지만 조기 노출 → `GlowText`가 이모지 코드포인트만 `opacity:0`으로 감춤(이모지 없는 문구는 DOM 동일). ② **재생 대기 중 취소 시 소리·버튼 불일치**(minor): `start()`가 play 후 cancelled면 `pause()`로 되돌림. ③ **retry↔버튼 click 경쟁**(minor): retry가 버튼 대상 제스처면 물러남(+ `{once}` 버리고 리스너 일괄 관리). codex의 major "detached audio 영원 loop"는 거짓양성(모던 브라우저 DOM 제거 시 자동 pause)으로 반박. 문서·안내문 대비 지적은 지적 범위 밖이라 미수정.
+
+**음악 원상복구 + 자동재생 수정 (ADR-051, ADR-050 철회)**: WebAudio(GainNode) 우회가 실기기에서 소리 자체를 깨뜨렸다 — **iOS의 WebAudio 출력은 무음 스위치(진동 모드)에 묶인다**(`<audio>` 직접 재생은 안 묶임). `<audio>` 직접 재생 + element volume(세제곱 곡선 유지)으로 원복 — iOS 음량 지정 불가는 플랫폼 정책이라 수용하고 편집기에 안내문("아이폰은 기기 음량 버튼을 따릅니다"). 덤: 자동재생 재시도에 허가 이벤트(touchend·click·pointerup) 추가 + 실패 시 재장전(스크롤 1회 실패로 소진되던 버그) — 폰에서 자동재생이 안 되던 별개 원인.
+
+**iOS filter 매 프레임 재계산 — 끊김의 남은 원인 (ADR-052)**: iOS는 합성 레이어의 CSS filter를 **화면을 그릴 때마다 다시 계산**한다 — 발광 blur 두 층(최대 10.5+30px×3배 해상도), 움직이는 잉크의 외곽 흐림, 무한 깜빡이는 별의 drop-shadow, 음악 버튼 backdrop-blur가 전부 매 프레임 GPU를 태워 쓸기 모서리가 건너뛰었다("글자 끝이 뒤늦게"). 원칙: **filter는 승격되는 요소에 직접 걸지 않는다** — 발광은 글자색 투명+text-shadow(래스터 1회, 반지름=blur×2), 외곽 흐림·별빛번짐은 안쪽 정지 요소로(EdgeBlurred), backdrop-blur는 제거(bg 진하게). ADR-044/045/049에 이은 마지막 조각.
 
 **준비 게이트 — 다 온 뒤에 함께 시작 (ADR-049)**: 합성기 전용화(ADR-044/045) 뒤에도 모바일에서 쓰기 효과가 끊긴 남은 원인 = **시작 시점**. 등장 효과의 첫 1~3초가 하이드레이션·이미지 디코드·레이어 승격이 몰리는 최혼잡 구간과 겹쳤다(PC는 이 구간이 짧아 안 겹침). ADR-046 폰트 게이트를 확장해 `data-entrance-hold` — 폰트 + window load(전 사진, ADR-048의 eager 포함)가 끝난 뒤 rAF 두 번 지나 캔버스의 **모든 CSS 애니메이션이 한가한 메인 스레드 위에서 함께 시작**한다(10초 안전장치, 편집기·JS 없음·백그라운드 탭 각각 안전). "로딩이 좀 느려도 화면이 떴을 때는 모두 부드럽게" — 사용자가 고른 트레이드.
 

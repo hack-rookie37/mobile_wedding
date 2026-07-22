@@ -109,15 +109,20 @@ function MusicPlaybackFields() {
 
   return (
     <div className="mt-3 space-y-4">
-      <NumberField
-        label="음량"
-        value={Math.round(music.volume * 100)}
-        min={0}
-        max={100}
-        step={5}
-        unit="%"
-        onChange={(percent) => patch({ volume: percent / 100 })}
-      />
+      <div>
+        <NumberField
+          label="음량"
+          value={Math.round(music.volume * 100)}
+          min={0}
+          max={100}
+          step={5}
+          unit="%"
+          onChange={(percent) => patch({ volume: percent / 100 })}
+        />
+        <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+          아이폰(iOS)은 페이지의 음량 지정을 허용하지 않아 기기 음량 버튼을 따릅니다.
+        </p>
+      </div>
       <NumberField
         label="재생 속도"
         value={Math.round(music.speed * 100)}

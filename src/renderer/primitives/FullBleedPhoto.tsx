@@ -483,11 +483,13 @@ function Sparkle() {
         }
       `}</style>
       {STARS.map((star) => (
-        <svg
+        // 깜빡임(애니메이션)은 바깥 상자, 빛번짐(filter)은 안쪽 정지 svg에 — 애니메이션되는
+        // 요소에 filter를 직접 걸면 iOS가 매 프레임 다시 계산한다. 별은 무한히 깜빡여서
+        // 그 비용이 영원히 돌았다 (ADR-052, 발광·외곽 흐림과 같은 원리).
+        <span
           key={`${star.top}-${star.left}`}
           data-star
-          viewBox="0 0 24 24"
-          className="absolute"
+          className="absolute block"
           style={{
             top: star.top,
             left: star.left,
@@ -495,13 +497,20 @@ function Sparkle() {
             height: star.size,
             marginTop: -star.size / 2, // 좌표를 별의 중심으로 삼는다
             marginLeft: -star.size / 2,
-            fill: "rgba(255,255,255,0.92)",
-            filter: "drop-shadow(0 0 4px rgba(255,255,255,0.55))",
             animation: `canvas-twinkle ${star.duration} ease-in-out ${star.delay} infinite`,
           }}
         >
-          <path d={STAR_PATH} />
-        </svg>
+          <svg
+            viewBox="0 0 24 24"
+            className="block h-full w-full"
+            style={{
+              fill: "rgba(255,255,255,0.92)",
+              filter: "drop-shadow(0 0 4px rgba(255,255,255,0.55))",
+            }}
+          >
+            <path d={STAR_PATH} />
+          </svg>
+        </span>
       ))}
     </div>
   );

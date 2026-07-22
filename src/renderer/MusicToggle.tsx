@@ -3,12 +3,29 @@
 import { useEffect, useRef, useState } from "react";
 import { useRenderer } from "./RendererContext";
 
-// 자동재생이 막혔을 때 다시 시도할 계기 — 게스트의 첫 동작이면 무엇이든 좋다.
-const FIRST_GESTURE_EVENTS = ["pointerdown", "keydown", "touchstart", "scroll", "wheel"] as const;
+// 자동재생이 막혔을 때 다시 시도할 계기가 되는 게스트의 동작들.
+// touchend·click·pointerup·keydown이 핵심이다 — 브라우저가 '사용자 동작'으로 인정해
+// 재생 허가를 주는 이벤트는 누름이 아니라 '뗌' 계열이다(iOS는 특히 touchend).
+// scroll·wheel·pointerdown은 허가를 못 받을 수 있지만 데스크톱 일부에서는 통해서 남겨 둔다.
+const FIRST_GESTURE_EVENTS = [
+  "touchend",
+  "click",
+  "pointerup",
+  "keydown",
+  "pointerdown",
+  "touchstart",
+  "scroll",
+  "wheel",
+] as const;
 
 // 배경음악 토글 — 캔버스 우상단 플로팅 버튼.
 // 자동재생은 "켜기를 시도한다"는 뜻이지 보장이 아니다: 브라우저는 소리 있는 자동재생을
-// 대부분 막으므로, 막히면 게스트의 첫 동작(스크롤·터치)까지 기다렸다가 한 번 더 시도한다.
+// 대부분 막으므로, 막히면 게스트의 다음 동작에서 다시 시도한다(성공할 때까지 재장전).
+//
+// 소리는 <audio> 엘리먼트가 직접 낸다 — WebAudio(GainNode) 우회는 쓰지 않는다 (ADR-051).
+// iOS에서 WebAudio 출력은 무음 스위치(진동 모드)에 묶여, 스위치가 켜진 폰에서는 소리
+// 자체가 사라졌다. <audio> 직접 재생은 무음 모드에서도 들린다 — BGM은 예식일에 반드시
+// 나와야 하는 기능이라 재생 신뢰성이 iOS 음량 조절보다 먼저다.
 export function MusicToggle({
   url,
   volume,
@@ -22,79 +39,24 @@ export function MusicToggle({
 }) {
   const { mode } = useRenderer();
   const audioRef = useRef<HTMLAudioElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [playing, setPlaying] = useState(false);
 
   // 편집 중에 음악이 저절로 울리면 방해가 된다 — 게스트가 보는 화면에서만 스스로 켠다
   // (편집기의 '미리보기'도 게스트 화면이므로 여기 포함된다).
   const autoStart = autoplay && mode === "published";
 
-  // iOS Safari는 audio.volume 대입을 무시한다(음량은 하드웨어 버튼 전용) — PC에서는 되던
-  // 음량 조절이 아이폰에서만 안 먹던 이유다. 소리 경로를 WebAudio GainNode로 돌리면
-  // iOS에서도 gain이 적용된다 (ADR-050). 그래프는 첫 재생 시도 때 한 번만 만든다 —
-  // 게스트 대부분은 음악을 안 켜므로 그 전에는 AudioContext를 만들지 않는다.
-  // MediaElementSource는 교차 출처 오디오면 무음이 되지만, 여기의 소스는 전부
-  // 같은 출처다: 게스트는 /a/ 프록시(ADR-040), 편집기·미리보기는 blob URL.
-  const graphRef = useRef<{ ctx: AudioContext; gain: GainNode } | null>(null);
-  const volumeRef = useRef(volume);
-
-  // 음량 적용 지점은 하나 — 그래프가 있으면 gain, 없으면(생성 전·WebAudio 미지원)
-  // element volume. 두 군데에 다 걸면 세제곱이 두 번 먹는다(volume⁶).
-  // 세제곱: 진폭은 선형인데 사람 귀는 로그라, 선형으로는 70%와 100%가 거의 같게
-  // 들린다(-3dB). 세제곱이면 70%≈-9dB·50%≈-18dB — 슬라이더 눈금마다 차이가 들린다
-  // (ADR-047). 문서에는 슬라이더 값(0~1)이 그대로 저장된다.
-  const applyVolume = () => {
+  // 볼륨·속도는 렌더 결과가 아니라 audio 엘리먼트의 상태다 — 값이 바뀔 때마다 직접 얹는다.
+  // 세제곱: audio.volume은 선형 진폭인데 사람 귀는 로그라, 선형으로는 70%와 100%가
+  // 거의 같게 들린다(-3dB). 세제곱이면 70%≈-9dB·50%≈-18dB — 슬라이더 눈금마다 차이가
+  // 실제로 들린다 (ADR-047). 문서에는 슬라이더 값(0~1)이 그대로 저장된다.
+  // 단, iOS는 volume 지정을 무시한다(음량은 기기 버튼 전용 — 플랫폼 정책, ADR-051).
+  useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const gainValue = volumeRef.current ** 3;
-    const graph = graphRef.current;
-    if (graph !== null) {
-      audio.volume = 1;
-      graph.gain.gain.value = gainValue;
-    } else {
-      audio.volume = gainValue;
-    }
-    // 실제 적용된 감쇠값 — gain은 DOM 밖이라 여기 남겨야 확인(디버깅·e2e)이 가능하다
-    audio.dataset.appliedVolume = String(gainValue);
-  };
-
-  const ensureGraph = () => {
-    const audio = audioRef.current;
-    if (audio === null || graphRef.current !== null) return;
-    const Ctx =
-      window.AudioContext ??
-      (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (Ctx === undefined) return; // WebAudio 미지원 — element volume으로 동작한다
-    const ctx = new Ctx();
-    const gain = ctx.createGain();
-    ctx.createMediaElementSource(audio).connect(gain);
-    gain.connect(ctx.destination);
-    graphRef.current = { ctx, gain };
-    applyVolume();
-  };
-
-  // 컨텍스트는 사용자 동작 없이는 suspended로 태어날 수 있다 — 재생 경로마다 열어 준다.
-  // 기다리지 않는다: 막힌 resume은 거부가 아니라 영영 pending일 수 있어서(크롬),
-  // 성공 여부는 start()가 state를 직접 본다. 거부(사파리)는 삼킨다 — 다음 동작에서 다시 연다.
-  const resumeGraph = () => {
-    const graph = graphRef.current;
-    if (graph !== null && graph.ctx.state !== "running") graph.ctx.resume().catch(() => {});
-  };
-
-  // 볼륨·속도는 렌더 결과가 아니라 오디오 그래프의 상태다 — 값이 바뀔 때마다 직접 얹는다.
-  useEffect(() => {
-    volumeRef.current = volume;
-    applyVolume();
-    const audio = audioRef.current;
-    if (audio) audio.playbackRate = speed;
+    audio.volume = volume ** 3;
+    audio.playbackRate = speed;
   }, [volume, speed]);
-
-  // 언마운트 시 컨텍스트를 닫는다 — 오디오 하드웨어 점유를 남기지 않는다
-  useEffect(
-    () => () => {
-      void graphRef.current?.ctx.close();
-    },
-    [],
-  );
 
   useEffect(() => {
     if (!autoStart) return;
@@ -105,33 +67,54 @@ export function MusicToggle({
     let removeListeners: (() => void) | null = null;
 
     const start = async () => {
-      ensureGraph();
-      resumeGraph();
       try {
         await audio.play();
-        if (!cancelled) setPlaying(true);
+        // play()는 비동기라, 대기 중에 정리(cancelled)됐을 수 있다 — 그 경우 되돌린다.
+        // cancelled가 setPlaying만 막고 재생을 안 막으면 버튼은 '켜기'인데 소리만 나는
+        // 불일치가 생긴다(에디터 미리보기에서 재생 대기 중 자동재생을 끌 때). 언마운트는
+        // 브라우저가 DOM 제거 시 알아서 멈추지만, 마운트 유지 상태 전환은 여기서 막는다.
+        if (cancelled) {
+          audio.pause();
+          return true;
+        }
+        setPlaying(true);
+        return true;
       } catch {
         return false; // 자동재생 차단·로드 실패 — 꺼진 상태를 유지한다
       }
-      // 재생은 허용됐는데 컨텍스트가 잠긴 채면(정책이 media와 WebAudio를 달리 볼 때)
-      // 소리 없이 도는 상태다 — 실패로 치고 첫 동작에서 다시 연다
-      const graph = graphRef.current;
-      return graph === null || graph.ctx.state === "running";
     };
 
-    void start().then((started) => {
-      if (started || cancelled) return;
-      const retry = () => {
+    // 실패하면 다음 동작을 다시 기다린다(재장전) — 스크롤처럼 허가를 못 받는 동작에서
+    // 한 번 실패했다고 끝내면, 정작 허가가 되는 탭(touchend)이 와도 켤 수 없다.
+    const arm = () => {
+      const retry = (event: Event) => {
+        // 음악 버튼을 누른 제스처면 retry는 물러난다 — 버튼 onClick(toggle)이 직접 재생을
+        // 처리하므로, 여기서 또 start()하면 retry가 켠 뒤 곧이어 오는 click이 toggle→pause로
+        // 꺼 버리는 경쟁이 생긴다. 물러날 때도 리스너는 정리한다: 사용자가 버튼으로 직접
+        // 제어를 잡았으니 자동 재시도는 끝내야 한다(안 그러면 일시정지 후 스크롤이 재시작한다).
+        const target = event.target;
+        if (target instanceof Node && buttonRef.current?.contains(target)) {
+          removeListeners?.();
+          return;
+        }
         removeListeners?.();
-        void start();
+        void start().then((started) => {
+          if (!started && !cancelled) arm();
+        });
       };
+      // once:true를 쓰지 않는다 — 버튼 제스처로 물러날 때는 start()를 안 하므로, 자동 제거에
+      // 맡기면 나머지 리스너가 남는다. removeListeners로 항상 8종을 함께 건다·뗀다.
       removeListeners = () => {
         for (const event of FIRST_GESTURE_EVENTS) window.removeEventListener(event, retry);
         removeListeners = null;
       };
       for (const event of FIRST_GESTURE_EVENTS) {
-        window.addEventListener(event, retry, { once: true, passive: true });
+        window.addEventListener(event, retry, { passive: true });
       }
+    };
+
+    void start().then((started) => {
+      if (!started && !cancelled) arm();
     });
 
     return () => {
@@ -148,8 +131,6 @@ export function MusicToggle({
       setPlaying(false);
       return;
     }
-    ensureGraph();
-    resumeGraph(); // 클릭 = 사용자 동작 — 여기서의 resume은 항상 허용된다
     audio
       .play()
       .then(() => setPlaying(true))
@@ -158,13 +139,17 @@ export function MusicToggle({
 
   return (
     <div className="pointer-events-none sticky top-3 z-20 -mb-11 flex justify-end px-3">
+      {/* backdrop-blur를 쓰지 않는다 — iOS는 backdrop-filter를 매 프레임 다시 계산해,
+          버튼이 작아도 아래에서 꽃잎·쓰기 효과가 움직이는 내내 GPU를 잡아먹는다 (ADR-052).
+          대신 배경을 조금 더 진하게 깔아 사진 위에서의 가독을 유지한다. */}
       <button
+        ref={buttonRef}
         type="button"
         data-music-toggle
         aria-label={playing ? "음악 끄기" : "음악 켜기"}
         aria-pressed={playing}
         onClick={toggle}
-        className="pointer-events-auto flex size-8 items-center justify-center rounded-full bg-black/40 text-[length:calc(13px*var(--canvas-fs))] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)] backdrop-blur transition-colors hover:bg-black/55"
+        className="pointer-events-auto flex size-8 items-center justify-center rounded-full bg-black/45 text-[length:calc(13px*var(--canvas-fs))] text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)] transition-colors hover:bg-black/60"
       >
         {playing ? (
           // 재생 중 — 음표
