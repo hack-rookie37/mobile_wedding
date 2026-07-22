@@ -502,7 +502,7 @@ describe("발행 수명주기 (Phase 7)", () => {
   it("공개 응답에는 private 필드가 없다 (projection + 스냅샷 컬럼 한정)", async () => {
     const projectId = await createProject(userA);
     const persistence = new SupabasePersistence(userA);
-    await uploadAsset(userA, projectId);
+    const uploadedAssetId = await uploadAsset(userA, projectId); // 문서가 참조하지 않는 업로드
     await persistence.createCheckpoint(projectId, "비밀 체크포인트 라벨"); // rev 1에 이미 origin → exists
     const slug = uniqueSlug();
     await persistence.publish(projectId, slug);
@@ -515,7 +515,9 @@ describe("발행 수명주기 (Phase 7)", () => {
     expect(serialized).not.toContain("undoStack");
     expect(serialized).not.toContain("published_rev");
     // asset manifest는 공개 URL만 — 내부 storage 경로 필드는 없다
-    const assets = (record.data as { assets: Record<string, unknown>[] }).assets;
+    const assets = (record.data as { assets: { id: string }[] }).assets;
+    // 문서가 참조하지 않는 업로드는 공개 스냅샷에 실리지 않는다 (ADR-041) — 직접 RPC로도 URL이 안 샌다
+    expect(assets.map((e) => e.id)).not.toContain(uploadedAssetId);
     for (const entry of assets) {
       expect(Object.keys(entry).sort()).toEqual([
         "height",
@@ -528,6 +530,44 @@ describe("발행 수명주기 (Phase 7)", () => {
     }
     // anon은 revisions 테이블 자체에 접근 불가
     expectNoRows(await anon.from("revisions").select("*").eq("project_id", projectId));
+  });
+
+  it("anon은 photos 버킷을 열거할 수 없다 — 경로를 몰라도 목록으로 새면 안 된다", async () => {
+    const projectId = await createProject(userA);
+    await uploadAsset(userA, projectId); // 실제 객체가 있어도
+
+    // anon SELECT 정책 제거 후: list는 빈 목록(또는 거부)이어야 한다. 하나라도 새면 모든
+    // 프로젝트의 업로드(미발행 draft 포함)가 열거 가능하다는 뜻이다 (20260722020000).
+    const anon = anonClient();
+    const listed = await anon.storage.from("photos").list(`projects/${projectId}`);
+    expect(listed.data ?? []).toEqual([]);
+  });
+
+  it("숨긴 섹션만 참조하는 asset은 발행 스냅샷에서 빠진다 (ADR-041, 직접 RPC)", async () => {
+    const projectId = await createProject(userA);
+    const persistence = new SupabasePersistence(userA);
+    const visibleAssetId = await uploadAsset(userA, projectId); // 보이는 hero가 참조
+    const hiddenAssetId = await uploadAsset(userA, projectId); // 숨긴 gallery만 참조
+
+    const doc = createSampleDocument();
+    const hero = doc.sections[0];
+    if (hero.type === "hero") hero.content.photoAssetId = visibleAssetId;
+    const gallery = doc.sections.find((s) => s.type === "gallery");
+    if (gallery?.type === "gallery") {
+      gallery.visible = false;
+      gallery.content.photos = [{ ...gallery.content.photos[0], assetId: hiddenAssetId }];
+    }
+    await persistence.save(projectId, doc, 1); // 업로드는 doc_rev를 바꾸지 않아 여전히 rev 1
+
+    const slug = uniqueSlug();
+    await persistence.publish(projectId, slug);
+
+    // 직접 anon RPC(앱의 buildPublicPayload를 거치지 않는 경로)에서도 숨긴 asset URL이 없어야 한다
+    const anon = anonClient();
+    const record = await anon.rpc("get_published_by_slug", { p_slug: slug });
+    const ids = (record.data as { assets: { id: string }[] }).assets.map((a) => a.id);
+    expect(ids).toContain(visibleAssetId); // 보이는 섹션 asset은 남고
+    expect(ids).not.toContain(hiddenAssetId); // 숨긴 섹션 전용 asset은 스냅샷에서 빠진다
   });
 });
 

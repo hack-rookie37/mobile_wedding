@@ -282,7 +282,7 @@ Zustand 5 단일 스토어, 슬라이스 3개:
 | invitation_documents / revisions / project_assets | 없음 (grant조차 없음) | CRUD(revisions는 불변 — update 없음), `owns_project()` 한정 |
 | publish_records | **없음 (grant조차 없음)** — 읽기는 `get_published_by_slug` RPC만 (ADR-023) | 전체, 소유 프로젝트 한정 |
 | rsvp_responses | 없음 (grant조차 없음 — 쓰기는 definer RPC만) | select·delete만, `owns_project()` 한정 — **소유자도 insert/update 불가** |
-| storage.objects(photos) | select(공개 읽기) | insert/update/delete — 경로 `projects/{projectId}/…`의 프로젝트를 소유할 때만 |
+| storage.objects(photos) | **없음** — 공개 URL 다운로드는 공개 버킷이라 RLS 밖이고, list(열거) API는 막힌다 (ADR-041) | select(자기 경로 목록만) · insert/update/delete — 경로 `projects/{projectId}/…`의 프로젝트를 소유할 때만 |
 
 - RLS(행 필터)와 별개로 **GRANT는 명시적 최소 권한**으로 선언한다 — 최신 로컬 스택은 기본 DML grant를 주지 않는다.
 - 공개 페이지(/i/[slug])는 발행 시점에 고정된 `publish_records.assets` manifest로만 이미지를 해석한다 —
@@ -327,16 +327,23 @@ interface AssetStore {
   (grant 없음) — 발행 목록 열거·projection 우회·내부 메타(published_rev) 노출이 불가능하다.
   **숨긴 섹션 제거는 RPC(DB)가 1차로 수행**하고, 앱의 `buildPublicPayload`(문서 화이트리스트
   재파싱 + asset manifest strict 검증)가 같은 규칙을 한 번 더 적용한다(2차 방어).
+  anon은 `photos` 버킷을 **열거(list)할 수 없다** — 공개 URL 다운로드만 되고 목록 API는
+  막혀, 경로를 몰라도 남의 업로드가 새는 것을 방지한다 (ADR-041).
 - **public projection**: `/i/[slug]`·`/p/[token]` 응답은 `invitation/publicPayload.ts`의
   `buildPublicPayload`를 통과한 것만 클라이언트로 나간다 — 편집기 상태·revision 이력·
-  내부 storage 경로는 존재하지 않는다.
+  내부 storage 경로는 존재하지 않는다. 게다가 **문서가 실제로 참조하는 asset만** 남긴다
+  (쓰지 않는 업로드·숨긴 섹션 전용 사진 제외) — 발행 스냅샷도 발행 시점에 같은 규칙으로
+  좁혀, 직접 RPC로도 미참조 URL이 새지 않는다 (ADR-041).
 - **공개 페이지**: RSC 서버 렌더 + generateMetadata(og/twitter·대표 이미지·robots noindex),
   최대 430px 중앙 정렬(360/390/430 검증), Web Share API + 클립보드 복사 fallback.
-  요청마다 SSR + DB 1회(React cache로 metadata와 본문이 조회 공유) — 항상 최신.
+  발행 스냅샷을 **ISR**(`revalidate=300`, 세션 없는 클라이언트)로 캐시해 하객마다 RPC를 때리지
+  않고, 발행/재발행/중단·주소 변경 때 `revalidatePath`로 즉시 새로고침한다 (ADR-040). React
+  cache로 한 요청 안 metadata·본문 RPC를 공유한다. RPC 오류는 런타임엔 던져 마지막 정상
+  스냅샷을 유지하고(일시 오류가 '없는 청첩장'으로 굳지 않게), 빌드 프리렌더만 관대하게 넘긴다.
 - **발행 중 asset 보호** (Phase 11): live 발행본이 참조하는 사진은 보관함에서 삭제할 수
   없다(어댑터가 거부) — 스냅샷 문서는 불변인데 파일만 사라져 공개 페이지가 깨지는 것을 막는다.
-- 남은 것(후속 설계 메모): 발행 전 검증 규칙(PRODUCT_SPEC §7), `/i/[slug]` 태그 캐시
-  (`inv:${slug}` — 재발행·발행 중단 시 revalidate; Next 16.2의 권장 캐시 API 확인 후 통일).
+- 남은 것(후속 설계 메모): 발행 전 검증 규칙(PRODUCT_SPEC §7). 하객 페이지 캐시는 ADR-040에서
+  ISR+`revalidatePath`로 완료했다(Next 16의 `revalidateTag`/`updateTag` 함정은 그 ADR 참고).
 
 ## 9. RSVP 데이터 경로 (Phase 9 구현 완료 — ADR-021)
 
@@ -476,5 +483,5 @@ AI 변수는 선택이 의도된 예외다(§10 — 미설정 = 기능 비활성
 - [x] 공개 페이지 `noindex`, slug 직접 조회만 가능(열거 경로 없음)
 - [x] 접근성: native dialog 포커스 관리, 라벨·alert/status announce, reduced-motion 존중,
       키보드 대체 경로(드래그·행 펼침), 터치 타깃 ≥24px
-- [ ] `/i/[slug]` 태그 캐시(재발행 revalidate) — 후속 (현재는 매 요청 SSR = 항상 최신)
+- [x] 하객 페이지 캐시 — ISR(`revalidate=300`) + `revalidatePath`로 완료 (ADR-040)
 - [ ] 한글 서브셋 프리로드 최적화(next/font preload 범위) — 후속

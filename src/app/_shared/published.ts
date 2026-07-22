@@ -1,3 +1,4 @@
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import type { Metadata } from "next";
 import { cache } from "react";
 import { weddingIcsResponse } from "@/invitation/lib/ics";
@@ -26,19 +27,36 @@ function payloadOf(data: unknown): PublicInvitationPayload | null {
   return buildPublicPayload(raw.doc, raw.assets);
 }
 
+// RPC/네트워크 오류를 "없는 청첩장"(null)으로 캐시하지 않는다 (fail fast, ADR-040).
+// 빌드 프리렌더와 런타임 재검증은 '백엔드가 안 닿을 때' 정답이 다르다:
+//  - 런타임: 던진다 → ISR이 마지막 정상 스냅샷을 유지하고 다음 요청에 다시 시도한다.
+//    일시 오류가 '없는 청첩장'으로 덮어써져 캐시로 굳는 것을 막는다(codex 지적).
+//  - 빌드(프리렌더): 관대하게 null → 백엔드 blip이 배포 전체를 막지 않는다. 첫 재검증에서
+//    실제 내용으로 채워진다(루트 페이지는 빌드 시 프리렌더되므로 이 구분이 필요하다).
+// 진짜 미발행/미존재는 data=null이면서 error가 없는 경우로 온다(양쪽 모두 정상 처리).
+const BUILD_PRERENDER = process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD;
+
 export const loadPublished = cache(
   async (slug: string): Promise<PublicInvitationPayload | null> => {
     const { data, error } = await getPublicSupabase().rpc("get_published_by_slug", {
       p_slug: slug,
     });
-    return error !== null ? null : payloadOf(data);
+    if (error !== null) {
+      if (BUILD_PRERENDER) return null;
+      throw new Error(`발행본 조회 실패 (${slug}): ${error.message}`);
+    }
+    return payloadOf(data);
   },
 );
 
 // 도메인 루트에 올라간 발행본 (공개 주소를 따로 두지 않은 것) — ADR-029
 export const loadPublishedRoot = cache(async (): Promise<PublicInvitationPayload | null> => {
   const { data, error } = await getPublicSupabase().rpc("get_published_root");
-  return error !== null ? null : payloadOf(data);
+  if (error !== null) {
+    if (BUILD_PRERENDER) return null;
+    throw new Error(`루트 발행본 조회 실패: ${error.message}`);
+  }
+  return payloadOf(data);
 });
 
 // 예식 일정(.ics) — 페이지와 같은 RPC만 쓴다 (ADR-023).

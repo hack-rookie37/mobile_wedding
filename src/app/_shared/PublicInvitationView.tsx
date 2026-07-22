@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { resolveBuiltinAsset } from "@/editor/assets/builtinAssets";
+// publicManifest에서 직접 가져온다 — publicPayload를 거치면 zod·마이그레이션이 게스트 번들에
+// 딸려 온다 ("use client"라 트리셰이킹이 안 걷어낸다, ADR-040).
 import {
   fontUrlOf,
   manifestResolver,
   musicUrlOf,
   type PublicAssetEntry,
-} from "@/invitation/publicPayload";
+} from "@/invitation/publicManifest";
 import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import type { InvitationDocument } from "@/invitation/schema/document";
 import { InvitationRenderer } from "@/renderer/InvitationRenderer";

@@ -11,6 +11,7 @@ import type {
   RevisionSummary,
   SaveOutcome,
 } from "@/invitation/persistence/port";
+import { referencedAssetIds } from "@/invitation/lib/assetRefs";
 import { documentSchema, type InvitationDocument } from "@/invitation/schema/document";
 import { CURRENT_SCHEMA_VERSION, migrateDocument } from "@/invitation/schema/migrate";
 import { publicAssetManifest } from "./assetManifest";
@@ -139,21 +140,46 @@ export class SupabasePersistence implements ProjectPersistence {
     if (formatError !== null) {
       throw new PersistenceError(`발행 실패: ${formatError}`); // 형식 오류는 네트워크 전에 거부
     }
-    const assets = await publicAssetManifest(this.client, projectId);
-    const { data, error } = await this.client.rpc("publish_project", {
-      p_project_id: projectId,
-      p_slug: slug,
-      p_assets: assets,
-    });
-    const result = must(data, error, "발행") as
-      | { status: "published"; slug: string | null; publishedRev: number }
-      | { status: "slug_taken" }
-      | { status: "root_taken" }
-      | { status: "not_found" };
-    if (result.status === "not_found") {
-      throw new PersistenceError("발행 실패: 프로젝트를 찾을 수 없습니다");
+    // 발행 스냅샷에는 '보이는 섹션이 실제로 참조하는' asset만 담는다 (ADR-041) — 읽기 시
+    // buildPublicPayload와 같은 규칙이라, 올렸다 뺀 사진·숨긴 섹션 전용 사진이 스냅샷에 실려
+    // 직접 RPC로 URL이 새는 것을 막는다(게스트 payload도 읽을 때 한 번 더 좁힌다 — 옛 스냅샷 보호).
+    //
+    // manifest는 우리가 로드한 doc(rev) 기준으로 필터한다. RPC는 현재 draft를 잠그고 스냅샷하므로,
+    // 그 사이 draft가 바뀌면(멀티탭 등) manifest와 스냅샷 doc이 어긋난다. 그래서 p_expected_rev를
+    // 넘겨 RPC가 '잠근 뒤 rev가 다르면 아무것도 쓰지 않고 rev_changed로 되돌리게' 한다 → 어긋난
+    // 스냅샷은 커밋된 적조차 없다(직접 RPC·cold ISR도 못 본다). 최신 doc으로 다시 필터해 재시도한다.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const loaded = await this.load(projectId);
+      if (loaded === null) {
+        throw new PersistenceError("발행 실패: 프로젝트를 찾을 수 없습니다");
+      }
+      const visibleSections = loaded.doc.sections.filter((section) => section.visible);
+      const referenced = referencedAssetIds({ ...loaded.doc, sections: visibleSections });
+      const assets = (await publicAssetManifest(this.client, projectId)).filter((entry) =>
+        referenced.has(entry.id),
+      );
+      const { data, error } = await this.client.rpc("publish_project", {
+        p_project_id: projectId,
+        p_slug: slug,
+        p_assets: assets,
+        p_expected_rev: loaded.rev,
+      });
+      const result = must(data, error, "발행") as
+        | { status: "published"; slug: string | null; publishedRev: number }
+        | { status: "slug_taken" }
+        | { status: "root_taken" }
+        | { status: "rev_changed"; currentRev: number }
+        | { status: "not_found" };
+      if (result.status === "not_found") {
+        throw new PersistenceError("발행 실패: 프로젝트를 찾을 수 없습니다");
+      }
+      // rev_changed: 잠근 사이 draft가 바뀌어 RPC가 아무것도 쓰지 않고 되돌렸다(이전 발행 상태 보존)
+      // — 최신 doc으로 다시 필터해 재시도한다. 그 외(발행 성공·slug/root 중복)는 그대로 반환.
+      if (result.status !== "rev_changed") {
+        return result;
+      }
     }
-    return result;
+    throw new PersistenceError("발행 실패: 편집이 계속 겹쳐 스냅샷을 확정하지 못했습니다");
   }
 
   async unpublish(projectId: string): Promise<void> {

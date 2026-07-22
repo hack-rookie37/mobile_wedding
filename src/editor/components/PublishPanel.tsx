@@ -278,6 +278,7 @@ export function PublishPanel({
                 disabled={busy || slugMessage !== null}
                 onClick={() =>
                   run(async () => {
+                    const prevSlug = publishState?.slug ?? null; // 재발행 전 공개 주소
                     const outcome = await persistence.publish(projectId, targetSlug);
                     if (outcome.status === "slug_taken") {
                       setError("이미 사용 중인 주소입니다 — 다른 주소를 입력해 주세요.");
@@ -291,6 +292,10 @@ export function PublishPanel({
                     }
                     // 발행 스냅샷 캐시를 즉시 새로고침 — 안 하면 하객에게 옛 내용이 남는다
                     await onPublishChange?.(outcome.slug);
+                    // 공개 주소를 바꿔 재발행했다면 옛 주소(/i/<old>)의 캐시도 무효화한다 —
+                    // 안 하면 지난 slug가 옛 스냅샷을 계속 보여준다 (ADR-040). 콜백은 매번 루트도
+                    // 새로고침하므로 이전 slug로 한 번 더 부르면 충분하다.
+                    if (prevSlug !== outcome.slug) await onPublishChange?.(prevSlug);
                     await refresh();
                   })
                 }

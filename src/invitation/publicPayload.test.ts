@@ -138,18 +138,57 @@ describe("musicUrlOf (배경음악)", () => {
 describe("kind 도입 전 발행 스냅샷 호환", () => {
   it("kind 없는 entry는 이미지로 보정되어 통과한다", () => {
     const doc = createSampleDocument();
+    const hero = doc.sections[0];
+    if (hero.type === "hero") hero.content.photoAssetId = "old-1"; // 문서가 참조해야 payload에 남는다
     const legacy = [{ id: "old-1", url: "u", thumbUrl: null, width: 800, height: 600 }];
     const payload = buildPublicPayload(doc, legacy);
     expect(payload.assets[0].kind).toBe("image");
   });
 
   it("오디오 entry는 치수 없이 통과하고, 이미지 entry는 치수가 필수다", () => {
-    const doc = createSampleDocument();
+    const base = createSampleDocument();
+    const doc = { ...base, music: { ...base.music, assetId: "b" } }; // 배경음악으로 참조
     const audio = [{ id: "b", kind: "audio", url: "u", thumbUrl: null, width: null, height: null }];
     expect(buildPublicPayload(doc, audio).assets[0].kind).toBe("audio");
+    // 치수 없는 이미지 entry는 참조 필터 이전에 parse 단계에서 거부된다
     const badImage = [
       { id: "i", kind: "image", url: "u", thumbUrl: null, width: null, height: null },
     ];
     expect(() => buildPublicPayload(doc, badImage)).toThrow();
+  });
+});
+
+describe("참조 asset만 내보낸다 (ADR-041)", () => {
+  it("문서가 참조하지 않는 업로드는 공개 payload에서 빠진다", () => {
+    const doc = createSampleDocument();
+    const hero = doc.sections[0];
+    if (hero.type === "hero") hero.content.photoAssetId = "used";
+    const manifest = [
+      { id: "used", kind: "image" as const, url: "u1", thumbUrl: null, width: 800, height: 1000 },
+      { id: "unused", kind: "image" as const, url: "u2", thumbUrl: null, width: 800, height: 1000 },
+    ];
+    const payload = buildPublicPayload(doc, manifest);
+    expect(payload.assets.map((a) => a.id)).toEqual(["used"]); // unused는 URL을 얻지 못한다
+  });
+
+  it("숨긴 섹션만 참조하는 asset도 제외된다", () => {
+    const doc = createSampleDocument();
+    const gallery = doc.sections.find((s) => s.type === "gallery");
+    if (gallery?.type === "gallery") {
+      gallery.visible = false;
+      gallery.content.photos = [{ ...gallery.content.photos[0], assetId: "hidden-photo" }];
+    }
+    const manifest = [
+      {
+        id: "hidden-photo",
+        kind: "image" as const,
+        url: "u",
+        thumbUrl: null,
+        width: 800,
+        height: 1000,
+      },
+    ];
+    const payload = buildPublicPayload(doc, manifest);
+    expect(payload.assets.map((a) => a.id)).not.toContain("hidden-photo");
   });
 });

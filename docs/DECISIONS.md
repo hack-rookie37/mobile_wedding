@@ -966,3 +966,71 @@ stale-while-revalidate라 재발행이 새로고침 한 번 안에 반영된다.
 아니라 로딩속도용이라 미뤘다. next/image로 사진 — 자동 WebP·리사이즈는 좋지만 Hobby 이미지
 최적화 쿼터를 먹고, 이미 업로드 때 1600px로 줄여서 범용 프록시로 통일했다. `"use cache"`
 디렉티브 — `cacheComponents` 설정이 필요해 영향 범위가 커서 ISR을 택했다.
+
+## ADR-041. 설계 리뷰 후속: 공개 노출·게스트 번들·발행 캐시 정밀화
+
+**Context**: 지금까지의 설계·개발 방향을 Codex로 한 번 리뷰했다(적용 없이 검토만 → 이후 이
+변경으로 반영). 큰 재설계·데이터 삭제성 작업은 제외하고, 실제로 근거를 대조해 확인된 것만
+수술적으로 고쳤다. 네 가지가 남았다.
+
+**Decision**:
+
+1. **공개 projection·발행 스냅샷을 '보이는 섹션이 참조하는 asset'으로 좁힌다 (정보노출).**
+   `buildPublicPayload`가 섹션은 `visible`로 걸렀지만 asset 배열은 프로젝트의 *모든* 업로드를
+   그대로 실어, 올렸다 뺀 사진·숨긴 섹션 전용 사진까지 공개 URL을 얻고 있었다. 이제
+   `referencedAssetIds`(asset을 가진 모든 섹션 타입 + 전역 음악·폰트를 덮는다 — video는 외부
+   URL이라 asset 없음)와 교집합만 내보낸다. **두 겹**이다: 읽을 때 `buildPublicPayload`가
+   좁히고(옛 스냅샷까지 보호), 발행 시점에 `persistence.publish`가 스냅샷도 좁힌다(직접 anon
+   RPC로도 미참조 URL이 안 샌다). **양쪽 모두 `visible` 섹션 기준으로 참조를 뽑는다** — 숨긴
+   섹션만 참조하는 asset도 스냅샷에서 빠진다(코드 리뷰가 처음엔 발행측이 full doc을 쓰던 것을
+   잡았다). manifest는 호출부가 로드한 doc(rev) 기준으로 거르는데, RPC는 '현재 draft'를 잠그고
+   스냅샷하므로 그 사이 draft가 바뀌면(멀티탭) manifest와 스냅샷 doc이 어긋날 수 있다. TS 재시도만으로는
+   이미 커밋된 뒤라 '어긋난 스냅샷이 잠깐 live'가 되는 창을 못 막는다(직접 RPC·cold ISR이 읽을 수
+   있다) — 그래서 **`publish_project`에 `p_expected_rev` 낙관적 동시성 가드**를 뒀다(마이그레이션
+   `20260722030000`): 행을 잠근 뒤 rev가 다르면 아무것도 쓰지 않고 `rev_changed`로 되돌리고, 호출부가
+   최신 doc으로 다시 필터해 재시도한다. **어긋난 스냅샷은 커밋된 적조차 없다.** 참조 집합이 보이는
+   섹션에서 나오므로 렌더가 필요로 하는 asset을 떨어뜨리지 않는다.
+
+   **남는 것(의도적 보류)**: ① '보이지만 비활성 variant'의 사진(예: closing이 `simple` variant인데
+   photoAssetId가 남아 있는 경우)은 렌더되지 않아도 참조로 잡혀 발행된다 — 제외하려면 렌더 활성
+   여부까지 아는 별도 수집기가 필요한데, 부부 자신의 사진이라 위험 대비 이득이 낮아 미룬다
+   (`referencedAssetIds`는 편집기 삭제 보호도 쓰므로 그 의미를 바꾸지 않는다). ② 이 변경 이전에
+   이미 발행된 스냅샷(publish_records)은 전체 asset manifest를 갖고 있다 — 하객 페이지는 읽기측
+   필터가 보호하지만 직접 RPC로는 넓게 남는다. **배포 후 기존 live 청첩장을 재발행하면 정리된다**
+   (운영 단계).
+
+2. **`photos` 버킷의 anon 열거를 막는다 (보안).** init의 정책이 anon에게 버킷 전체 SELECT를 줘,
+   공개 anon 키만으로 storage list API로 *모든* 프로젝트의 업로드 경로(미발행 draft 포함)를
+   열거할 수 있었다("uuid라 열거 불가"는 틀린 전제 — 경로를 몰라도 목록이 나온다). 공개 버킷의
+   공개 URL 다운로드는 RLS를 거치지 않으므로, SELECT 정책은 사실상 목록·관리 API에만 관여한다.
+   anon SELECT를 제거하고(다운로드는 그대로) authenticated는 자기 경로만 목록 가능하게 좁혔다
+   (마이그레이션 `20260722020000`). **로컬 Supabase가 꺼져 있어 이 DB 변경만 로컬 검증을 못 했다
+   — `db push` 전에 확인 필요.** 통합 테스트에 'anon은 열거 불가' 케이스를 넣었다.
+
+3. **게스트 번들에서 zod·마이그레이션 체인을 뗀다 (성능).** 게스트 화면의 유일한 클라이언트
+   컴포넌트 `PublicInvitationView`가 `publicPayload.ts`에서 순수 헬퍼(폰트/음악 URL·manifest
+   해석)를 가져왔는데, 그 파일 top-level이 `zod`와 전체 마이그레이션 체인을 import해 하객 번들로
+   딸려 왔다("use client"라 트리셰이킹이 못 걷어낸다). 순수 헬퍼만 `publicManifest.ts`(런타임
+   import 0, 타입만)로 떼고 클라이언트는 거기서 직접 가져온다. 결과: 게스트 번들에서 **마이그레이션
+   체인 제거**(측정상 route 클라이언트 JS ~102KB gz, 목표 130KB 이하). 잔여 zod는 어떤 게스트
+   *소스*도 import하지 않는 공유 벤더 청크에 남아 있어(청킹 레벨) 위험 대비 이득이 낮아 미룬다.
+
+4. **발행 캐시 무효화를 보강한다 (정합성).** ① 공개 주소를 바꿔 재발행하면 옛 slug(`/i/<old>`)의
+   ISR 캐시도 무효화한다(안 하면 지난 주소가 옛 스냅샷을 계속 보여준다). ② 게스트 로더가 RPC
+   오류를 `null`로 뭉개 '없는 청첩장'으로 캐시하던 것을 **fail-fast**로 바꿨다 — 런타임엔 던져
+   ISR이 마지막 정상 스냅샷을 유지하고, 빌드 프리렌더(루트는 빌드 시 프리렌더된다)만 관대하게
+   넘겨 백엔드 blip이 배포를 막지 않게 한다(`NEXT_PHASE`로 구분).
+
+**Scope 판단**: Codex는 더 큰 재설계(발행을 필수 server-side capability로, publish-time CDN-native
+아티팩트, 소스/공개 버킷 분리, e2e hermetic화·WebKit·CI 워크플로·Supabase 타입 생성)도 제안했다.
+"설계를 크게 바꾸지 않는다"는 제약에 따라 **의도적으로 보류**했다 — 위 넷은 전부 국소 변경이다.
+
+**코드 리뷰 반복**: 위 변경을 Codex로 재리뷰하며 두 번 더 고쳤다 — (a) 발행측 필터가 처음엔
+full doc을 써 숨긴 섹션 asset이 스냅샷에 남던 것을 visible 기준으로 바로잡고, (b) TS 재시도만으로는
+못 막던 발행 TOCTOU를 `p_expected_rev` 가드(커밋 전 거부)로 닫았다.
+
+**검증**: typecheck·lint(0 error)·단위 278·renderer-units·build(green) 통과. **두 DB 마이그레이션
+(`20260722020000` storage anon 열거 차단, `20260722030000` publish_project expected_rev)과 통합/e2e는
+로컬 Supabase가 필요해 미실행**(사용자가 리소스 문제로 꺼 둠) — 의도는 테스트로 인코딩했고, **`db push`
+전에 로컬에서 켜서 통합 테스트로 확인**해야 한다. 스키마 문서 버전은 불변(공개 projection·Storage·
+발행 RPC 변경이라 문서 마이그레이션과 무관).
