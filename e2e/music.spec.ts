@@ -114,8 +114,10 @@ test("배경음악: 음량·속도·자동재생 설정이 게스트 화면의 a
   const { context, page: guest } = await newGuestPage(browser);
   await guest.goto(`/i/${slug}`);
   const audio = guest.locator("[data-music-toggle] + audio");
-  // 저장값 0.4 → 세제곱 곡선(ADR-047)으로 얹힌다 — 선형은 상단 절반이 다 비슷하게 들렸다
-  await expect(audio).toHaveJSProperty("volume", 0.4 ** 3);
+  // 저장값 0.4 → 세제곱 곡선(ADR-047)의 감쇠값이 적용된다. 실제 감쇠는 WebAudio
+  // GainNode에 얹히므로(iOS는 audio.volume을 무시한다 — ADR-050) 적용값을 비추는
+  // data 속성으로 검증한다. element volume은 그래프 생성 여부에 따라 1 또는 감쇠값.
+  await expect(audio).toHaveAttribute("data-applied-volume", String(0.4 ** 3));
   await expect(audio).toHaveJSProperty("playbackRate", 1.2);
   // 자동재생을 켜면 미리 받아 둔다 — 첫 동작에 곧바로 소리가 나야 하기 때문
   await expect(audio).toHaveAttribute("preload", "auto");

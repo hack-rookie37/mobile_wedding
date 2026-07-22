@@ -1,6 +1,6 @@
 # CURRENT_STATE — 프로젝트 현재 상태
 
-- 최종 갱신: 2026-07-22 (갤러리 선로딩 — ADR-048 / 음량 곡선·버튼 강조색 — ADR-047 / 폰트 FOUT — ADR-046 / 모바일 끊김 — ADR-045 / 피드백 1~3차 — ADR-042~044, 스키마 v16~18)
+- 최종 갱신: 2026-07-23 (준비 게이트 — ADR-049 / 모바일 음량 WebAudio — ADR-050 / 갤러리 선로딩 — ADR-048 / 음량 곡선·버튼 강조색 — ADR-047 / 폰트 FOUT — ADR-046 / 모바일 끊김 — ADR-045 / 피드백 1~3차 — ADR-042~044, 스키마 v16~18)
 - 갱신 규칙: **각 vertical slice 완료 시, 그리고 중요한 결정·환경 변화 시 이 파일을 갱신한다.** 이 파일은 "지금 어디까지 왔고 다음이 무엇인지"의 단일 소스다.
 
 ## 1. 한 줄 요약
@@ -9,6 +9,10 @@
 7개 영역(architecture·security·data integrity·accessibility·responsive·performance·e2e)을 감사해 실제 결함 **14건을 수정**했고(핵심: anon이 `publish_records` 직접 조회로 public projection을 우회해 숨긴 계좌·연락처 열람 + 발행 목록 열거가 가능했던 취약점 — RPC 단일 경로로 봉쇄, ADR-023), 배포 문서(README·DEPLOYMENT·.env.example)를 완성했다. 전 검사 green: format·lint·typecheck·renderer-units / 단위 216 / 통합 29 / build / e2e 59. 남은 조건은 §3.
 
 **Phase 11 이후 변경**: 아직 서비스로 열지 않으므로 **공개 가입을 닫았다**(ADR-024) — 로그인 화면에서 회원가입 모드 제거, 계정은 Supabase 대시보드에서 직접 생성, 운영 `enable_signup = false`가 실제 경계(§3-2). admin role은 도입하지 않았다(소유권 모델로 충분, YAGNI). e2e 헬퍼는 가입 UI 대신 anon API로 계정을 만들고 로그인만 UI로 수행한다 — 전 검사 재실행 green(§4).
+
+**준비 게이트 — 다 온 뒤에 함께 시작 (ADR-049)**: 합성기 전용화(ADR-044/045) 뒤에도 모바일에서 쓰기 효과가 끊긴 남은 원인 = **시작 시점**. 등장 효과의 첫 1~3초가 하이드레이션·이미지 디코드·레이어 승격이 몰리는 최혼잡 구간과 겹쳤다(PC는 이 구간이 짧아 안 겹침). ADR-046 폰트 게이트를 확장해 `data-entrance-hold` — 폰트 + window load(전 사진, ADR-048의 eager 포함)가 끝난 뒤 rAF 두 번 지나 캔버스의 **모든 CSS 애니메이션이 한가한 메인 스레드 위에서 함께 시작**한다(10초 안전장치, 편집기·JS 없음·백그라운드 탭 각각 안전). "로딩이 좀 느려도 화면이 떴을 때는 모두 부드럽게" — 사용자가 고른 트레이드.
+
+**모바일 음량 — WebAudio GainNode (ADR-050)**: 음량이 PC에서만 조절되던 원인 = **iOS Safari는 `audio.volume` 대입을 무시**(하드웨어 버튼 전용 정책). 첫 재생 시도 때 `AudioContext + MediaElementSource + GainNode` 그래프를 지연 생성해 세제곱 감쇠(ADR-047)를 gain에 얹는다(element volume은 1 — 두 군데면 volume⁶). suspended 컨텍스트는 재생 경로마다 resume + 무음 재생이면 첫-동작 재시도로 다시 연다. 소스는 전부 같은 출처(/a/ 프록시·blob)라 taint 무음 없음. 적용값은 `data-applied-volume`으로 노출(e2e 단언 이전).
 
 **갤러리 선로딩 (ADR-048)**: 사진을 넘길 때마다 그 자리에서 받아오던 lazy 로딩을 버리고, **모든 사진을 처음부터 받되 fetchPriority로 차등**(메인 high, 나머지 low) — 첫 페인트는 그대로, 하객이 갤러리에 닿을 땐 이미 도착. Supabase 비용 불변(/a/ CDN이 받는다, ADR-040), 전송량은 srcSet 표시 폭 변형이라 수 MB 수준.
 

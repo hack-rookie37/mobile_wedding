@@ -151,17 +151,22 @@ export function InvitationRenderer({
         className="w-full bg-(--canvas-paper) antialiased"
         style={{ ...canvasVars, ...INHERITED_BODY_STYLE }}
       >
-        {/* 폰트 게이트 — 글꼴이 도착하기 전에는 사진 위 문구의 등장 효과를 멈춰 둔다
-            (globals.css의 [data-fonts-loading] 규칙). fallback 글꼴로 재생을 시작했다가
-            도중에 진짜 글꼴로 바뀌면 줄 폭이 틀어져 효과가 어긋난다 (ADR-046).
+        {/* 준비 게이트 (ADR-049, ADR-046의 폰트 게이트를 확장) — 폰트와 모든 이미지가
+            도착할 때까지 캔버스의 CSS 애니메이션 전부를 멈춰 둔다(globals.css의
+            [data-entrance-hold] 규칙). 등장 효과가 재생되는 첫 1~3초는 하필 하이드레이션·
+            이미지 디코드·레이어 승격이 몰리는 가장 바쁜 구간이라, 합성기 전용 애니메이션도
+            시작 프레임들이 밀렸다 — PC는 이 구간이 짧아 안 겹치고 모바일만 겹쳤다.
+            로딩이 조금 길어지더라도, 시작한 뒤에는 한가한 메인 스레드 위에서 부드럽게 돈다.
             이 스크립트는 서버 렌더 HTML에서만 실행된다 — 클라이언트 렌더(편집기 미리보기)로
             주입된 script는 브라우저가 실행하지 않으므로 편집기는 게이트 없이 즉시 재생한다.
             JS가 죽은 환경에서는 속성이 아예 붙지 않아 효과가 그냥 재생된다(글자가 숨은 채
-            남는 일은 없다). 3초 안전장치: 폰트가 끝내 안 오면 fallback으로라도 재생한다. */}
+            남는 일은 없다). 10초 안전장치: 자원이 끝내 안 오면 그대로 시작한다.
+            해제 직전 rAF 두 번 — load 직후의 스타일·레이아웃 정리가 지나간 다음 프레임에서
+            시작해야 첫 프레임부터 온전하다. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              '(function(){var s=document.currentScript,r=s&&s.parentElement;if(!r||!document.fonts||document.fonts.status==="loaded")return;r.setAttribute("data-fonts-loading","");var done=function(){r.removeAttribute("data-fonts-loading")};document.fonts.ready.then(done);setTimeout(done,3000);})()',
+              '(function(){var s=document.currentScript,r=s&&s.parentElement;if(!r)return;r.setAttribute("data-entrance-hold","");var lifted=false;var lift=function(){if(lifted)return;lifted=true;requestAnimationFrame(function(){requestAnimationFrame(function(){r.removeAttribute("data-entrance-hold")})})};var fonts=document.fonts?document.fonts.ready:Promise.resolve();var loaded=document.readyState==="complete"?Promise.resolve():new Promise(function(res){window.addEventListener("load",res,{once:true})});Promise.all([fonts,loaded]).then(lift,lift);setTimeout(lift,10000);})()',
           }}
         />
         <CustomFontFaces assetIds={fontAssetIds} resolveFontUrl={resolveFontUrl ?? null} />
