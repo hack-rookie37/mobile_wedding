@@ -23,7 +23,7 @@ const style = (
 // 실제 한국 청첩장 관례를 따른 샘플 문서 (연락처·계좌만 가상)
 export function createSampleDocument(): InvitationDocument {
   return {
-    schemaVersion: 17,
+    schemaVersion: 18,
     wedding: {
       groom: {
         name: "이정훈",
@@ -73,6 +73,7 @@ export function createSampleDocument(): InvitationDocument {
             color: "#ffffff",
             letterSpacing: 0,
             lineHeight: 1.45,
+            rotateDeg: 0,
             edgeBlurPx: 0,
             glow: false,
             glowStrength: 40,

@@ -16,7 +16,7 @@ import {
   PT_MIN,
 } from "./themes";
 
-export const CURRENT_SCHEMA_VERSION = 17;
+export const CURRENT_SCHEMA_VERSION = 18;
 
 // 사진 위 문구의 등장 효과로 쓸 수 있는 값. 마이그레이션이 잘못된 값을 여기 기준으로 되돌린다.
 const OVERLAY_ANIMATIONS = new Set(["none", "fade", "rise", "typing", "letterFade", "writing"]);
@@ -592,6 +592,29 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
         }
         return section;
       }),
+    };
+  },
+  // v17 → v18: 사진 위 문구에 기울기(rotateDeg), 자간·행간 하한 확장(-0.5em·0.3),
+  // 글자 크기 상한 확대(72→200pt) (ADR-044). 값의 '허용 범위가 넓어지는' 변경이라 기존
+  // 문서는 전부 그대로 유효하다 — 기울기 0만 채우면 모습이 변하지 않는다. 버전을 올리는
+  // 이유는 경계다: 새 범위의 값을 담은 문서를 옛 코드가 스키마 오류로 오해하지 않고
+  // "지원하지 않는 버전"으로 명확히 거부하게 한다 (ADR-002, v4→v5와 같은 규칙).
+  17: (raw) => {
+    const doc = raw as { sections?: Array<{ type?: unknown; content?: { overlay?: object } }> };
+    return {
+      ...(raw as object),
+      schemaVersion: 18,
+      sections: (doc.sections ?? []).map((section) =>
+        section.type !== "hero"
+          ? section
+          : {
+              ...section,
+              content: {
+                ...section.content,
+                overlay: { ...DEFAULT_HERO_OVERLAY, ...section.content?.overlay },
+              },
+            },
+      ),
     };
   },
 };

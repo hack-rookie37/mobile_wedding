@@ -58,14 +58,26 @@
 }
 
 /* 펜으로 쓰듯 — 줄마다 왼쪽에서 오른쪽으로 잉크가 드러난다.
-   음수 inset으로 상자 밖까지 열어 둬야 글자 그림자가 네 변에서 잘리지 않는다
-   (그림자 번짐 최대 25px + 아래로 1px). */
-@keyframes canvas-write-in {
+   창(overflow hidden 상자)은 왼쪽에서 오고 잉크(글자)는 오른쪽에서 와서 서로 상쇄된다 —
+   글자는 제자리에 서 있고 보이는 영역만 왼쪽부터 넓어진다.
+   원래는 clip-path inset 애니메이션이었는데, 모바일 WebKit은 clip-path를 합성기로 돌리지
+   못해 매 프레임 메인 스레드에서 다시 그렸고 로딩 직후처럼 바쁜 순간 뚝뚝 끊겼다 (ADR-044).
+   transform은 합성기 전용이라 메인 스레드가 바빠도 부드럽다. */
+@keyframes canvas-write-window {
   from {
-    clip-path: inset(-40px 100% -40px -40px);
+    transform: translateX(-100%);
   }
   to {
-    clip-path: inset(-40px -40px -40px -40px);
+    transform: none;
+  }
+}
+
+@keyframes canvas-write-ink {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: none;
   }
 }
 
@@ -89,6 +101,5 @@
   [data-canvas-anim],
   [data-hero-overlay] * {
     animation: none !important;
-    clip-path: none !important;
   }
 }

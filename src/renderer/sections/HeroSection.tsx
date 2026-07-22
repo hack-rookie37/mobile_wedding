@@ -61,13 +61,23 @@ const CHAR_EFFECTS: Record<string, { stepMs: number; durationMs: number; ease: s
 
 const WRITE_MS_PER_CHAR = 60; // 한 글자 폭을 쓸고 지나가는 시간 (÷ 등장 속도 배율)
 
+// 그림자·발광이 잘리지 않도록 잘라내는 창을 글자 상자보다 사방 40px 열어 둔다
+// (옛 clip-path 구현의 inset -40px과 같은 몫 — 그림자 번짐 최대 25px + 발광 무리 30px 언저리).
+const WRITE_CLIP_ROOM = 40;
+
 // 손으로 쓰는 효과 — 줄마다 왼쪽에서 오른쪽으로 잉크가 드러난다.
 // 획을 따라가는 진짜 필기는 글리프마다 SVG 경로가 있어야 해서 임의의 글자로는 만들 수 없다.
 // 줄 단위로 쓸어 주는 것이 글꼴을 가리지 않고 '쓰는 중'으로 읽히는 가장 가까운 모양이다.
 //
-// 줄을 직접 나누는 이유: clip-path는 요소 상자를 기준으로 자르는데, 가운데 정렬된 문단은
-// 상자가 캔버스 폭 전체라 왼쪽 빈 여백부터 쓸고 지나간다. 줄마다 inline-block으로 감싸면
-// 상자가 글자에 딱 붙어서 잉크가 나오는 순간과 쓸리는 속도가 맞는다.
+// 창(overflow hidden)이 왼쪽에서 오고 잉크가 오른쪽에서 와서 상쇄된다 — 글자는 제자리에
+// 있고 보이는 창만 왼쪽부터 넓어진다. clip-path 애니메이션이 아닌 이유는 globals.css의
+// keyframe 주석 참고(모바일 메인 스레드 끊김). 두 상자의 패딩·마진이 같아야 %(상자 폭 기준)
+// 이동이 정확히 상쇄되어 글자가 흐르지 않는다.
+//
+// 줄을 직접 나누는 이유: 가운데 정렬된 문단은 상자가 캔버스 폭 전체라 왼쪽 빈 여백부터
+// 쓸고 지나간다. 줄마다 inline-block으로 감싸면 상자가 글자에 딱 붙어서 잉크가 나오는
+// 순간과 쓸리는 속도가 맞는다. vertical-align: top — overflow가 있는 inline-block은
+// 기준선이 글자가 아니라 상자 아래 모서리가 되어 줄이 위로 들리는 것을 막는다.
 function WrittenText({ text, speed }: { text: string; speed: number }) {
   const lines = text.split("\n");
   const durations = lines.map(
@@ -75,6 +85,7 @@ function WrittenText({ text, speed }: { text: string; speed: number }) {
   );
   // 각 줄은 앞 줄을 다 쓴 뒤에 시작한다
   const delayOf = (index: number) => durations.slice(0, index).reduce((sum, ms) => sum + ms, 0);
+  const room = { padding: WRITE_CLIP_ROOM, margin: -WRITE_CLIP_ROOM } as const;
 
   return (
     <>
@@ -82,12 +93,22 @@ function WrittenText({ text, speed }: { text: string; speed: number }) {
         <span key={i} className="block">
           <span
             data-canvas-anim
-            className="inline-block"
+            className="inline-block overflow-hidden align-top"
             style={{
-              animation: `canvas-write-in ${durations[i]}ms linear ${delayOf(i)}ms backwards`,
+              ...room,
+              animation: `canvas-write-window ${durations[i]}ms linear ${delayOf(i)}ms backwards`,
             }}
           >
-            {line === "" ? " " : line /* 빈 줄도 높이를 가져야 줄이 밀린다 */}
+            <span
+              data-canvas-anim
+              className="inline-block"
+              style={{
+                ...room,
+                animation: `canvas-write-ink ${durations[i]}ms linear ${delayOf(i)}ms backwards`,
+              }}
+            >
+              {line === "" ? " " : line /* 빈 줄도 높이를 가져야 줄이 밀린다 */}
+            </span>
           </span>
         </span>
       ))}
@@ -126,13 +147,22 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
   const pct = overlay.positionPct;
   const blockKeyframes = BLOCK_KEYFRAMES[overlay.animation];
   return (
-    <div data-hero-overlay className="pointer-events-none absolute inset-0 px-8 py-10">
+    // overflow-hidden: 이 문구는 '사진 위'가 존재 이유다 — 기울이거나(200pt까지) 키워서
+    // 사진을 벗어나는 부분은 사진에서 잘리고, 아래 섹션을 덮거나 페이지에 가로
+    // 스크롤을 만들지 않는다 (absolute 요소도 조상의 스크롤 넘침을 늘린다).
+    <div
+      data-hero-overlay
+      className="pointer-events-none absolute inset-0 overflow-hidden px-8 py-10"
+    >
       <div className="relative h-full">
         <p
           className="absolute inset-x-0 text-center break-keep whitespace-pre-line"
           style={{
             top: `${pct}%`,
-            transform: `translateY(-${pct}%)`,
+            // 기울기는 자리를 잡은 뒤(translate 다음) 상자 가운데를 축으로 돈다 —
+            // 등장 효과(rise)가 transform을 애니메이션하는 안쪽 상자에 걸면 재생이 끝나는
+            // 순간 기울기가 풀리므로 여기서만 건다.
+            transform: `translateY(-${pct}%) rotate(${overlay.rotateDeg}deg)`,
             // pt를 그대로 쓴다 — 캔버스의 pt 환산(96/72)과 결과가 같고, 사진 위 크기는
             // 전역 글자 크기를 따라 흔들리지 않아야 한다
             fontSize: `${overlay.sizePt}pt`,

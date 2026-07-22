@@ -135,6 +135,21 @@ function v16Document() {
   return { ...doc, schemaVersion: 16, sections: doc.sections.map(withoutNewFields) };
 }
 
+// v17: 기울기(rotateDeg)가 아직 없었다 (자간·행간 하한·크기 상한 확장은 필드가 아니라
+// 범위 변화라 '없던 칸'이 생기지 않는다 — 그쪽은 아래 '넓힌 범위' 케이스가 덮는다).
+function v17Document() {
+  const doc = createSampleDocument();
+  return {
+    ...doc,
+    schemaVersion: 17,
+    sections: doc.sections.map((section) => {
+      if (section.type !== "hero") return section;
+      const { rotateDeg: _rot, ...overlay } = section.content.overlay;
+      return { ...section, content: { ...section.content, overlay } };
+    }),
+  };
+}
+
 // v14 전이 상태 — 이 사고가 실제로 났다. 개발 중 이 필드가 typewriter(boolean) →
 // animation(enum)으로 바뀌었고, 그 사이에 dev 서버가 문서를 저장하면서 schemaVersion만 14로
 // 찍혔다. 버전이 이미 최신이라 마이그레이션이 손대지 못해 열리지 않았다.
@@ -231,6 +246,35 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
     expect(closing.content.effects.petalColor).toBe("#ffd6e0");
   });
 
+  it("v17 문서가 열리고, 기울기는 0으로 들어온다", () => {
+    const opened = migrateDocument(v17Document());
+    expect(opened.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    const hero = opened.sections[0];
+    if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    expect(hero.content.overlay.rotateDeg).toBe(0); // 열었더니 글자가 기울면 안 된다
+    expect(hero.content.overlay.text).toBe("we're getting married"); // 저장돼 있던 값 보존
+  });
+
+  it("v18에서 넓힌 범위의 값(겹치는 자간·행간, 200pt, 기울기)이 담긴 문서가 열린다", () => {
+    const doc = createSampleDocument();
+    const hero = doc.sections[0];
+    if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    hero.content.overlay = {
+      ...hero.content.overlay,
+      sizePt: 200,
+      letterSpacing: -0.5,
+      lineHeight: 0.3,
+      rotateDeg: -90,
+    };
+    const opened = migrateDocument(doc);
+    const openedHero = opened.sections[0];
+    if (openedHero.type !== "hero") throw new Error("hero가 없습니다");
+    expect(openedHero.content.overlay.sizePt).toBe(200);
+    expect(openedHero.content.overlay.letterSpacing).toBe(-0.5);
+    expect(openedHero.content.overlay.lineHeight).toBe(0.3);
+    expect(openedHero.content.overlay.rotateDeg).toBe(-90);
+  });
+
   it("교통 수단 '전화'가 담긴 문서가 열린다 (v17에서 넓어진 값)", () => {
     const doc = createSampleDocument();
     const transport = doc.sections.find((s) => s.type === "transportation");
@@ -298,6 +342,7 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
       transitionalV14({ typewriter: false }),
       v15Document(),
       v16Document(),
+      v17Document(),
     ]) {
       const opened = migrateDocument(stored);
       expect(migrateDocument(opened)).toEqual(opened);

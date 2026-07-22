@@ -198,7 +198,8 @@ export const photoEffectsSchema = z.object({
 // 전역 typography를 따르게 하면 사진마다 달라지는 균형을 맞출 수 없다.
 // 사진 위 문구는 역할 글자(최대 28pt)와 달리 훨씬 크게 쓴다 — 사진 한 장을 덮는 한 줄이라
 // 28pt로는 작다. 역할 pt는 배율로 환산되지만 이 값은 절대 크기라 따로 열어도 안전하다.
-export const OVERLAY_PT_MAX = 72;
+// 200pt까지 연다(v18) — 글자 몇 자로 사진을 통째로 덮는 연출용. 넘치는 부분은 사진에서 잘린다.
+export const OVERLAY_PT_MAX = 200;
 export const overlayFontSizePtSchema = z.number().min(7).max(OVERLAY_PT_MAX);
 
 // 그림자 세기 — 진하기(알파)와 번짐(blur)을 한 숫자로 함께 움직인다.
@@ -217,6 +218,15 @@ export const GLOW_STRENGTH_MAX = 100;
 export const OVERLAY_SPEED_MIN = 0.5;
 export const OVERLAY_SPEED_MAX = 2;
 
+// 사진 위 문구 전용 자간·행간 하한 — 역할 글자(최소 -0.05em·1.0)보다 훨씬 깊은 마이너스를
+// 허용한다. 필기체를 포개는 연출("글자가 겹쳐도 좋으니")은 여기서만 말이 되고,
+// 본문 역할에 이 하한을 열면 청첩장 본문이 읽을 수 없게 겹치는 사고 손잡이가 된다.
+export const OVERLAY_LETTER_SPACING_MIN = -0.5;
+export const OVERLAY_LINE_HEIGHT_MIN = 0.3;
+
+// 기울기(도). 시계 방향이 +다. ±90이면 세로쓰기까지 닿는다 — 그 너머는 뒤집힌 글자다.
+export const OVERLAY_ROTATE_MAX = 90;
+
 // 글자 외곽 흐림(px). 0 = 또렷(끄기)이라 별도 스위치를 두지 않는다.
 // 6을 넘기면 부드러운 가장자리가 아니라 초점 나간 글자가 된다.
 export const EDGE_BLUR_MAX = 6;
@@ -229,10 +239,12 @@ export const heroOverlaySchema = z.object({
   font: fontIdSchema, // "theme" = 제목 글꼴
   sizePt: overlayFontSizePtSchema,
   color: hexColorSchema,
-  // 자간(em)·행간(배수) — 역할 글자(ADR-035)와 같은 단위·범위를 쓴다. 필기체 글꼴은
-  // 글자 크기·기울기에 따라 어울리는 간격이 달라서 사진 위 문구만 따로 고른다.
-  letterSpacing: z.number().min(LETTER_SPACING_MIN).max(LETTER_SPACING_MAX),
-  lineHeight: z.number().min(LINE_HEIGHT_MIN).max(LINE_HEIGHT_MAX),
+  // 자간(em)·행간(배수) — 단위는 역할 글자(ADR-035)와 같지만 하한은 따로다:
+  // 겹침을 허용하는 깊은 마이너스까지 연다 (OVERLAY_*_MIN 주석 참고, v18).
+  letterSpacing: z.number().min(OVERLAY_LETTER_SPACING_MIN).max(LETTER_SPACING_MAX),
+  lineHeight: z.number().min(OVERLAY_LINE_HEIGHT_MIN).max(LINE_HEIGHT_MAX),
+  // 문구 전체의 기울기(도, 시계 방향 +). 사진의 대각선을 따라 얹는 연출용 (v18).
+  rotateDeg: z.number().min(-OVERLAY_ROTATE_MAX).max(OVERLAY_ROTATE_MAX),
   // 글자 자체의 외곽을 부드럽게 번지게 한다 — 발광(뒤에 깔리는 후광)과 별개의 효과다.
   edgeBlurPx: z.number().min(0).max(EDGE_BLUR_MAX),
   // 글자 주변이 은은하게 빛나는 후광 — 세기 하나가 번짐과 진하기를 함께 움직이고,
@@ -264,6 +276,7 @@ export const DEFAULT_HERO_OVERLAY = {
   // 자간 0 · 행간 1.45는 v15까지 렌더러에 못박혀 있던 값 — 기본값이 그대로라 모습이 변하지 않는다
   letterSpacing: 0,
   lineHeight: 1.45,
+  rotateDeg: 0,
   edgeBlurPx: 0,
   glow: false,
   glowStrength: 40,
@@ -620,7 +633,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(17),
+    schemaVersion: z.literal(18),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,

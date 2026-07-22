@@ -7,10 +7,11 @@ import {
   GLOW_STRENGTH_MAX,
   GLOW_STRENGTH_MIN,
   LETTER_SPACING_MAX,
-  LETTER_SPACING_MIN,
   LINE_HEIGHT_MAX,
-  LINE_HEIGHT_MIN,
+  OVERLAY_LETTER_SPACING_MIN,
+  OVERLAY_LINE_HEIGHT_MIN,
   OVERLAY_PT_MAX,
+  OVERLAY_ROTATE_MAX,
   OVERLAY_SPEED_MAX,
   OVERLAY_SPEED_MIN,
   SECTION_LABEL_MAX,
@@ -120,7 +121,8 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
               0%는 사진 위쪽 끝, 50%는 한가운데, 100%는 아래쪽 끝입니다.
             </p>
           </div>
-          {/* 역할 글자(최대 28pt)와 달리 사진 한 장을 덮는 한 줄이라 훨씬 크게 열어 둔다 */}
+          {/* 역할 글자(최대 28pt)와 달리 사진 한 장을 덮는 한 줄이라 훨씬 크게 열어 둔다.
+              사진을 벗어나는 부분은 사진에서 잘린다. */}
           <NumberField
             label="글자 크기"
             value={overlay.sizePt}
@@ -130,6 +132,20 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
             unit="pt"
             onChange={(sizePt) => patchOverlay({ sizePt })}
           />
+          <div>
+            <NumberField
+              label="기울기"
+              value={overlay.rotateDeg}
+              min={-OVERLAY_ROTATE_MAX}
+              max={OVERLAY_ROTATE_MAX}
+              step={1}
+              unit="°"
+              onChange={(rotateDeg) => patchOverlay({ rotateDeg })}
+            />
+            <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+              +는 시계 방향입니다. 사진의 대각선을 따라 문구를 얹을 수 있습니다.
+            </p>
+          </div>
           <FontPicker
             label="글꼴"
             value={overlay.font}
@@ -141,12 +157,12 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
             value={overlay.color}
             onChange={(color) => patchOverlay({ color })}
           />
-          {/* 자간·행간은 역할 글자와 같은 % 표기 — 사진 위 문구는 필기체 글꼴을 자주 써서
-              어울리는 간격이 글꼴마다 다르다 */}
+          {/* 자간·행간은 역할 글자와 같은 % 표기지만 하한이 깊다 — 마이너스로 내리면
+              글자·줄이 서로 겹치는 연출까지 허용한다 (필기체 포개기) */}
           <NumberField
             label="자간"
             value={Math.round(overlay.letterSpacing * 100)}
-            min={LETTER_SPACING_MIN * 100}
+            min={OVERLAY_LETTER_SPACING_MIN * 100}
             max={LETTER_SPACING_MAX * 100}
             step={1}
             unit="%"
@@ -155,7 +171,7 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
           <NumberField
             label="행간"
             value={Math.round(overlay.lineHeight * 100)}
-            min={LINE_HEIGHT_MIN * 100}
+            min={OVERLAY_LINE_HEIGHT_MIN * 100}
             max={LINE_HEIGHT_MAX * 100}
             step={5}
             unit="%"
