@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { resolveBuiltinAsset } from "@/editor/assets/builtinAssets";
 // publicManifest에서 직접 가져온다 — publicPayload를 거치면 zod·마이그레이션이 게스트 번들에
 // 딸려 온다 ("use client"라 트리셰이킹이 안 걷어낸다, ADR-040).
@@ -22,14 +22,12 @@ export function PublicInvitationView({
   doc,
   manifest,
   previewBadge = false,
-  shareTitle,
   rsvpTarget,
   calendarIcsUrl,
 }: {
   doc: InvitationDocument;
   manifest: PublicAssetEntry[];
   previewBadge?: boolean;
-  shareTitle?: string; // 지정 시 공유 버튼 표시 (Web Share API + 링크 복사 fallback)
   rsvpTarget?: RsvpTarget; // 발행된 공개 페이지만 전달 — 비공개 미리보기의 RSVP 폼은 제출 불가
   calendarIcsUrl?: string; // 예식 일정(.ics) 주소 — 각 화면이 자기 경로로 만들어 넘긴다
 }) {
@@ -58,41 +56,8 @@ export function PublicInvitationView({
           kakaoJsKey={kakaoJsKeyFromEnv()}
           calendarIcsUrl={calendarIcsUrl ?? null}
         />
-        {shareTitle !== undefined && <ShareBar title={shareTitle} />}
+        {/* 공유 버튼은 렌더러 안의 FloatingShare가 그린다 — 편집기 미리보기와 같은 모습 (ADR-042) */}
       </div>
     </main>
-  );
-}
-
-function ShareBar({ title }: { title: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const share = async () => {
-    const url = window.location.href;
-    // Web Share API 우선, 미지원 환경(데스크톱 등)은 링크 복사로 fallback
-    if (typeof navigator.share === "function") {
-      try {
-        await navigator.share({ title, url });
-        return;
-      } catch {
-        // 사용자가 공유 시트를 닫음 — 아무것도 하지 않는다
-        return;
-      }
-    }
-    await navigator.clipboard.writeText(url);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div className="pointer-events-none sticky bottom-5 z-10 flex justify-center pb-2">
-      <button
-        type="button"
-        onClick={() => void share()}
-        className="pointer-events-auto flex h-11 items-center gap-2 rounded-full bg-black/75 px-5 text-[13px] font-medium text-white shadow-[0_4px_16px_rgba(0,0,0,0.25)] backdrop-blur transition-colors hover:bg-black/85"
-      >
-        {copied ? "링크가 복사되었습니다" : "청첩장 공유하기"}
-      </button>
-    </div>
   );
 }

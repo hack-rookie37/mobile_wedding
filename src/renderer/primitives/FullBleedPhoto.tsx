@@ -49,6 +49,7 @@ export function FullBleedPhoto({
         className="w-full"
       />
       {effects.sparkle && <Sparkle />}
+      {effects.petals && <Petals />}
       {effects.fadeBottom && (
         <div
           aria-hidden
@@ -79,6 +80,105 @@ const STARS = [
 // 4각 별의 윤곽 — 각 변이 안으로 휘어 끝이 뾰족하다 (24×24 기준)
 const STAR_PATH =
   "M12 0c0 6.6 5.4 12 12 12-6.6 0-12 5.4-12 12 0-6.6-5.4-12-12-12 6.6 0 12-5.4 12-12z";
+
+// 꽃잎의 자리와 박자도 고정값이다 (별과 같은 이유 — 난수는 서버·클라이언트 렌더를 어긋나게 한다).
+// left는 가로 자리, delay는 음수로 두어 처음부터 하늘에 흩어져 있게 한다 — 0부터 시작하면
+// 첫 몇 초 동안 꽃잎이 하나도 없다가 우르르 떨어진다.
+const PETALS = [
+  { left: "6%", size: 13, fall: "13s", delay: "-4s", sway: 9, swayMs: "2.6s", tilt: -18, tone: 0 },
+  { left: "17%", size: 17, fall: "10s", delay: "-9s", sway: 12, swayMs: "3.1s", tilt: 24, tone: 1 },
+  { left: "29%", size: 11, fall: "15s", delay: "-1s", sway: 8, swayMs: "2.2s", tilt: 8, tone: 2 },
+  {
+    left: "41%",
+    size: 15,
+    fall: "11s",
+    delay: "-6s",
+    sway: 11,
+    swayMs: "2.9s",
+    tilt: -30,
+    tone: 0,
+  },
+  { left: "54%", size: 12, fall: "14s", delay: "-11s", sway: 9, swayMs: "2.4s", tilt: 40, tone: 1 },
+  { left: "63%", size: 18, fall: "9s", delay: "-3s", sway: 13, swayMs: "3.4s", tilt: -8, tone: 2 },
+  { left: "74%", size: 13, fall: "12s", delay: "-8s", sway: 10, swayMs: "2.7s", tilt: 16, tone: 0 },
+  {
+    left: "84%",
+    size: 15,
+    fall: "10.5s",
+    delay: "-5s",
+    sway: 11,
+    swayMs: "3.2s",
+    tilt: -24,
+    tone: 1,
+  },
+  {
+    left: "93%",
+    size: 12,
+    fall: "13.5s",
+    delay: "-12s",
+    sway: 8,
+    swayMs: "2.5s",
+    tilt: 32,
+    tone: 2,
+  },
+];
+
+// 벚꽃 빛깔 세 톤 — 사진 위에서 하양~분홍이 가장 자연스럽게 읽힌다
+const PETAL_TONES = ["rgba(255,214,224,0.9)", "rgba(255,240,243,0.88)", "rgba(255,189,203,0.85)"];
+
+// 꽃잎 한 장 — 끝이 뾰족한 물방울꼴 (24×24 기준)
+const PETAL_PATH = "M12 2c5.5 3.5 7.5 10 0 20C4.5 12 6.5 5.5 12 2z";
+
+// 꽃잎 날림 — 사진 위로 꽃잎이 잔잔히 떨어진다.
+// 세로 낙하는 사진 높이만큼의 보이지 않는 기둥(inset-y-0)을 translateY(-100% → 100%)로
+// 움직여 그린다: 사진 높이가 비율마다 달라도 %가 그 높이를 그대로 따라가고, top을 직접
+// 움직일 때와 달리 합성기(compositor)만으로 굴러간다. 흔들림·회전은 안쪽 상자가 맡는다.
+// prefers-reduced-motion에서는 아예 그리지 않는다 — 공중에 멈춘 꽃잎은 별과 달리 얼룩처럼 보인다.
+function Petals() {
+  return (
+    <div data-petals aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+      <style>{`
+        @keyframes canvas-petal-fall {
+          from { transform: translateY(-100%); }
+          to   { transform: translateY(100%); }
+        }
+        @keyframes canvas-petal-sway {
+          from { transform: translateX(calc(-1 * var(--petal-sway))) rotate(var(--petal-tilt)); }
+          to   { transform: translateX(var(--petal-sway)) rotate(calc(var(--petal-tilt) + 50deg)); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          [data-petals] { display: none; }
+        }
+      `}</style>
+      {PETALS.map((petal, i) => (
+        <div
+          key={i}
+          className="absolute inset-y-0"
+          style={{
+            left: petal.left,
+            animation: `canvas-petal-fall ${petal.fall} linear ${petal.delay} infinite`,
+          }}
+        >
+          <svg
+            viewBox="0 0 24 24"
+            style={
+              {
+                width: petal.size,
+                height: petal.size,
+                fill: PETAL_TONES[petal.tone],
+                "--petal-sway": `${petal.sway}px`,
+                "--petal-tilt": `${petal.tilt}deg`,
+                animation: `canvas-petal-sway ${petal.swayMs} ease-in-out ${petal.delay} infinite alternate`,
+              } as CSSProperties
+            }
+          >
+            <path d={PETAL_PATH} />
+          </svg>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 // 반짝임 — 사진 위에서 별빛이 잔잔하게 깜빡인다. prefers-reduced-motion에서는 멈춘 채 은은하게 남는다
 // (renderer의 미디어 쿼리 금지는 뷰포트 폭 대응 규칙이므로 모션 접근성 쿼리는 예외다).

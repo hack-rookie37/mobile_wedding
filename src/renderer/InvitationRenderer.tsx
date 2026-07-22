@@ -6,6 +6,7 @@ import { customFontAssetIds } from "@/invitation/lib/assetRefs";
 import type { InvitationDocument, Section, Wedding } from "@/invitation/schema/document";
 import { resolvePalette, THEMES } from "@/invitation/schema/themes";
 import { CustomFontFaces, type ResolveFontUrl } from "./CustomFontFaces";
+import { FloatingShare } from "./FloatingShare";
 import { INHERITED_BODY_STYLE, textRoleVars } from "./textRoles";
 import { MusicToggle } from "./MusicToggle";
 import { RendererProvider, type RendererMode, type RsvpTarget } from "./RendererContext";
@@ -164,6 +165,7 @@ export function InvitationRenderer({
           .map((section, index) => (
             <SectionSwitch key={section.id} section={section} wedding={doc.wedding} index={index} />
           ))}
+        <FloatingShare wedding={doc.wedding} />
       </div>
     </RendererProvider>
   );

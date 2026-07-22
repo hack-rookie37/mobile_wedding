@@ -178,6 +178,7 @@ export const photoAspectSchema = z.enum(["1/1", "4/5", "3/4", "9/16", "9/20", "9
 export const photoEffectsSchema = z.object({
   fadeBottom: z.boolean(), // 사진 하단을 배경색으로 녹인다
   sparkle: z.boolean(), // 은은한 반짝임 오버레이
+  petals: z.boolean(), // 꽃잎이 잔잔히 떨어지는 오버레이
   brightness: z.number().min(0.3).max(1.5), // 1 = 원본
   opacity: z.number().min(0.2).max(1), // 1 = 불투명
 });
@@ -196,6 +197,16 @@ export const overlayFontSizePtSchema = z.number().min(7).max(OVERLAY_PT_MAX);
 export const SHADOW_STRENGTH_MIN = 5;
 export const SHADOW_STRENGTH_MAX = 100;
 
+// 발광 세기 — 그림자 세기와 같은 규칙(진하기·번짐을 한 숫자로). 빛 색은 글자색을 따른다:
+// 글자와 다른 색으로 빛나는 글자는 후광이 아니라 번진 인쇄처럼 보인다.
+export const GLOW_STRENGTH_MIN = 5;
+export const GLOW_STRENGTH_MAX = 100;
+
+// 등장 효과 재생 속도 배율. 1에서 멀어질수록 원래 리듬에서 벗어난다 —
+// 0.5는 두 배 느리게, 2는 두 배 빠르게. 그 밖은 효과가 아니라 오류처럼 보인다.
+export const OVERLAY_SPEED_MIN = 0.5;
+export const OVERLAY_SPEED_MAX = 2;
+
 export const heroOverlaySchema = z.object({
   text: z.string(), // 빈 문자열이면 아무것도 얹지 않는다
   // 사진 안에서의 세로 위치(%). 0이면 위쪽 끝, 100이면 아래쪽 끝에 붙는다 (가로는 항상 가운데).
@@ -204,12 +215,21 @@ export const heroOverlaySchema = z.object({
   font: fontIdSchema, // "theme" = 제목 글꼴
   sizePt: overlayFontSizePtSchema,
   color: hexColorSchema,
+  // 자간(em)·행간(배수) — 역할 글자(ADR-035)와 같은 단위·범위를 쓴다. 필기체 글꼴은
+  // 글자 크기·기울기에 따라 어울리는 간격이 달라서 사진 위 문구만 따로 고른다.
+  letterSpacing: z.number().min(LETTER_SPACING_MIN).max(LETTER_SPACING_MAX),
+  lineHeight: z.number().min(LINE_HEIGHT_MIN).max(LINE_HEIGHT_MAX),
+  // 글자 주변이 은은하게 빛나는 후광 — 세기 하나가 번짐과 진하기를 함께 움직이고,
+  // 켜져 있는 동안 천천히 숨쉬듯 밝아졌다 어두워진다. 빛 색은 글자색을 따른다.
+  glow: z.boolean(),
+  glowStrength: z.number().min(GLOW_STRENGTH_MIN).max(GLOW_STRENGTH_MAX),
   // 문구가 나타나는 방식. CSS 애니메이션 지연만으로 그리므로 JS가 없어도 글자는 다 보인다.
   //  fade/rise:          문단 통째로 (떠오르기 / 아래에서 올라오기)
   //  typing/letterFade:  글자마다 (타자기처럼 찍히기 / 스르륵 나타나기)
   //  writing:            줄마다 왼쪽에서 오른쪽으로 쓸려 나온다 — 손으로 쓰는 것에 가장 가깝다.
   //    획을 따라 그리는 진짜 필기는 글리프마다 SVG 경로가 있어야 해서 임의의 글자로는 못 만든다.
   animation: z.enum(["none", "fade", "rise", "typing", "letterFade", "writing"]),
+  animationSpeed: z.number().min(OVERLAY_SPEED_MIN).max(OVERLAY_SPEED_MAX), // 1 = 원래 속도
   shadow: z.boolean(), // 사진 위 가독성용 그림자 — 어두운 사진에서는 없는 편이 깔끔하다
   // 검정 그림자가 늘 답은 아니다: 밝은 글자에는 사진의 어두운 색, 어두운 글자에는
   // 흰 그림자(테두리처럼 보인다)가 더 읽힌다.
@@ -225,7 +245,13 @@ export const DEFAULT_HERO_OVERLAY = {
   font: "theme",
   sizePt: 14,
   color: "#ffffff",
+  // 자간 0 · 행간 1.45는 v15까지 렌더러에 못박혀 있던 값 — 기본값이 그대로라 모습이 변하지 않는다
+  letterSpacing: 0,
+  lineHeight: 1.45,
+  glow: false,
+  glowStrength: 40,
   animation: "none",
+  animationSpeed: 1,
   shadow: true,
   shadowColor: "#000000",
   shadowStrength: 40,
@@ -569,7 +595,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(15),
+    schemaVersion: z.literal(16),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,

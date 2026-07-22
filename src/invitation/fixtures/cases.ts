@@ -43,7 +43,13 @@ export function createCaseDocument(kind: FixtureCase): InvitationDocument {
     case "hero-full": {
       const hero = doc.sections[0];
       if (hero.type !== "hero") throw new Error("hero 섹션이 없습니다");
-      hero.content.effects = { fadeBottom: true, sparkle: true, brightness: 0.8, opacity: 0.9 };
+      hero.content.effects = {
+        fadeBottom: true,
+        sparkle: true,
+        petals: true,
+        brightness: 0.8,
+        opacity: 0.9,
+      };
       return doc;
     }
 

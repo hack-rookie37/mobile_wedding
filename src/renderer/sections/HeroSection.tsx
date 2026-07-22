@@ -22,14 +22,23 @@ function textShadowOf(overlay: HeroOverlay): string | undefined {
   return `0 1px ${overlay.shadowStrength / 4}px ${overlay.shadowColor}${alpha}`;
 }
 
+// 발광 — 글자를 한 층 더 그려 블러로 번지게 한다("블러 효과처럼"). 세기 하나가
+// 번짐(blur)과 진하기(불투명도)를 함께 움직인다 — 그림자 세기와 같은 규칙이다.
+// 숨쉬는 깜빡임은 바깥 상자의 opacity 애니메이션(canvas-glow-breathe)이 맡는다:
+// 안쪽 상자의 고정 불투명도와 곱해지므로 세기를 유지한 채 은은하게 오르내린다.
+const glowBlurPx = (strength: number) => 2 + strength * 0.14; // 5 → 2.7px, 100 → 16px
+const glowOpacity = (strength: number) => 0.4 + strength / 250; // 5 → 0.42, 100 → 0.8
+
 // 등장 효과는 전부 CSS 애니메이션의 지연만으로 그린다 — JS 타이머가 없으므로 서버 렌더
 // 결과에 글자가 전부 들어 있고, 스크립트가 죽어도 문구는 그대로 읽힌다.
+// 모든 시간(재생·글자 간 지연)을 등장 속도 배율로 나눈다 — 0.5배는 두 배 느리게.
 
 // 문단 통째로 움직이는 효과
-const BLOCK_EFFECTS: Record<string, string> = {
-  fade: "canvas-fade-in 900ms ease-out both",
-  rise: "canvas-rise-in 900ms ease-out both",
+const BLOCK_KEYFRAMES: Record<string, string> = {
+  fade: "canvas-fade-in",
+  rise: "canvas-rise-in",
 };
+const BLOCK_MS = 900;
 
 // 글자마다 시작 시각을 미는 효과. 타자기는 지연이 끝나면 1ms 만에 나타나 '찍히는' 것처럼,
 // 스르륵은 천천히 겹쳐 떠오르는 것처럼 보인다 — 같은 keyframe에 시간만 다르다.
@@ -38,7 +47,7 @@ const CHAR_EFFECTS: Record<string, { stepMs: number; durationMs: number; ease: s
   letterFade: { stepMs: 45, durationMs: 420, ease: "ease-out" },
 };
 
-const WRITE_MS_PER_CHAR = 60; // 한 글자 폭을 쓸고 지나가는 시간
+const WRITE_MS_PER_CHAR = 60; // 한 글자 폭을 쓸고 지나가는 시간 (÷ 등장 속도 배율)
 
 // 손으로 쓰는 효과 — 줄마다 왼쪽에서 오른쪽으로 잉크가 드러난다.
 // 획을 따라가는 진짜 필기는 글리프마다 SVG 경로가 있어야 해서 임의의 글자로는 만들 수 없다.
@@ -47,9 +56,11 @@ const WRITE_MS_PER_CHAR = 60; // 한 글자 폭을 쓸고 지나가는 시간
 // 줄을 직접 나누는 이유: clip-path는 요소 상자를 기준으로 자르는데, 가운데 정렬된 문단은
 // 상자가 캔버스 폭 전체라 왼쪽 빈 여백부터 쓸고 지나간다. 줄마다 inline-block으로 감싸면
 // 상자가 글자에 딱 붙어서 잉크가 나오는 순간과 쓸리는 속도가 맞는다.
-function WrittenText({ text }: { text: string }) {
+function WrittenText({ text, speed }: { text: string; speed: number }) {
   const lines = text.split("\n");
-  const durations = lines.map((line) => Math.max([...line].length, 1) * WRITE_MS_PER_CHAR);
+  const durations = lines.map(
+    (line) => (Math.max([...line].length, 1) * WRITE_MS_PER_CHAR) / speed,
+  );
   // 각 줄은 앞 줄을 다 쓴 뒤에 시작한다
   const delayOf = (index: number) => durations.slice(0, index).reduce((sum, ms) => sum + ms, 0);
 
@@ -75,7 +86,8 @@ function WrittenText({ text }: { text: string }) {
 // 코드포인트 단위로 쪼갠다 — split("")은 이모지를 반쪽씩 잘라 깨뜨린다.
 // 줄바꿈(\n)도 한 글자로 취급되며, 부모의 whitespace-pre-line이 그대로 줄을 넘긴다.
 function OverlayText({ overlay }: { overlay: HeroOverlay }) {
-  if (overlay.animation === "writing") return <WrittenText text={overlay.text} />;
+  const speed = overlay.animationSpeed;
+  if (overlay.animation === "writing") return <WrittenText text={overlay.text} speed={speed} />;
 
   const effect = CHAR_EFFECTS[overlay.animation];
   if (effect === undefined) return <>{overlay.text}</>;
@@ -86,7 +98,7 @@ function OverlayText({ overlay }: { overlay: HeroOverlay }) {
           key={i}
           data-canvas-anim
           style={{
-            animation: `canvas-fade-in ${effect.durationMs}ms ${effect.ease} ${i * effect.stepMs}ms backwards`,
+            animation: `canvas-fade-in ${effect.durationMs / speed}ms ${effect.ease} ${(i * effect.stepMs) / speed}ms backwards`,
           }}
         >
           {char}
@@ -100,11 +112,12 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
   // top과 translateY에 같은 %를 주면 0%는 위쪽 끝, 100%는 아래쪽 끝에 딱 맞는다 —
   // top만 쓰면 100%에서 글자가 사진 밖으로 절반 넘어간다.
   const pct = overlay.positionPct;
+  const blockKeyframes = BLOCK_KEYFRAMES[overlay.animation];
   return (
     <div data-hero-overlay className="pointer-events-none absolute inset-0 px-8 py-10">
       <div className="relative h-full">
         <p
-          className="absolute inset-x-0 text-center leading-[1.45] break-keep whitespace-pre-line"
+          className="absolute inset-x-0 text-center break-keep whitespace-pre-line"
           style={{
             top: `${pct}%`,
             transform: `translateY(-${pct}%)`,
@@ -113,6 +126,8 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
             fontSize: `${overlay.sizePt}pt`,
             fontFamily: fontCssOf(overlay.font) ?? "var(--canvas-font-heading)",
             color: overlay.color,
+            letterSpacing: `${overlay.letterSpacing}em`,
+            lineHeight: overlay.lineHeight,
             // 밝은 사진 위에서 읽히게 해 주지만, 어두운 사진에서는 없는 편이 깔끔하다
             textShadow: textShadowOf(overlay),
           }}
@@ -120,14 +135,40 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
           {/* 문단 통째로 움직이는 효과는 여기 안쪽 상자에 건다 — <p>의 transform은
               세로 위치를 잡는 데 이미 쓰이고 있어서 애니메이션이 덮으면 자리가 틀어진다 */}
           <span
-            className="block"
+            className="relative block"
             style={
-              BLOCK_EFFECTS[overlay.animation] === undefined
+              blockKeyframes === undefined
                 ? undefined
-                : { animation: BLOCK_EFFECTS[overlay.animation] }
+                : {
+                    animation: `${blockKeyframes} ${BLOCK_MS / overlay.animationSpeed}ms ease-out both`,
+                  }
             }
           >
-            <OverlayText overlay={overlay} />
+            {/* 발광 층 — 같은 글자를 블러로 한 번 더 그려 뒤에 깐다. 글꼴·자간·등장 효과를
+                전부 물려받아 본문과 겹쳐 움직이고, 숨쉬는 밝기만 바깥 상자에서 오르내린다.
+                모션 최소화 설정에서는 숨쉬기가 꺼져 일정한 밝기로 남는다 (globals.css). */}
+            {overlay.glow && (
+              <span
+                aria-hidden
+                className="absolute inset-0 block"
+                style={{ animation: "canvas-glow-breathe 4s ease-in-out infinite" }}
+              >
+                <span
+                  className="block"
+                  style={{
+                    filter: `blur(${glowBlurPx(overlay.glowStrength)}px)`,
+                    opacity: glowOpacity(overlay.glowStrength),
+                    // 그림자는 상속된다 — 끊지 않으면 어두운 그림자까지 블러에 섞여 후광이 탁해진다
+                    textShadow: "none",
+                  }}
+                >
+                  <OverlayText overlay={overlay} />
+                </span>
+              </span>
+            )}
+            <span className="relative block">
+              <OverlayText overlay={overlay} />
+            </span>
           </span>
         </p>
       </div>

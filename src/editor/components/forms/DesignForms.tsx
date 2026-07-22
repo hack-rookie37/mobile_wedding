@@ -77,6 +77,11 @@ function PhotoEffectsFields({ section }: { section: HeroSection | ClosingSection
             checked={effects.sparkle}
             onChange={(sparkle) => patchEffects({ sparkle })}
           />
+          <ToggleField
+            label="꽃잎 날림"
+            checked={effects.petals}
+            onChange={(petals) => patchEffects({ petals })}
+          />
         </div>
       </div>
       <NumberField

@@ -16,7 +16,7 @@ import {
   PT_MIN,
 } from "./themes";
 
-export const CURRENT_SCHEMA_VERSION = 15;
+export const CURRENT_SCHEMA_VERSION = 16;
 
 // 사진 위 문구의 등장 효과로 쓸 수 있는 값. 마이그레이션이 잘못된 값을 여기 기준으로 되돌린다.
 const OVERLAY_ANIMATIONS = new Set(["none", "fade", "rise", "typing", "letterFade", "writing"]);
@@ -520,6 +520,38 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
         }
         delete overlay.typewriter; // 사라진 옛 이름 흔적 제거 (zod도 떼지만 명시적으로)
         return { ...section, content: { ...section.content, overlay } };
+      }),
+    };
+  },
+  // v15 → v16: 사진 위 문구에 발광·자간·행간·등장 속도, 전면 사진에 꽃잎 효과 (ADR-042).
+  // 전부 '지금 모습 그대로'인 기본값으로 채운다 — 발광·꽃잎 꺼짐, 자간 0·행간 1.45(그때까지
+  // 렌더러 고정값), 속도 1배. 이미 있는 값은 그대로 이긴다(두 번 태워도 같다).
+  15: (raw) => {
+    const doc = raw as {
+      sections?: Array<{ type?: unknown; content?: { overlay?: object; effects?: object } }>;
+    };
+    const effectsWithPetals = (effects: object | undefined) => ({ petals: false, ...effects });
+    return {
+      ...(raw as object),
+      schemaVersion: 16,
+      sections: (doc.sections ?? []).map((section) => {
+        if (section.type === "hero") {
+          return {
+            ...section,
+            content: {
+              ...section.content,
+              overlay: { ...DEFAULT_HERO_OVERLAY, ...section.content?.overlay },
+              effects: effectsWithPetals(section.content?.effects),
+            },
+          };
+        }
+        if (section.type === "closing") {
+          return {
+            ...section,
+            content: { ...section.content, effects: effectsWithPetals(section.content?.effects) },
+          };
+        }
+        return section;
       }),
     };
   },

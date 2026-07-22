@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { publicPageMeta } from "@/invitation/publicPayload";
 import { proxyManifest } from "@/server/supabase/assetProxy";
 import { InvitationNotFound } from "../../_shared/InvitationNotFound";
 import { loadPublished, publishedMetadata } from "../../_shared/published";
@@ -33,7 +32,6 @@ export default async function PublicInvitationPage({
     <PublicInvitationView
       doc={payload.doc}
       manifest={proxyManifest(payload.assets)}
-      shareTitle={publicPageMeta(payload).title}
       rsvpTarget={{ slug }}
       calendarIcsUrl={`/i/${encodeURIComponent(slug)}/wedding.ics`}
     />

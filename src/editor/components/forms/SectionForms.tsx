@@ -3,7 +3,15 @@
 import { kakaoJsKeyFromEnv } from "@/invitation/lib/kakaoShare";
 import { parseVideoUrl } from "@/invitation/lib/videoEmbed";
 import {
+  GLOW_STRENGTH_MAX,
+  GLOW_STRENGTH_MIN,
+  LETTER_SPACING_MAX,
+  LETTER_SPACING_MIN,
+  LINE_HEIGHT_MAX,
+  LINE_HEIGHT_MIN,
   OVERLAY_PT_MAX,
+  OVERLAY_SPEED_MAX,
+  OVERLAY_SPEED_MIN,
   SECTION_LABEL_MAX,
   SHADOW_STRENGTH_MAX,
   SHADOW_STRENGTH_MIN,
@@ -132,6 +140,52 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
             value={overlay.color}
             onChange={(color) => patchOverlay({ color })}
           />
+          {/* 자간·행간은 역할 글자와 같은 % 표기 — 사진 위 문구는 필기체 글꼴을 자주 써서
+              어울리는 간격이 글꼴마다 다르다 */}
+          <NumberField
+            label="자간"
+            value={Math.round(overlay.letterSpacing * 100)}
+            min={LETTER_SPACING_MIN * 100}
+            max={LETTER_SPACING_MAX * 100}
+            step={1}
+            unit="%"
+            onChange={(percent) => patchOverlay({ letterSpacing: percent / 100 })}
+          />
+          <NumberField
+            label="행간"
+            value={Math.round(overlay.lineHeight * 100)}
+            min={LINE_HEIGHT_MIN * 100}
+            max={LINE_HEIGHT_MAX * 100}
+            step={5}
+            unit="%"
+            onChange={(percent) => patchOverlay({ lineHeight: percent / 100 })}
+          />
+          <div>
+            <ToggleField
+              label="은은한 발광"
+              checked={overlay.glow}
+              onChange={(glow) => patchOverlay({ glow })}
+            />
+            <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+              글자 주변이 글자색으로 부드럽게 빛나고, 천천히 숨쉬듯 밝아졌다 어두워집니다.
+            </p>
+          </div>
+          {overlay.glow && (
+            <div>
+              <NumberField
+                label="발광 정도"
+                value={overlay.glowStrength}
+                min={GLOW_STRENGTH_MIN}
+                max={GLOW_STRENGTH_MAX}
+                step={5}
+                unit="%"
+                onChange={(glowStrength) => patchOverlay({ glowStrength })}
+              />
+              <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+                올릴수록 넓고 환하게 번집니다. 어두운 사진 위에서 가장 또렷하게 보입니다.
+              </p>
+            </div>
+          )}
           <div>
             <ToggleField
               label="글자 그림자"
@@ -179,6 +233,23 @@ function HeroOverlayFields({ section }: { section: HeroSection }) {
               그럴듯합니다. 모션을 줄이도록 설정한 기기에서는 효과 없이 바로 보입니다.
             </p>
           </div>
+          {/* 효과가 없으면 속도는 아무 일도 하지 않는 손잡이다 — 그림자 색과 같은 규칙으로 숨긴다 */}
+          {overlay.animation !== "none" && (
+            <div>
+              <NumberField
+                label="효과 속도"
+                value={Math.round(overlay.animationSpeed * 100)}
+                min={OVERLAY_SPEED_MIN * 100}
+                max={OVERLAY_SPEED_MAX * 100}
+                step={10}
+                unit="%"
+                onChange={(percent) => patchOverlay({ animationSpeed: percent / 100 })}
+              />
+              <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
+                100%가 기본 속도입니다. 낮추면 천천히, 높이면 빠르게 나타납니다.
+              </p>
+            </div>
+          )}
           <p className="text-[11px] leading-[1.5] text-tool-ink-faint">
             사진의 밝기·투명도를 낮춰도 이 문구는 또렷하게 남습니다.
           </p>

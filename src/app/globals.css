@@ -69,9 +69,22 @@
   }
 }
 
+/* 사진 위 문구의 발광 숨쉬기 — 후광이 천천히 밝아졌다 어두워진다 (ADR-042).
+   글자 자체가 아니라 뒤에 깔린 블러 층의 밝기만 오르내린다. */
+@keyframes canvas-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /* 모션을 줄이기로 한 사람에게는 효과 없이 즉시 보여 준다.
    렌더러 안에서는 뷰포트 미디어 쿼리를 금지하지만(편집기 미리보기 = 게스트 화면),
-   prefers-reduced-motion은 화면 크기가 아니라 사람의 설정이라 이 규칙 밖이다. */
+   prefers-reduced-motion은 화면 크기가 아니라 사람의 설정이라 이 규칙 밖이다.
+   발광 숨쉬기도 여기서 함께 멈춘다 — 후광은 일정한 밝기로 남는다. */
 @media (prefers-reduced-motion: reduce) {
   [data-canvas-anim],
   [data-hero-overlay] * {

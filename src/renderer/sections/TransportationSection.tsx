@@ -1,5 +1,6 @@
 "use client";
 
+import { withEmojiPresentation } from "@/invitation/lib/emoji";
 import type {
   TransportationSection as TransportationSectionData,
   TransportIcon,
@@ -30,8 +31,10 @@ export const TRANSPORT_ICON_GLYPHS: Record<TransportIcon, string> = {
 };
 
 // 항목이 스스로 정한 그림이 있으면 그것을, 없으면 고른 수단의 기본 그림을 쓴다.
+// 직접 넣은 그림은 표시 지정자를 정규화한다 — ☎처럼 지정자 없이 들어온 옛 기호가
+// 작은 흑백 활자로 그려져 다른 그림과 크기가 어긋나는 것을 막는다.
 export function transportGlyph(item: TransportItem): string {
-  return item.emoji !== "" ? item.emoji : TRANSPORT_ICON_GLYPHS[item.icon];
+  return item.emoji !== "" ? withEmojiPresentation(item.emoji) : TRANSPORT_ICON_GLYPHS[item.icon];
 }
 
 function transportTitle(item: TransportItem): string {

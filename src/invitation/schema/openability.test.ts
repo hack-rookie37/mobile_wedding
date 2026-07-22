@@ -96,6 +96,27 @@ const v12Document = () =>
 // v13: 그림자는 갖췄지만 타자 효과·글 내리기가 없었다.
 const v13Document = () => heroWithout(13, { overlay: ["animation"], content: ["contentOffsetPx"] });
 
+// v15: 사진 위 문구의 발광·자간·행간·등장 속도, 그리고 전면 사진의 꽃잎 효과가 없었다.
+// 꽃잎은 hero뿐 아니라 closing의 effects에도 없었다 — heroWithout은 hero만 만지므로 따로 만든다.
+function v15Document() {
+  const doc = createSampleDocument();
+  const withoutNewFields = (section: (typeof doc.sections)[number]) => {
+    if (section.type !== "hero" && section.type !== "closing") return section;
+    const { petals: _petals, ...effects } = section.content.effects;
+    if (section.type === "closing") return { ...section, content: { ...section.content, effects } };
+    const {
+      letterSpacing: _ls,
+      lineHeight: _lh,
+      glow: _glow,
+      glowStrength: _gs,
+      animationSpeed: _speed,
+      ...overlay
+    } = section.content.overlay;
+    return { ...section, content: { ...section.content, effects, overlay } };
+  };
+  return { ...doc, schemaVersion: 15, sections: doc.sections.map(withoutNewFields) };
+}
+
 // v14 전이 상태 — 이 사고가 실제로 났다. 개발 중 이 필드가 typewriter(boolean) →
 // animation(enum)으로 바뀌었고, 그 사이에 dev 서버가 문서를 저장하면서 schemaVersion만 14로
 // 찍혔다. 버전이 이미 최신이라 마이그레이션이 손대지 못해 열리지 않았다.
@@ -154,6 +175,27 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
     expect(calendar.content.buttonColor).toBeUndefined();
   });
 
+  it("v15 문서가 열리고, 발광·꽃잎은 꺼진 채 자간·행간·속도는 그때 모습 그대로다", () => {
+    const opened = migrateDocument(v15Document());
+    expect(opened.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+
+    const hero = opened.sections[0];
+    if (hero.type !== "hero") throw new Error("hero가 없습니다");
+    // 전부 '지금까지와 같은 모습'인 값이어야 한다 — 열었더니 글자가 빛나거나 꽃잎이 내리면 안 된다
+    expect(hero.content.overlay.glow).toBe(false);
+    expect(hero.content.overlay.letterSpacing).toBe(0);
+    expect(hero.content.overlay.lineHeight).toBe(1.45); // v15까지 렌더러 고정값
+    expect(hero.content.overlay.animationSpeed).toBe(1);
+    expect(hero.content.effects.petals).toBe(false);
+    // 저장돼 있던 값은 그대로 (기본값이 덮어쓰면 안 된다)
+    expect(hero.content.overlay.text).toBe("we're getting married");
+
+    const closing = opened.sections.find((s) => s.type === "closing");
+    if (closing?.type !== "closing") throw new Error("closing이 없습니다");
+    expect(closing.content.effects.petals).toBe(false);
+    expect(closing.content.effects.brightness).toBe(0.6); // 저장돼 있던 값 보존
+  });
+
   // 실제로 열리지 않았던 모양: 필드 이름이 한 버전 안에서 바뀌어, 저장 버전은 최신인데
   // overlay는 옛 모양(typewriter 있고 animation 없음)으로 굳었다.
   it("v14 전이 상태(typewriter만 있고 animation 없음)가 열린다", () => {
@@ -205,6 +247,7 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
       v12Document(),
       v13Document(),
       transitionalV14({ typewriter: false }),
+      v15Document(),
     ]) {
       const opened = migrateDocument(stored);
       expect(migrateDocument(opened)).toEqual(opened);
