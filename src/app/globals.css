@@ -46,6 +46,21 @@
   }
 }
 
+/* 글자별 등장 전용 — opacity가 아니라 '잉크색'이 투명에서 본색으로 차오른다 (ADR-060).
+   opacity는 합성기 전용이라 글자마다 레이어가 생기는데, iOS는 레이어의 그림 범위를 글자
+   상자로 잡아 필기체처럼 상자 밖까지 뻗는 획이 잘렸고, 페이드가 끝나 강등될 때 온전한
+   글리프로 다시 그려지며 '덧칠'처럼 보였다. 색 애니메이션은 승격 없이 부모 레이어에 매
+   프레임 통째로 그려진다 — 잘림·강등 스냅이 구조적으로 없다. 메인 스레드 페인트지만
+   글리프 크기의 칠이고, 등장 게이트(ADR-049)가 한가한 시점을 보장한다.
+   to를 적지 않아 문서가 고른 글자색·그림자가 그대로 목적지가 된다.
+   그림자도 함께 숨긴다 — 색만 숨기면 지연 동안 그림자가 먼저 떠 있는다. */
+@keyframes canvas-ink-in {
+  from {
+    color: transparent;
+    text-shadow: none;
+  }
+}
+
 @keyframes canvas-rise-in {
   from {
     opacity: 0;
@@ -92,7 +107,5 @@
   [data-canvas-anim],
   [data-hero-overlay] * {
     animation: none !important;
-    /* 글자 상자의 상시 승격(ADR-059)도 푼다 — 움직이지 않는 글자에 레이어를 잡아 둘 이유가 없다 */
-    will-change: auto !important;
   }
 }

@@ -94,26 +94,27 @@ function isEmojiCluster(cluster: string): boolean {
   return /\p{Emoji_Presentation}|\uFE0F/u.test(cluster);
 }
 
-// 글자 상자는 애니메이션이 끝나도 합성 레이어로 남긴다 (will-change, ADR-059).
-// iOS는 글자별 페이드가 '끝나는 순간' 그 글자의 레이어를 강등하며 부모 레이어에 다시
-// 그리는데, 이 재래스터가 획 두께를 미세하게 바꿔 보인다 — 글자마다 시차를 두고 끝나니
-// 단어를 따라 한 글자씩 '탁탁' 진해지며 완성되는 것처럼 보였다(얇은 필기체에서 특히).
-// 상시 승격이면 래스터는 처음(등장 게이트가 잡아 둔 한가한 때) 한 번뿐이고, 페이드는
-// 그 픽셀의 투명도만 움직인다 — 두께가 처음부터 끝까지 한 모습이다.
-// 비용: 글자 수만큼의 작은 레이어가 상주한다 — 사진 위 문구는 짧아(수십 자) 감당 범위.
-const CHAR_BOX_STYLE = { willChange: "opacity" } as const;
+// 글자별 등장은 opacity가 아니라 '잉크색'으로 그린다 (canvas-ink-in, ADR-060).
+// opacity 애니메이션은 글자마다 합성 레이어를 만드는데, iOS는 레이어의 그림 범위를 글자
+// 상자로 잡는다 — 필기체처럼 획이 상자 밖(옆 글자·메트릭 바깥)까지 뻗는 글꼴은 잘리고,
+// 페이드가 끝나 강등될 때에야 온전한 글리프로 다시 그려져 '덧칠하며 완성'처럼 보였다.
+// 색 애니메이션은 승격이 없다 — 글리프가 부모 레이어에 통째로(잘림 없이) 그려진 채
+// 색만 차오른다. 단, 컬러 이모지는 color가 안 먹으므로(내장 색) opacity 페이드를 유지한다
+// — 네모 비트맵이라 상자 밖 획도, 얇은 획도 없어 레이어로 떠도 부작용이 없다.
+function charKeyframesOf(cluster: string): string {
+  return isEmojiCluster(cluster) ? "canvas-fade-in" : "canvas-ink-in";
+}
 
 // 손으로 쓰는 효과 — 줄 안에서 왼쪽부터 글자가 차례로 짧게 배어 나오고, 줄은 위에서
 // 아래로 이어 쓴다(다음 줄은 앞 줄을 다 쓴 뒤 시작). 획을 따라가는 진짜 필기는 글리프마다
 // SVG 경로가 있어야 해서 임의의 글자로는 만들 수 없다 — 글자 단위로 잉크가 번지는 것이
 // 글꼴을 가리지 않는 가장 가까운 모양이다.
 //
-// 글자별 opacity 페이드다 — 움직이는 상자가 아니다 (ADR-054). 처음에는 clip-path(ADR-044),
-// 다음에는 창·잉크 두 상자의 transform 상쇄로 '쓸어서' 드러냈지만, 모바일에서 글자 끝이
-// 늦게 그려지는 문제가 끝내 남았다: 브라우저는 잘려서 안 보이는 픽셀을 미리 칠하지 않아,
-// 창이 열리며 드러나는 순간에야 비동기로 칠하기 시작했고 바쁜 순간에는 칠이 애니메이션을
-// 뒤늦게 쫓아갔다. opacity 페이드는 이 문제가 구조적으로 없다 — 픽셀은 한 번 그려진 뒤
-// 움직이지 않고, 혹시 첫 칠이 늦어도 그 프레임은 페이드 초입(투명)이라 눈에 띄지 않는다.
+// 글자별 잉크색 페이드다(canvas-ink-in) — 움직이는 상자가 아니다 (ADR-054·060). 처음에는
+// clip-path(ADR-044), 다음에는 창·잉크 두 상자의 transform 상쇄로 '쓸어서' 드러냈지만
+// 잘려 있던 픽셀이 뒤늦게 칠해지는 문제가 남았고, 글자별 opacity는 글자마다 레이어를
+// 만들어 필기체 획이 상자 밖에서 잘렸다. 색 페이드는 글리프가 부모 레이어에 통째로
+// 그려진 채 색만 차오른다 — 잘림도, 늦은 칠도, 강등 스냅도 구조적으로 없다.
 function WrittenText({
   text,
   speed,
@@ -139,8 +140,7 @@ function WrittenText({
               key={j}
               data-canvas-anim
               style={{
-                ...CHAR_BOX_STYLE,
-                animation: `canvas-fade-in ${WRITE_FADE_MS / speed}ms ease-out ${delayOf(i) + (j * WRITE_MS_PER_CHAR) / speed}ms backwards`,
+                animation: `${charKeyframesOf(cluster)} ${WRITE_FADE_MS / speed}ms ease-out ${delayOf(i) + (j * WRITE_MS_PER_CHAR) / speed}ms backwards`,
               }}
             >
               <EdgeBlurred filter={edgeFilter}>{cluster}</EdgeBlurred>
@@ -173,8 +173,7 @@ function OverlayText({ overlay }: { overlay: HeroOverlay }) {
           key={i}
           data-canvas-anim
           style={{
-            ...CHAR_BOX_STYLE,
-            animation: `canvas-fade-in ${effect.durationMs / speed}ms ${effect.ease} ${(i * effect.stepMs) / speed}ms backwards`,
+            animation: `${charKeyframesOf(cluster)} ${effect.durationMs / speed}ms ${effect.ease} ${(i * effect.stepMs) / speed}ms backwards`,
           }}
         >
           <EdgeBlurred filter={edgeFilter}>{cluster}</EdgeBlurred>
