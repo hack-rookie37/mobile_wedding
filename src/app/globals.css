@@ -92,5 +92,7 @@
   [data-canvas-anim],
   [data-hero-overlay] * {
     animation: none !important;
+    /* 글자 상자의 상시 승격(ADR-059)도 푼다 — 움직이지 않는 글자에 레이어를 잡아 둘 이유가 없다 */
+    will-change: auto !important;
   }
 }

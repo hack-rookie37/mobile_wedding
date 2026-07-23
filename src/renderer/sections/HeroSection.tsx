@@ -94,6 +94,15 @@ function isEmojiCluster(cluster: string): boolean {
   return /\p{Emoji_Presentation}|\uFE0F/u.test(cluster);
 }
 
+// 글자 상자는 애니메이션이 끝나도 합성 레이어로 남긴다 (will-change, ADR-059).
+// iOS는 글자별 페이드가 '끝나는 순간' 그 글자의 레이어를 강등하며 부모 레이어에 다시
+// 그리는데, 이 재래스터가 획 두께를 미세하게 바꿔 보인다 — 글자마다 시차를 두고 끝나니
+// 단어를 따라 한 글자씩 '탁탁' 진해지며 완성되는 것처럼 보였다(얇은 필기체에서 특히).
+// 상시 승격이면 래스터는 처음(등장 게이트가 잡아 둔 한가한 때) 한 번뿐이고, 페이드는
+// 그 픽셀의 투명도만 움직인다 — 두께가 처음부터 끝까지 한 모습이다.
+// 비용: 글자 수만큼의 작은 레이어가 상주한다 — 사진 위 문구는 짧아(수십 자) 감당 범위.
+const CHAR_BOX_STYLE = { willChange: "opacity" } as const;
+
 // 손으로 쓰는 효과 — 줄 안에서 왼쪽부터 글자가 차례로 짧게 배어 나오고, 줄은 위에서
 // 아래로 이어 쓴다(다음 줄은 앞 줄을 다 쓴 뒤 시작). 획을 따라가는 진짜 필기는 글리프마다
 // SVG 경로가 있어야 해서 임의의 글자로는 만들 수 없다 — 글자 단위로 잉크가 번지는 것이
@@ -109,12 +118,10 @@ function WrittenText({
   text,
   speed,
   edgeFilter,
-  glowCopy,
 }: {
   text: string;
   speed: number;
   edgeFilter?: string;
-  glowCopy?: boolean;
 }) {
   const lines = text
     .split("\n")
@@ -132,14 +139,11 @@ function WrittenText({
               key={j}
               data-canvas-anim
               style={{
+                ...CHAR_BOX_STYLE,
                 animation: `canvas-fade-in ${WRITE_FADE_MS / speed}ms ease-out ${delayOf(i) + (j * WRITE_MS_PER_CHAR) / speed}ms backwards`,
               }}
             >
-              {glowCopy ? (
-                <GlowCluster cluster={cluster} />
-              ) : (
-                <EdgeBlurred filter={edgeFilter}>{cluster}</EdgeBlurred>
-              )}
+              <EdgeBlurred filter={edgeFilter}>{cluster}</EdgeBlurred>
             </span>
           ))}
         </span>
@@ -151,24 +155,17 @@ function WrittenText({
 // 자소 단위로 쪼갠다 — graphemesOf 참고. 줄바꿈(\n)도 한 자소로 취급되며, 부모의
 // whitespace-pre-line이 그대로 줄을 넘긴다.
 // 외곽 흐림은 애니메이션되는 글자 상자가 아니라 그 안의 정지 요소에 건다 — EdgeBlurred 참고.
-// glowCopy: 발광 층이 같은 등장 시차로 그리는 사본 — 후광이 글자를 따라 함께 배어 나온다.
-// 잉크와 같은 컴포넌트를 지나므로 시차가 어긋날 수 없다.
-function OverlayText({ overlay, glowCopy = false }: { overlay: HeroOverlay; glowCopy?: boolean }) {
+function OverlayText({ overlay }: { overlay: HeroOverlay }) {
   const speed = overlay.animationSpeed;
-  // 발광 사본에는 외곽 흐림을 걸지 않는다 — 후광(text-shadow) 자체가 번짐이다
-  const edgeFilter =
-    glowCopy || overlay.edgeBlurPx === 0 ? undefined : `blur(${overlay.edgeBlurPx}px)`;
+  const edgeFilter = overlay.edgeBlurPx === 0 ? undefined : `blur(${overlay.edgeBlurPx}px)`;
   if (overlay.animation === "writing") {
-    return (
-      <WrittenText text={overlay.text} speed={speed} edgeFilter={edgeFilter} glowCopy={glowCopy} />
-    );
+    return <WrittenText text={overlay.text} speed={speed} edgeFilter={edgeFilter} />;
   }
 
   const effect = CHAR_EFFECTS[overlay.animation];
   // 정지 모드(none·fade·rise)의 외곽 흐림은 PhotoOverlay의 정지 래퍼가 맡는다 — 여기서
   // 또 걸면 이중 블러가 된다
-  if (effect === undefined)
-    return glowCopy ? <GlowText text={overlay.text} /> : <>{overlay.text}</>;
+  if (effect === undefined) return <>{overlay.text}</>;
   return (
     <>
       {graphemesOf(overlay.text).map((cluster, i) => (
@@ -176,31 +173,38 @@ function OverlayText({ overlay, glowCopy = false }: { overlay: HeroOverlay; glow
           key={i}
           data-canvas-anim
           style={{
+            ...CHAR_BOX_STYLE,
             animation: `canvas-fade-in ${effect.durationMs / speed}ms ${effect.ease} ${(i * effect.stepMs) / speed}ms backwards`,
           }}
         >
-          {glowCopy ? (
-            <GlowCluster cluster={cluster} />
-          ) : (
-            <EdgeBlurred filter={edgeFilter}>{cluster}</EdgeBlurred>
-          )}
+          <EdgeBlurred filter={edgeFilter}>{cluster}</EdgeBlurred>
         </span>
       ))}
     </>
   );
 }
 
-// 발광 사본의 자소 하나 — 컬러 이모지는 color:transparent로 감춰지지 않는다(CSS color의
-// 알파는 컬러 글리프의 내장 색에 안 먹는다 — CSS Color 명세). 이모지 자소만 opacity:0으로
-// 감춘다 — advance 폭은 남아 후광 텍스트가 본문과 정렬을 유지하고, 일반 글자는 부모의
-// color:transparent로 감춰진 채 text-shadow 후광만 남는다.
-function GlowCluster({ cluster }: { cluster: string }) {
-  if (!isEmojiCluster(cluster)) return <>{cluster}</>;
-  return <span style={{ opacity: 0 }}>{cluster}</span>;
+// 등장 효과가 다 나타나기까지 걸리는 시간(ms) — 발광 층이 이 시간에 맞춰 차오른다.
+function totalEntranceMs(overlay: HeroOverlay): number {
+  const speed = overlay.animationSpeed;
+  if (overlay.animation === "fade" || overlay.animation === "rise") return BLOCK_MS / speed;
+  if (overlay.animation === "writing") {
+    const chars = overlay.text
+      .split("\n")
+      .reduce((sum, line) => sum + Math.max(graphemesOf(line).length, 1), 0);
+    return (chars * WRITE_MS_PER_CHAR + WRITE_FADE_MS) / speed;
+  }
+  const effect = CHAR_EFFECTS[overlay.animation];
+  if (effect === undefined) return 0; // "none"
+  const count = graphemesOf(overlay.text).length;
+  return (Math.max(count - 1, 0) * effect.stepMs + effect.durationMs) / speed;
 }
 
-// 발광 사본 전용 텍스트(정지 모드) — 이모지 사이의 일반 글자는 묶음 그대로 두고
-// 이모지 자소만 감싼다. 등장 효과 모드는 OverlayText의 자소별 상자가 GlowCluster를 쓴다.
+// 발광 사본 전용 텍스트 — 컬러 이모지는 color:transparent로 감춰지지 않으므로(CSS color의
+// 알파는 컬러 글리프의 내장 색에 안 먹는다) 이모지 자소만 opacity:0으로 감싼다. advance
+// 폭은 남아 후광 텍스트가 본문과 정렬을 유지하고, 일반 글자는 부모의 color:transparent로
+// 감춰진 채 text-shadow 후광만 남는다. 모든 등장 모드가 이 '정지 사본' 하나를 쓴다 —
+// 글자별로 움직이는 발광 사본은 iOS에서 겹칠이 보였다 (ADR-059, 아래 발광 층 주석 참고).
 function GlowText({ text }: { text: string }) {
   const nodes: ReactNode[] = [];
   let run = ""; // 이모지 사이의 일반 글자 묶음 — 부모 color:transparent로 후광만 남긴다
@@ -272,17 +276,24 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
             }
           >
             {/* 발광 층 — 같은 글자를 두 층 더 그려 뒤에 깐다. 글꼴·자간을 물려받는다.
-                사본도 본문과 같은 등장 시차로 그린다(OverlayText glowCopy) — 후광이 글자를
-                따라 함께 배어 나온다. 후광이 filter:blur였을 때는 사본 안에서 효과가 돌면
-                매 프레임 재블러라 정지 사본 + 층 전체 차오르기로 물러났지만(ADR-045),
-                text-shadow(정지 픽셀, ADR-052)가 되면서 글자별 opacity 등장은 공짜가 됐다
-                (ADR-054). 숨쉬는 밝기는 바깥 상자의 무한 애니메이션이 맡고, 모션 최소화
-                설정에서는 등장과 함께 꺼져 일정한 밝기로 남는다. */}
+                사본은 '정지 상태'로 한 번만 그리고, 층 전체가 등장 총 시간에 맞춰 불투명도로
+                차오른다. ADR-054에서 사본도 글자별 시차로 움직여 봤지만 iOS에서 글자를
+                여러 번 덧칠하며 완성되는 것처럼 보였다 (ADR-059): 글자마다 잉크+심+무리
+                세 레이어의 페이드가 각각 늦게 래스터되고 끝나는 순간마다 강등·재래스터되어,
+                한 겹씩 얹히는 칠이 그대로 보였다. 정지 사본은 게이트가 잡아 둔 한가한 때
+                가우시안 번짐까지 통째로 한 번 구워지고, 그 뒤로는 픽셀이 변하지 않는다.
+                숨쉬는 밝기는 바깥 상자의 무한 애니메이션이 맡고(이 덕에 발광 층은 늘 승격돼
+                있어 강등 재래스터도 없다), 모션 최소화 설정에서는 둘 다 꺼진다. */}
             {overlay.glow && (
               <span
                 aria-hidden
                 className="absolute inset-0 block"
-                style={{ animation: "canvas-glow-breathe 4s ease-in-out infinite" }}
+                style={{
+                  animation:
+                    totalEntranceMs(overlay) === 0
+                      ? "canvas-glow-breathe 4s ease-in-out infinite"
+                      : `canvas-glow-breathe 4s ease-in-out infinite, canvas-fade-in ${totalEntranceMs(overlay)}ms ease-out backwards`,
+                }}
               >
                 {GLOW_LAYERS.map((layer, i) => (
                   <span
@@ -291,13 +302,13 @@ function PhotoOverlay({ overlay }: { overlay: HeroOverlay }) {
                     style={{
                       // 글자 몸은 숨기고 번짐(그림자)만 남긴다 — 상속되던 어두운 그림자도
                       // 이 지정이 대체한다(섞이면 후광이 탁해진다). 컬러 이모지는 color로 안
-                      // 감춰져 GlowCluster가 opacity로 따로 감춘다.
+                      // 감춰져 GlowText가 opacity로 따로 감춘다.
                       color: "transparent",
                       textShadow: `0 0 ${layer.radiusPx(overlay.glowStrength)}px ${overlay.color}`,
                       opacity: layer.opacity(overlay.glowStrength),
                     }}
                   >
-                    <OverlayText overlay={overlay} glowCopy />
+                    <GlowText text={overlay.text} />
                   </span>
                 ))}
               </span>
