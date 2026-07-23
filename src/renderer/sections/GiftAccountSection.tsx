@@ -53,13 +53,13 @@ function AccountRow({ account }: { account: GiftAccount }) {
   return (
     <li data-account-row className="flex items-center gap-3 py-3">
       <div className="min-w-0 flex-1">
+        {/* 예금주 이름이 위, 은행·계좌번호가 아래 — 누구에게 보내는지를 먼저 읽는다.
+            '예금주' 딱지는 붙이지 않는다: 이름 한 줄이면 그 뜻이 이미 읽힌다 */}
         <p className="text-[length:calc(13px*var(--canvas-fs))] leading-[1.6] text-(--canvas-ink)">
-          <span className="text-(--canvas-ink-soft)">{account.bank}</span>{" "}
-          <span className="tabular-nums">{account.number}</span>
-        </p>
-        {/* '예금주' 딱지는 붙이지 않는다 — 계좌 아래 이름 한 줄이면 그 뜻이 이미 읽힌다 */}
-        <p className="text-[length:calc(12px*var(--canvas-fs))] leading-[1.6] text-(--canvas-ink-soft)">
           {account.holder}
+        </p>
+        <p className="text-[length:calc(12px*var(--canvas-fs))] leading-[1.6] text-(--canvas-ink-soft)">
+          <span>{account.bank}</span> <span className="tabular-nums">{account.number}</span>
         </p>
       </div>
       <CopyButton account={account} />
