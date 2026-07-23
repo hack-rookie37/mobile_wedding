@@ -57,8 +57,9 @@ function AccountRow({ account }: { account: GiftAccount }) {
           <span className="text-(--canvas-ink-soft)">{account.bank}</span>{" "}
           <span className="tabular-nums">{account.number}</span>
         </p>
+        {/* '예금주' 딱지는 붙이지 않는다 — 계좌 아래 이름 한 줄이면 그 뜻이 이미 읽힌다 */}
         <p className="text-[length:calc(12px*var(--canvas-fs))] leading-[1.6] text-(--canvas-ink-soft)">
-          예금주 {account.holder}
+          {account.holder}
         </p>
       </div>
       <CopyButton account={account} />
