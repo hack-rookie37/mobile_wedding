@@ -119,7 +119,7 @@ function ResponseRow({
             {response.guestName}
           </button>
         </td>
-        <td className="px-3 py-2.5 text-tool-ink-soft">
+        <td className="hidden px-3 py-2.5 text-tool-ink-soft sm:table-cell">
           {response.side === null ? "—" : RSVP_SIDE_LABELS[response.side]}
         </td>
         <td className="px-3 py-2.5">
@@ -137,17 +137,30 @@ function ResponseRow({
         <td className="px-3 py-2.5 text-tool-ink-soft tabular-nums">
           {response.companions === null ? "—" : `+${response.companions}`}
         </td>
-        <td className="px-3 py-2.5 text-tool-ink-soft">
+        <td className="hidden px-3 py-2.5 text-tool-ink-soft sm:table-cell">
           {response.meal === null ? "—" : RSVP_MEAL_LABELS[response.meal]}
         </td>
-        <td className="px-3 py-2.5 text-[12px] text-tool-ink-faint tabular-nums">
+        <td className="hidden px-3 py-2.5 text-[12px] text-tool-ink-faint tabular-nums sm:table-cell">
           {formatSubmittedAt(response.createdAt)}
         </td>
       </tr>
       {expanded && (
         <tr data-rsvp-detail className="border-t border-tool-border bg-tool-bg/60">
           <td colSpan={6} className="px-4 py-3">
+            {/* 상세는 전체 기록을 담는다 — 모바일 표에서 접힌 구분·식사도 여기서 읽는다 */}
             <dl className="space-y-1.5 text-[12.5px] leading-[1.6]">
+              <div className="flex gap-2">
+                <dt className="w-16 shrink-0 text-tool-ink-faint">구분</dt>
+                <dd className="text-tool-ink">
+                  {response.side === null ? "—" : RSVP_SIDE_LABELS[response.side]}
+                </dd>
+              </div>
+              <div className="flex gap-2">
+                <dt className="w-16 shrink-0 text-tool-ink-faint">식사</dt>
+                <dd className="text-tool-ink">
+                  {response.meal === null ? "—" : RSVP_MEAL_LABELS[response.meal]}
+                </dd>
+              </div>
               <div className="flex gap-2">
                 <dt className="w-16 shrink-0 text-tool-ink-faint">연락처</dt>
                 <dd className="text-tool-ink">{response.phone ?? "—"}</dd>
@@ -242,33 +255,36 @@ function DashboardBody({
 
   return (
     <div className="min-h-dvh bg-tool-bg text-tool-ink">
-      <header className="flex h-[52px] items-center gap-3 border-b border-tool-border bg-tool-surface px-4">
-        <Link
-          href={`/editor/${projectId}`}
-          className="text-[13px] text-tool-ink-soft transition-colors hover:text-tool-ink"
-        >
-          ← 편집기로
-        </Link>
-        <div aria-hidden className="h-4 w-px bg-tool-border" />
-        <h1 className="text-[13px] font-medium">
-          {title} <span className="text-tool-ink-faint">— RSVP 응답</span>
-        </h1>
-        <div className="ml-auto flex items-center gap-2">
-          <Button onClick={downloadCsv} disabled={responses.length === 0}>
-            CSV 다운로드
-          </Button>
-          {responses.length > 0 && (
-            <ConfirmDeleteButton
-              label="전체 삭제"
-              confirmLabel={`${responses.length}건 모두 삭제`}
-              onConfirm={() => void removeAll()}
-            />
-          )}
+      {/* 모바일 세로에서는 한 줄에 다 안 들어간다 — 제목 줄과 버튼 줄로 접힌다 */}
+      <header className="border-b border-tool-border bg-tool-surface px-4 py-2.5">
+        <div className="flex min-h-9 flex-wrap items-center gap-x-3 gap-y-2">
+          <Link
+            href={`/editor/${projectId}`}
+            className="text-[13px] text-tool-ink-soft transition-colors hover:text-tool-ink"
+          >
+            ← 편집기로
+          </Link>
+          <div aria-hidden className="hidden h-4 w-px bg-tool-border sm:block" />
+          <h1 className="min-w-0 flex-1 truncate text-[13px] font-medium">
+            {title} <span className="text-tool-ink-faint">— RSVP 응답</span>
+          </h1>
+          <div className="flex w-full items-center justify-end gap-2 sm:w-auto">
+            <Button onClick={downloadCsv} disabled={responses.length === 0}>
+              CSV 다운로드
+            </Button>
+            {responses.length > 0 && (
+              <ConfirmDeleteButton
+                label="전체 삭제"
+                confirmLabel={`${responses.length}건 모두 삭제`}
+                onConfirm={() => void removeAll()}
+              />
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-[880px] px-6 py-8">
-        <section aria-label="집계" className="grid grid-cols-4 gap-3">
+      <main className="mx-auto max-w-[880px] px-4 py-6 sm:px-6 sm:py-8">
+        <section aria-label="집계" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <SummaryCard
             title="참석"
             value={`${summary.attending}명`}
@@ -292,14 +308,14 @@ function DashboardBody({
         </section>
 
         <section aria-label="응답 목록" className="mt-6">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <input
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="이름·연락처·메시지 검색"
               aria-label="응답 검색"
-              className="h-8 w-64 rounded-md border border-tool-border bg-white px-2.5 text-[13px] text-tool-ink placeholder:text-tool-ink-faint focus:border-tool-accent focus:ring-[3px] focus:ring-tool-accent/15 focus:outline-none"
+              className="h-9 w-full rounded-md border border-tool-border bg-white px-2.5 text-[13px] text-tool-ink placeholder:text-tool-ink-faint focus:border-tool-accent focus:ring-[3px] focus:ring-tool-accent/15 focus:outline-none sm:w-64"
             />
             <Segmented
               value={filter}
@@ -332,13 +348,14 @@ function DashboardBody({
             <div className="mt-4 overflow-hidden rounded-lg border border-tool-border bg-white">
               <table className="w-full border-collapse text-left">
                 <thead>
+                  {/* 모바일 세로에서는 이름·참석·동반만 — 나머지는 행을 펼치면 상세에 있다 */}
                   <tr className="text-[11px] tracking-wider text-tool-ink-faint uppercase">
                     <th className="px-4 py-2.5 font-medium">이름</th>
-                    <th className="px-3 py-2.5 font-medium">구분</th>
+                    <th className="hidden px-3 py-2.5 font-medium sm:table-cell">구분</th>
                     <th className="px-3 py-2.5 font-medium">참석</th>
                     <th className="px-3 py-2.5 font-medium">동반</th>
-                    <th className="px-3 py-2.5 font-medium">식사</th>
-                    <th className="px-3 py-2.5 font-medium">제출</th>
+                    <th className="hidden px-3 py-2.5 font-medium sm:table-cell">식사</th>
+                    <th className="hidden px-3 py-2.5 font-medium sm:table-cell">제출</th>
                   </tr>
                 </thead>
                 <tbody>
