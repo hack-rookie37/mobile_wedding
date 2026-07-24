@@ -528,7 +528,19 @@ export function RsvpSection({ section, index }: { section: RsvpSectionData; inde
             {form}
           </div>
         )}
-        {sheetOpen && <RsvpSheet onClose={() => setSheetOpen(false)}>{form}</RsvpSheet>}
+        {sheetOpen && (
+          <RsvpSheet
+            onClose={() => {
+              setSheetOpen(false);
+              // 재제출 없이 닫으면 '이미 전달했습니다' 안내로 돌아간다 — 처음의 열기 버튼으로
+              // 되돌리면 이전 응답이 사라진 것처럼 읽힌다. (제출로 닫힐 때는 이 핸들러가 아니라
+              // onDone이 시트를 내리므로 done 안내와 경쟁하지 않는다)
+              setReopened(false);
+            }}
+          >
+            {form}
+          </RsvpSheet>
+        )}
       </>
     );
   }

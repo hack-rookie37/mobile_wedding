@@ -113,6 +113,12 @@ test("게스트: 제출 → 성공 상태 → 소프트 가드 → 수정 제출
   await expect(guest.locator("[data-rsvp-already]")).toBeVisible();
   await expect(guest.getByText("이미 참석 의사를 전달하셨습니다")).toBeVisible();
 
+  // 수정하기로 시트를 열었다가 재제출 없이 닫으면 '이미 전달' 안내로 돌아간다
+  // (처음의 열기 버튼으로 리셋되면 이전 응답이 사라진 것처럼 보인다)
+  await guest.getByRole("button", { name: "응답 수정하기" }).click();
+  await guest.locator("[data-rsvp-sheet]").getByRole("button", { name: "닫기" }).click();
+  await expect(guest.locator("[data-rsvp-already]")).toBeVisible();
+
   // 수정 제출 — 같은 토큰이 재사용되어 서버에서 '수정'으로 처리된다 (중복 제출 처리)
   await guest.getByRole("button", { name: "응답 수정하기" }).click();
   await fillRsvpForm(guest, { name: "김하객", attending: "불참" });

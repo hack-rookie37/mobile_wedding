@@ -10,7 +10,7 @@
 
 **Phase 11 이후 변경**: 아직 서비스로 열지 않으므로 **공개 가입을 닫았다**(ADR-024) — 로그인 화면에서 회원가입 모드 제거, 계정은 Supabase 대시보드에서 직접 생성, 운영 `enable_signup = false`가 실제 경계(§3-2). admin role은 도입하지 않았다(소유권 모델로 충분, YAGNI). e2e 헬퍼는 가입 UI 대신 anon API로 계정을 만들고 로그인만 UI로 수행한다 — 전 검사 재실행 green(§4).
 
-**RSVP 폼 문턱 낮추기 (계속, ADR-055 연장)**: ① (필수) 표시를 오류 문구와 같은 빨강(#b3403a)으로 — FieldBlock `required` prop으로 분리(라벨 문자열에서 제거, e2e는 input aria-label을 잡아 무영향). ② 참석 여부·어느 쪽 하객을 빈 라디오 대신 한쪽이 켜진 채로 시작(참석·신랑측 기본) — '골라야 제출된다'는 문턱 제거. ③ 동반 인원·식사 여부는 참석일 때만 노출, 불참 제출 시 숨은 값은 null로 보낸다(참석↔불참 토글 시 적어 둔 값은 상태로 보존). 검증: typecheck·renderer-units·lint·단위 290·build green — **e2e는 로컬 Supabase 중단 상태라 미실행**(다음 세션에서 돌릴 것).
+**RSVP 폼 문턱 낮추기 (계속, ADR-055 연장)**: ① (필수) 표시를 오류 문구와 같은 빨강(#b3403a)으로 — FieldBlock `required` prop으로 분리(라벨 문자열에서 제거, e2e는 input aria-label을 잡아 무영향). ② 참석 여부·어느 쪽 하객을 빈 라디오 대신 한쪽이 켜진 채로 시작(참석·신랑측 기본) — '골라야 제출된다'는 문턱 제거. ③ 동반 인원·식사 여부는 참석일 때만 노출, 불참 제출 시 숨은 값은 null로 보낸다(참석↔불참 토글 시 적어 둔 값은 상태로 보존). ④ '응답 수정하기'로 시트를 열었다가 재제출 없이 닫으면 초기 열기 버튼이 아니라 '이미 전달' 안내로 복귀(reopened 리셋 — 이전 응답이 사라진 듯 보이던 상태 버그, e2e 케이스 추가). 검증: typecheck·renderer-units·lint·단위 290·build green — **e2e는 로컬 Supabase 중단 상태라 미실행**(다음 세션에서 돌릴 것).
 
 **ADR-061 철회 — iOS 음량 미지원 확정 (ADR-062)**: AudioSession+GainNode가 실기기에서 소리 왜곡 + 100% 무음(iOS WebKit의 createMediaElementSource 구현 신뢰 불가 — 실측). ADR-051 상태로 정확 복원(git 원본 대조). 모든 경로 소진: element.volume(정책 무시)·MediaElementSource(050·061 두 번 실기기 실패)·BufferSource(속도가 피치를 바꿈)·파일 재인코딩(비용, 유일한 잔여 경로로 보류). 원칙 재확인: 재생 신뢰성 > iOS 음량. 아이폰은 기기 음량 버튼, PC·안드로이드는 슬라이더 유지.
 
