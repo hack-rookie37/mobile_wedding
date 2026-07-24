@@ -1582,3 +1582,26 @@ canvas-fade-in → canvas-ink-in 갱신).
 **검증**: typecheck·단위 290·build·e2e 95 green (Chromium은 audioSession이 없어 기존
 element volume 단언이 그 경로를 검증). Safari 경로는 실기기 확인 필요: 무음 스위치
 ON/OFF × 음량 30↔70% 차이 × 다른 앱 재생 중 시나리오.
+
+## ADR-062. ADR-061 철회 — iOS 소프트웨어 음량은 미지원으로 확정 (렌더러만)
+
+**Context**: ADR-061(AudioSession + GainNode) 배포 직후 실기기(iPhone)에서 **소리가 깨지고
+(왜곡), 음량 100%에서는 아예 무음**. 코드의 수학(감쇠 1.0 = 통과)에는 100%를 특별하게
+만드는 것이 없다 — 증상은 우리 로직이 아니라 iOS WebKit의
+`createMediaElementSource`(미디어 엘리먼트를 WebAudio 그래프로 라우팅) 구현 자체가
+신뢰 불가라는 실측 증거다(라우팅된 엘리먼트의 왜곡·무음은 알려진 WebKit 버그 계열).
+
+**Decision**: MusicToggle·안내문·e2e 주석을 ADR-051 상태(313228f)로 정확히 복원한다.
+iOS 소프트웨어 음량 조절은 **미지원으로 확정**한다 — 모든 경로를 실측·검토했다:
+- element.volume — 애플 정책으로 무시 (ADR-051에서 확인)
+- MediaElementSource + GainNode — 무음 스위치 결합(ADR-050, 실기기 무음) →
+  AudioSession으로 풀었더니 왜곡·무음(ADR-061, 실기기). 두 번의 실기기 실패.
+- AudioBufferSource + GainNode — 재생 속도가 피치를 바꿔 버린다(엘리먼트의
+  preservesPitch가 없다) + 전곡 PCM 메모리(수십 MB). 기능 회귀라 제외.
+- 파일 재인코딩(음량 굽기) — 유일하게 남은 경로. 손실 압축 2회(음질)·슬라이더마다
+  재처리와 재업로드(Supabase 예산)·즉시 미리듣기 상실이라 보류. 필요해지면 이것뿐이다.
+
+원칙 재확인: **예식일에 BGM은 무조건 나와야 한다 — 재생 신뢰성 > iOS 음량**(ADR-051).
+아이폰은 기기 음량 버튼을 따른다(안내문 유지). PC·안드로이드는 슬라이더가 계속 작동한다.
+
+**검증**: 복원은 git 원본 대조(313228f)로 정확성 보장. typecheck·단위·build·e2e green.

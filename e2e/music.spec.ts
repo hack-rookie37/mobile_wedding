@@ -115,9 +115,8 @@ test("배경음악: 음량·속도·자동재생 설정이 게스트 화면의 a
   await guest.goto(`/i/${slug}`);
   const audio = guest.locator("[data-music-toggle] + audio");
   // 저장값 0.4 → 세제곱 곡선(ADR-047)으로 얹힌다 — 선형은 상단 절반이 다 비슷하게 들렸다.
-  // 이 단언은 element volume 경로(Chromium — audioSession 없음)의 몫이다. Safari는
-  // audioSession.type="playback" + GainNode로 같은 감쇠를 얹는다 (ADR-061 — iOS도 적용,
-  // 그래프 경로에서는 element volume이 1로 남는다).
+  // iOS는 volume 지정 자체를 무시한다(기기 버튼 전용 — ADR-051, WebAudio 우회는 무음
+  // 스위치에 소리가 묶여 폐기) — 이 검증은 그 외 환경의 몫이다.
   await expect(audio).toHaveJSProperty("volume", 0.4 ** 3);
   await expect(audio).toHaveJSProperty("playbackRate", 1.2);
   // 자동재생을 켜면 미리 받아 둔다 — 첫 동작에 곧바로 소리가 나야 하기 때문
