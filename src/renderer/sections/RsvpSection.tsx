@@ -35,11 +35,22 @@ const lineInputClass =
   "placeholder:text-(--canvas-ink-soft)/50 border border-(--canvas-line) " +
   "focus:border-(--canvas-ink) focus:outline-none";
 
-function FieldBlock({ label, children }: { label: string; children: ReactNode }) {
+function FieldBlock({
+  label,
+  required = false,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: ReactNode;
+}) {
   return (
     <div>
       <p className="mb-2 text-[length:calc(12px*var(--canvas-fs))] font-medium text-(--canvas-ink-soft)">
         {label}
+        {/* 필수 표시는 붉게 — 안 채우면 제출이 안 되는 항목임이 라벨만 훑어도 보인다.
+            제출 오류 문구와 같은 빨강(#b3403a): 캔버스 팔레트에 없는 '경고'는 이 색 하나로 통일 */}
+        {required && <span className="text-[#b3403a]"> (필수)</span>}
       </p>
       {children}
     </div>
@@ -65,7 +76,7 @@ function ChoiceChips<T extends string>({
   disabled?: boolean;
 }) {
   return (
-    <FieldBlock label={label}>
+    <FieldBlock label={label} required={required}>
       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={label}>
         {options.map((option) => {
           const checked = value === option.value;
@@ -136,16 +147,19 @@ function RsvpForm({
   // 서버 upsert가 중복 행 대신 갱신으로 처리된다 (제출마다 새로 만들면 재시도 = 중복)
   const [clientToken] = useState(() => storedToken ?? crypto.randomUUID());
   const [guestName, setGuestName] = useState("");
-  const [attending, setAttending] = useState<"yes" | "no" | null>(null);
-  const [side, setSide] = useState<ContactSide | null>(null);
+  // 양자택일은 한쪽이 켜진 채로 시작한다 — 빈 라디오는 '골라야 한다'는 문턱인데,
+  // 응답을 많이 받는 게 목적이다. 대부분의 게스트가 고를 값(참석·신랑측)을 기본으로 둔다.
+  const [attending, setAttending] = useState<"yes" | "no">("yes");
+  const [side, setSide] = useState<ContactSide>("groom");
   const [companions, setCompanions] = useState("0");
   const [meal, setMeal] = useState<RsvpMeal | null>(null);
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
+  const isAttending = attending === "yes";
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!submittable || target === null || attending === null) return;
+    if (!submittable || target === null) return;
     const website = new FormData(event.currentTarget).get("website");
     const token = clientToken;
     setPhase({ kind: "submitting" });
@@ -158,9 +172,11 @@ function RsvpForm({
           clientToken: token,
           guestName,
           side: collect.side ? side : null,
-          attending: attending === "yes",
-          companions: collect.companions ? (companions === "" ? 0 : Number(companions)) : null,
-          meal: collect.meal ? meal : null,
+          attending: isAttending,
+          // 불참이면 동반 인원·식사는 화면에 없다 — 숨긴 값(참석일 때 적어 둔 값)을 보내지 않는다
+          companions:
+            collect.companions && isAttending ? (companions === "" ? 0 : Number(companions)) : null,
+          meal: collect.meal && isAttending ? meal : null,
           phone: collect.phone ? phone : null,
           message: collect.message ? message : null,
           website,
@@ -191,7 +207,7 @@ function RsvpForm({
         </label>
       </div>
 
-      <FieldBlock label="성함 (필수)">
+      <FieldBlock label="성함" required>
         <input
           type="text"
           value={guestName}
@@ -206,7 +222,7 @@ function RsvpForm({
       </FieldBlock>
 
       <ChoiceChips
-        label="참석 여부 (필수)"
+        label="참석 여부"
         name="rsvp-attending"
         value={attending}
         required
@@ -232,7 +248,8 @@ function RsvpForm({
         />
       )}
 
-      {collect.companions && (
+      {/* 동반 인원·식사는 참석일 때만 묻는다 — 불참인 사람에게는 무의미한 질문이다 */}
+      {isAttending && collect.companions && (
         <FieldBlock label="동반 인원 (본인 제외)">
           <input
             type="number"
@@ -248,7 +265,7 @@ function RsvpForm({
         </FieldBlock>
       )}
 
-      {collect.meal && (
+      {isAttending && collect.meal && (
         <ChoiceChips
           label="식사 여부"
           name="rsvp-meal"
