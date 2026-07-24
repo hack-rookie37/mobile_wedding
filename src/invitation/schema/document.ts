@@ -504,6 +504,7 @@ export const giftAccountSchema = z.object({
 });
 
 export const giftAccountContentSchema = titledContentSchema.extend({
+  body: z.string(), // 안내 문구 (빈 문자열 = 표시 없음)
   groomLabel: z.string(),
   brideLabel: z.string(),
   accounts: z.array(giftAccountSchema).max(8, "계좌는 최대 8개입니다"),
@@ -643,7 +644,7 @@ export const musicSchema = z.object({
 
 export const documentSchema = z
   .object({
-    schemaVersion: z.literal(20),
+    schemaVersion: z.literal(21),
     wedding: weddingSchema,
     theme: themeSchema,
     music: musicSchema,

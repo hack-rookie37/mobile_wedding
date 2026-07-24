@@ -272,6 +272,12 @@ export function GiftAccountForm({ section }: { section: GiftAccountSection }) {
   return (
     <div className="space-y-5">
       <TextField label="제목" value={content.title} onChange={(title) => patchContent({ title })} />
+      <TextAreaField
+        label="안내 문구"
+        value={content.body}
+        onChange={(body) => patchContent({ body })}
+        rows={3}
+      />
       {sideGroup("groom")}
       {sideGroup("bride")}
     </div>

@@ -17,7 +17,7 @@ import {
   PT_MIN,
 } from "./themes";
 
-export const CURRENT_SCHEMA_VERSION = 20;
+export const CURRENT_SCHEMA_VERSION = 21;
 
 // 사진 위 문구의 등장 효과로 쓸 수 있는 값. 마이그레이션이 잘못된 값을 여기 기준으로 되돌린다.
 const OVERLAY_ANIMATIONS = new Set(["none", "fade", "rise", "typing", "letterFade", "writing"]);
@@ -659,6 +659,20 @@ const migrations: Record<number, (raw: unknown) => unknown> = {
                 ...section.content,
               },
             },
+      ),
+    };
+  },
+  // v20 → v21: 마음 전하실 곳에 안내 문구(body) 추가.
+  // 기존 문서는 빈 문자열 — 표시가 없으므로 열었을 때 모습이 변하지 않는다.
+  20: (raw) => {
+    const doc = raw as { sections?: Array<{ type?: unknown; content?: object }> };
+    return {
+      ...(raw as object),
+      schemaVersion: 21,
+      sections: (doc.sections ?? []).map((section) =>
+        section.type !== "giftAccount"
+          ? section
+          : { ...section, content: { body: "", ...section.content } },
       ),
     };
   },

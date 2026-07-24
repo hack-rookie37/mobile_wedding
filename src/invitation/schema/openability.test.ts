@@ -181,6 +181,19 @@ function transitionalV19() {
   };
 }
 
+function v20Document() {
+  const doc = createSampleDocument();
+  return {
+    ...doc,
+    schemaVersion: 20,
+    sections: doc.sections.map((section) => {
+      if (section.type !== "giftAccount") return section;
+      const { body: _body, ...content } = section.content;
+      return { ...section, content };
+    }),
+  };
+}
+
 // v14 전이 상태 — 이 사고가 실제로 났다. 개발 중 이 필드가 typewriter(boolean) →
 // animation(enum)으로 바뀌었고, 그 사이에 dev 서버가 문서를 저장하면서 schemaVersion만 14로
 // 찍혔다. 버전이 이미 최신이라 마이그레이션이 손대지 못해 열리지 않았다.
@@ -293,6 +306,14 @@ describe("저장돼 있던 문서는 반드시 다시 열린다", () => {
     if (greeting?.type !== "greeting") throw new Error("greeting이 없습니다");
     expect(greeting.content.ornamentHeightPx).toBe(56); // 열었더니 검증 실패가 나면 안 된다
     expect(greeting.content.ornamentAssetId).toBeNull(); // 저장돼 있던 값 보존
+  });
+
+  it("v20 문서가 열리고, 마음 전하실 곳 안내 문구는 비어 들어온다", () => {
+    const opened = migrateDocument(v20Document());
+    expect(opened.schemaVersion).toBe(CURRENT_SCHEMA_VERSION);
+    const gift = opened.sections.find((s) => s.type === "giftAccount");
+    if (gift?.type !== "giftAccount") throw new Error("giftAccount가 없습니다");
+    expect(gift.content.body).toBe(""); // 표시 없음 — 열었을 때 모습이 변하지 않는다
   });
 
   it("v18 문서가 열리고, 라벨 위 장식 이미지는 비어 들어온다", () => {

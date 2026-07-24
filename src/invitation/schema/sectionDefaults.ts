@@ -161,6 +161,7 @@ export function createDefaultSection(type: AddableSectionType, id: string): Sect
         content: {
           title: "마음 전하실 곳",
           label: DEFAULT_SECTION_LABELS[type],
+          body: "참석이 어려워 마음을 전하고 싶으신 분들을 위해\n계좌번호를 안내드립니다.",
           groomLabel: "신랑측",
           brideLabel: "신부측",
           accounts: [],

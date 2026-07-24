@@ -516,12 +516,23 @@ test("맺음말: 전면 사진 레이아웃과 밝기·투명도 조절", async 
   expect(titleBox!.y + titleBox!.height).toBeLessThan(photoRect!.y + photoRect!.height);
 });
 
-test("마음 전하실 곳: 눈썹 라벨이 REGISTRY다", async ({ page }) => {
+test("마음 전하실 곳: 눈썹 라벨이 REGISTRY고, 안내 문구를 고치면 캔버스에 그대로 뜬다", async ({
+  page,
+}) => {
   await signUpFresh(page);
   await createSample(page);
   const gift = canvas(page).locator('section:has-text("마음 전하실 곳")').last();
   await expect(gift.getByText("REGISTRY")).toBeVisible();
   await expect(gift.getByText("GIFT")).toHaveCount(0);
+
+  // 샘플 안내 문구가 보이고, 고치면 그대로 반영된다 (비우면 사라진다)
+  await expect(gift.getByText("참석이 어려워 마음을 전하고 싶으신 분들을 위해")).toBeVisible();
+  await selectSection(page, "마음 전하실 곳", "내용");
+  const notice = inspector(page).getByLabel("안내 문구", { exact: true });
+  await notice.fill("축하의 마음만으로도 충분합니다.");
+  await expect(gift.getByText("축하의 마음만으로도 충분합니다.")).toBeVisible();
+  await notice.fill("");
+  await expect(gift.getByText("축하의 마음만으로도")).toHaveCount(0);
 });
 
 test("메인: 사진 위 문구를 넣고 위치·크기·색을 고른 대로 얹힌다", async ({ page }) => {

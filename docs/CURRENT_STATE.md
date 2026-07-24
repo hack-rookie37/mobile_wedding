@@ -10,6 +10,10 @@
 
 **Phase 11 이후 변경**: 아직 서비스로 열지 않으므로 **공개 가입을 닫았다**(ADR-024) — 로그인 화면에서 회원가입 모드 제거, 계정은 Supabase 대시보드에서 직접 생성, 운영 `enable_signup = false`가 실제 경계(§3-2). admin role은 도입하지 않았다(소유권 모델로 충분, YAGNI). e2e 헬퍼는 가입 UI 대신 anon API로 계정을 만들고 로그인만 UI로 수행한다 — 전 검사 재실행 green(§4).
 
+**마음 전하실 곳 안내 문구 (스키마 v21)**: `giftAccount.content.body` 추가 — 제목 아래 가운데 정렬 안내문(RSVP body와 같은 스타일, 개행 보존, 빈 문자열이면 표시 없음). 편집기 '안내 문구' textarea, 새 섹션·샘플 기본 문구("참석이 어려워 마음을 전하고 싶으신 분들을 위해…"). v20→21 마이그레이션은 빈 문자열 — 기존 문서 모습 불변, openability v20 케이스 추가(마이그레이션 무력화로 가드 실패 확인 완료). e2e에 안내 문구 편집·비우기 케이스 추가 — **로컬 Supabase 중단으로 e2e 미실행**.
+
+**갤러리 라이트박스 UI 개편**: 확대 보기를 레퍼런스형 UI로 — 우상단 ✕ 닫기, 화면 좌우 가장자리 ‹ › 버튼, 좌우 스와이프(48px·가로 지배 판정), 하단 썸네일 스트립(현재 사진 흰 테두리 + aria-current, 탭 점프, scrollIntoView로 활성 썸네일 가운데 유지 — reduced-motion이면 즉시). 전체 화면(h-dvh) dialog로 재배치, 빈 곳 탭·backdrop 클릭·Esc 닫기와 포커스 복귀는 그대로 native dialog가 보장. 썸네일은 srcSet+sizes 44px라 640w 썸이 선택된다(egress 무해). e2e에 썸네일 점프·✕ 닫기·재열기 Esc 케이스 추가 — **e2e는 로컬 Supabase 중단으로 미실행**, 나머지 검증 green.
+
 **RSVP 폼 문턱 낮추기 (계속, ADR-055 연장)**: ① (필수) 표시를 오류 문구와 같은 빨강(#b3403a)으로 — FieldBlock `required` prop으로 분리(라벨 문자열에서 제거, e2e는 input aria-label을 잡아 무영향). ② 참석 여부·어느 쪽 하객을 빈 라디오 대신 한쪽이 켜진 채로 시작(참석·신랑측 기본) — '골라야 제출된다'는 문턱 제거. ③ 동반 인원·식사 여부는 참석일 때만 노출, 불참 제출 시 숨은 값은 null로 보낸다(참석↔불참 토글 시 적어 둔 값은 상태로 보존). ④ '응답 수정하기'로 시트를 열었다가 재제출 없이 닫으면 초기 열기 버튼이 아니라 '이미 전달' 안내로 복귀(reopened 리셋 — 이전 응답이 사라진 듯 보이던 상태 버그, e2e 케이스 추가). 검증: typecheck·renderer-units·lint·단위 290·build green — **e2e는 로컬 Supabase 중단 상태라 미실행**(다음 세션에서 돌릴 것).
 
 **ADR-061 철회 — iOS 음량 미지원 확정 (ADR-062)**: AudioSession+GainNode가 실기기에서 소리 왜곡 + 100% 무음(iOS WebKit의 createMediaElementSource 구현 신뢰 불가 — 실측). ADR-051 상태로 정확 복원(git 원본 대조). 모든 경로 소진: element.volume(정책 무시)·MediaElementSource(050·061 두 번 실기기 실패)·BufferSource(속도가 피치를 바꿈)·파일 재인코딩(비용, 유일한 잔여 경로로 보류). 원칙 재확인: 재생 신뢰성 > iOS 음량. 아이폰은 기기 음량 버튼, PC·안드로이드는 슬라이더 유지.
