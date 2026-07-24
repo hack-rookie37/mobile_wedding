@@ -1550,3 +1550,35 @@ v18 이하였고 18→19가 두 필드를 함께 채운다.
 
 **검증**: typecheck·renderer-units·단위 290·build·e2e 95 green (쓰기 효과 단언
 canvas-fade-in → canvas-ink-in 갱신).
+
+## ADR-061. iOS 음량 조절 — AudioSession "playback" + GainNode (ADR-050의 벽 해소, 렌더러만)
+
+**Context**: "기기 음량이 어떻든 그 대비로 이 곡이 몇 % 크기로 들릴지"를 만든 사람이
+정하고 싶다 — 재생 속도처럼 어디서나 일괄로. 확인 결과 volume 무시는 **아이폰만이다**
+(애플 공식 정책: "iOS에서 오디오 레벨은 항상 사용자의 물리적 제어 아래 있다" — iOS의
+모든 브라우저가 WebKit이라 동일). PC·안드로이드는 element volume을 이미 따른다.
+파일 자체를 재인코딩해 굽는 방식은 같은 결과에 비용만 크다: 손실 압축 2회(음질),
+슬라이더 변경마다 재처리·재업로드(Supabase 저장소·전송량 제약), 즉시 미리듣기 상실.
+재생 시점의 신호 감쇠(GainNode)가 수학적으로 동일한 일을 공짜로 한다.
+
+**결정적 변화**: ADR-050(WebAudio 감쇠)을 폐기시킨 유일한 벽 — iOS에서 WebAudio 출력이
+무음 스위치에 묶이는 것 — 을 **AudioSession API가 공식으로 푼다**:
+`navigator.audioSession.type = "playback"` (Safari 16.4+, 2023-03, 기본 활성). <audio>가
+원래 속하던 '미디어 재생' 범주를 WebAudio에도 열어 무음 스위치와 분리된다.
+
+**Decision**: 두 경로의 점진적 향상.
+- 기본: element volume(세제곱 곡선 ADR-047) — PC·안드로이드·구형 iOS(≤16.3, 재생만 되고
+  음량 조절 없음 — 기존과 동일).
+- `navigator.audioSession` 존재 시(Safari): type="playback" 지정 후 AudioContext+GainNode
+  그래프. 감쇠는 gain이 맡고 element volume은 1(이중 감쇠 방지).
+- **suspended 그래프 사고 방지** (ADR-050의 교훈): createMediaElementSource는 되돌릴 수
+  없으므로 '실행 중' 컨텍스트를 확보한 뒤에만 그래프를 만든다. 제스처 밖(자동재생)에서
+  컨텍스트가 안 열리면 그래프 없이 물러난다 — iOS 첫 재생은 어차피 제스처에서 성사되므로
+  소리가 나는 첫 순간에는 감쇠가 걸려 있다. 전화·백그라운드 중단은 visibilitychange에서
+  resume. 그래프 생성 실패는 조용히 element 경로 유지 — 재생 신뢰성 > 음량 (ADR-051 우선순위).
+- 부작용 수용: "playback" 세션은 배타적이라 하객이 듣던 다른 앱 미디어를 멈춘다 —
+  현행 <audio> 재생도 iOS에서 이미 오디오 포커스를 가져가므로 실질 변화 아님.
+
+**검증**: typecheck·단위 290·build·e2e 95 green (Chromium은 audioSession이 없어 기존
+element volume 단언이 그 경로를 검증). Safari 경로는 실기기 확인 필요: 무음 스위치
+ON/OFF × 음량 30↔70% 차이 × 다른 앱 재생 중 시나리오.

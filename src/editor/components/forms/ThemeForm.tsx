@@ -120,7 +120,8 @@ function MusicPlaybackFields() {
           onChange={(percent) => patch({ volume: percent / 100 })}
         />
         <p className="mt-1.5 text-[11px] leading-[1.5] text-tool-ink-faint">
-          아이폰(iOS)은 페이지의 음량 지정을 허용하지 않아 기기 음량 버튼을 따릅니다.
+          하객 기기 음량에 곱해지는 크기입니다 — 기기 음량이 어떻든 그 대비 비율로 들립니다.
+          아이폰도 iOS 16.4부터 적용되며, 그 이전 기기는 기기 음량 버튼만 따릅니다.
         </p>
       </div>
       <NumberField

@@ -1,6 +1,6 @@
 # CURRENT_STATE — 프로젝트 현재 상태
 
-- 최종 갱신: 2026-07-23 (글자별 등장 opacity→잉크색 — ADR-060, 059 교체 / 스키마 v20 전이 치유 — ADR-058 / 쓰기 효과 재구현 — ADR-054 / RSVP 동의 제거 — ADR-055 / 공유 버튼 스크롤 표시 — ADR-056 / 인사말 장식 이미지 — ADR-057)
+- 최종 갱신: 2026-07-24 (iOS 음량 조절 — ADR-061, AudioSession+GainNode / 글자별 등장 opacity→잉크색 — ADR-060 / 스키마 v20 전이 치유 — ADR-058 / 쓰기 효과 재구현 — ADR-054 / RSVP 동의 제거 — ADR-055 / 공유 버튼·장식 이미지 — ADR-056·057)
 - 갱신 규칙: **각 vertical slice 완료 시, 그리고 중요한 결정·환경 변화 시 이 파일을 갱신한다.** 이 파일은 "지금 어디까지 왔고 다음이 무엇인지"의 단일 소스다.
 
 ## 1. 한 줄 요약
@@ -9,6 +9,8 @@
 7개 영역(architecture·security·data integrity·accessibility·responsive·performance·e2e)을 감사해 실제 결함 **14건을 수정**했고(핵심: anon이 `publish_records` 직접 조회로 public projection을 우회해 숨긴 계좌·연락처 열람 + 발행 목록 열거가 가능했던 취약점 — RPC 단일 경로로 봉쇄, ADR-023), 배포 문서(README·DEPLOYMENT·.env.example)를 완성했다. 전 검사 green: format·lint·typecheck·renderer-units / 단위 216 / 통합 29 / build / e2e 59. 남은 조건은 §3.
 
 **Phase 11 이후 변경**: 아직 서비스로 열지 않으므로 **공개 가입을 닫았다**(ADR-024) — 로그인 화면에서 회원가입 모드 제거, 계정은 Supabase 대시보드에서 직접 생성, 운영 `enable_signup = false`가 실제 경계(§3-2). admin role은 도입하지 않았다(소유권 모델로 충분, YAGNI). e2e 헬퍼는 가입 UI 대신 anon API로 계정을 만들고 로그인만 UI로 수행한다 — 전 검사 재실행 green(§4).
+
+**iOS 음량 조절 (ADR-061)**: volume 무시는 아이폰만(애플 정책, iOS 전 브라우저 공통) — 안드로이드·PC는 element volume이 이미 작동. ADR-050을 폐기시킨 벽(WebAudio가 무음 스위치에 묶임)을 `navigator.audioSession.type="playback"`(Safari 16.4+, 기본 활성)이 공식으로 풀어, Safari에서는 GainNode 감쇠(세제곱 곡선 유지)를 얹는다 — 하객 기기 음량에 곱해지는 상대 크기. 실행 중 컨텍스트 확보 후에만 그래프 생성(suspended 무음 사고 방지), 실패 시 element 경로 유지(재생 신뢰성 우선), visibilitychange에서 resume. 편집기 안내문 갱신. 실기기 확인 항목: 무음 스위치 ON/OFF × 음량 30↔70 × 타 앱 재생 중.
 
 **글자별 등장 opacity→잉크색 (ADR-060, ADR-059 교체)**: ADR-059의 상시 승격이 "글자가 잘린다"를 만들며 진짜 뿌리를 드러냈다 — **글자를 레이어로 만드는 것 자체**가 문제(iOS는 레이어 그림 범위를 글자 상자로 잡아 필기체 획이 상자 밖에서 잘리고, 페이드 종료 강등 때 온전히 복원되던 것이 '덧칠 완성'의 실체). 글자별 등장을 color 애니메이션(canvas-ink-in: from color:transparent+text-shadow:none, to 없음)으로 교체 — 레이어가 아예 안 생겨 잘림·강등 스냅·덧칠이 구조적으로 불가능, 게이트(ADR-049)가 페인트 시점을 보장. 컬러 이모지만 opacity 유지(내장 색이라 color 안 먹음, 비트맵이라 잘림 없음). will-change 제거, 발광 정지 사본 환원(ADR-059의 절반)은 유지.
 
