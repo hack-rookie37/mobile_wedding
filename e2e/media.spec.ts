@@ -289,7 +289,21 @@ test("lightbox 접근성: 열기·화살표 탐색·Esc 닫기·포커스 복귀
   await lightbox.getByRole("button", { name: "다음 사진" }).click();
   await expect(lightbox).toContainText("2 / 6");
 
-  // Esc 닫기 → 트리거로 포커스 복귀 (native dialog 보장)
+  // 하단 썸네일 스트립 — 탭하면 그 사진으로 건너뛰고, 현재 사진이 표시된다
+  const thumbs = lightbox.locator("[data-lightbox-thumbs] button");
+  await expect(thumbs).toHaveCount(6);
+  await thumbs.nth(3).click();
+  await expect(lightbox).toContainText("4 / 6");
+  await expect(thumbs.nth(3)).toHaveAttribute("aria-current", "true");
+
+  // 우상단 ✕ 닫기 → 트리거로 포커스 복귀
+  await lightbox.getByRole("button", { name: "닫기" }).click();
+  await expect(lightbox).toBeHidden();
+  await expect(trigger).toBeFocused();
+
+  // 다시 열어 Esc 닫기도 확인 (native dialog 보장)
+  await trigger.click();
+  await expect(lightbox).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(lightbox).toBeHidden();
   await expect(trigger).toBeFocused();
