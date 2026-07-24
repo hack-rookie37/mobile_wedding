@@ -139,6 +139,13 @@ function ProjectRow({
           <RowAction label="삭제" danger onClick={() => setConfirmingDelete(true)} />
           {!archived && (
             <>
+              {/* 하객 응답 확인은 편집만큼 잦은 일이다 — 편집기를 거치지 않고 바로 간다 */}
+              <a
+                href={`/editor/${project.id}/rsvp`}
+                className="text-[13px] text-tool-ink-soft hover:text-tool-ink"
+              >
+                RSVP 응답
+              </a>
               <a
                 href={`/preview/${project.id}`}
                 target="_blank"
